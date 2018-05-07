@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>New Document Schema</title>
+  <style>
+  thead {
+    font-weight: bold;
+  }
+  tbody {
+    vertical-align: top;
+  }
+  td {
+    padding-bottom: 5px;
+    padding-top: 5px;
+    padding-right: 5px;
+  }
+  .field-label, #id-doc-name {
+    width: 300px;
+  }
+  </style>
+</head>
+<body>
+  <h1>New Document Schema</h1>
+
+  <form method="post" action="">
+    <div>
+      <label for="id-doc-name">Document Name</label>
+      <input type="text" name="doc-name" id="id-doc-name" />
+    </div>
+    <div>
+      <label for="id-child-table">Is Child Table</label>
+      <input type="checkbox" name="child-table" id="id-child-table" />
+    </div>
+
+    <h3>Fields</h3>
+    <table>
+      <thead>
+        <tr>
+          <td>No</td>
+          <td>Label</td>
+          <td>Name</td>
+          <td>Type</td>
+          <td>Options</td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><input type="text" class="field-label" name="label-1" /></td>
+          <td><input type="text" class="field-name" name="name-1" /></td>
+          <td>
+            <select name="type-1" class="field-type">
+              <option>Data</option>
+              <option>Email</option>
+              <option>Text</option>
+              <option>URL</option>
+            </select>
+          </td>
+          <td>
+            <label>Required <input type="checkbox" class="option-required" name="options-1" value="required" /></label>
+            <label>Unique <input type="checkbox" class="option-unique" name="options-1" value="checkbox" /></label>
+            <label>Default Value </label><input type="text" class="default-value" name="default-value-1" /><br>
+            <label>Other Options </label><br><textarea class="other-options" name="other-options-1"></textarea><br>
+          </td>
+          <td><button class='delete-field-btn' id="delete-field-1">Delete</button></td>
+        </tr>
+      </tbody>
+    </table>
+    <button id='new-field'>Add Field</button><br><br>
+    <button type="submit">Create</button>
+  </form>
+  <script src="/static/jquery-3.3.1.min.js"></script>
+  <script>
+
+  function deleteFieldHandler(e) {
+    e.preventDefault();
+    $(e.target).parents('tr').remove();
+    // reset the numbers
+    $('tbody tr').each(function(i, el) {
+      var newNo = i + 1;
+      var strNewNo = newNo.toString()
+      $('td:first', el).text(strNewNo);
+      $('.field-label', el).attr('name', 'label-' + strNewNo);
+      $('.field-name', el).attr('name', 'name-' + strNewNo);
+      $('.field-type', el).attr('name', 'type-' + strNewNo);
+      $('.option-required', el).attr('name', 'options-' + strNewNo);
+      $('.option-unique', el).attr('name', 'options-' + strNewNo);
+      $('.default-value', el).attr('name', 'default-value-' + strNewNo);
+      $('.other-options', el).attr('name', 'other-options-' + strNewNo);
+      $('.delete-field-btn', el).attr('id', 'delete-field-' + strNewNo);
+    });
+  }
+
+  $(document).ready(function() {
+    $('#delete-field-1').hide();
+
+    $('#new-field').click(function(e) {
+      e.preventDefault();
+
+      var currentNo = parseInt($('tr:last td:first').text());
+      var newNo = currentNo + 1;
+      var html = $('tr:last').html();
+      var re = new RegExp(currentNo.toString(), 'g');
+      html = html.replace(re, newNo.toString());
+
+      html = "<tr>" + html + "</tr>";
+      $('tbody').append(html);
+
+      $('#delete-field-' + newNo.toString()).click(deleteFieldHandler);
+      $('#delete-field-' + newNo.toString()).show();
+    });
+
+    $('form button[type=submit]').click(function(e) {
+      e.preventDefault();
+
+    })
+  });
+
+  </script>
+</body>
+</html>

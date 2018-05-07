@@ -1,0 +1,17 @@
+check
+column break
+data
+date and time
+email
+file
+float
+image
+int
+link to another document
+password
+read only
+section break
+select
+table
+text
+url
