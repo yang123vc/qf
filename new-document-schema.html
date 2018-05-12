@@ -31,6 +31,9 @@
     <div>
       <label for="id-child-table">Is Child Table</label>
       <input type="checkbox" name="child-table" id="id-child-table" />
+      &nbsp;&nbsp;
+      <label for="id-singleton">Is Singleton</label>
+      <input type="checkbox" name="singleton" id="id-singleton" />
     </div>
 
     <h3>Fields</h3>
@@ -59,8 +62,10 @@
           </td>
           <td>
             <label>Required <input type="checkbox" class="option-required" name="options-1" value="required" /></label>
-            <label>Unique <input type="checkbox" class="option-unique" name="options-1" value="checkbox" /></label>
+            <label>Unique <input type="checkbox" class="option-unique" name="options-1" value="unique" /></label>
             <label>Default Value </label><input type="text" class="default-value" name="default-value-1" /><br>
+            <label>Index <input type="checkbox" class="option-index" name="options-1" value="index" /></label>
+            <label>In List View <input type="checkbox" class="option-ilv" name="options-1" value="in-list-view" /></label><br>
             <label>Other Options </label><br><textarea class="other-options" name="other-options-1"></textarea><br>
           </td>
           <td><button class='delete-field-btn' id="delete-field-1">Delete</button></td>
@@ -86,6 +91,8 @@
       $('.field-type', el).attr('name', 'type-' + strNewNo);
       $('.option-required', el).attr('name', 'options-' + strNewNo);
       $('.option-unique', el).attr('name', 'options-' + strNewNo);
+      $('.option-index', el).attr('name', 'options-' + strNewNo);
+      $('.option-ilv', el).attr('name', 'options-' + strNewNo);
       $('.default-value', el).attr('name', 'default-value-' + strNewNo);
       $('.other-options', el).attr('name', 'other-options-' + strNewNo);
       $('.delete-field-btn', el).attr('id', 'delete-field-' + strNewNo);
@@ -109,12 +116,42 @@
 
       $('#delete-field-' + newNo.toString()).click(deleteFieldHandler);
       $('#delete-field-' + newNo.toString()).show();
+
+      $('.field-label, .field-name', 'tr:last').each(function(i, el) {
+        $(el).css('border', '1px solid gray');
+      });
+
+      $('html, body').scrollTop($(document).height());
     });
 
     $('form button[type=submit]').click(function(e) {
       e.preventDefault();
 
-    })
+      // validation
+
+      if ( $('#id-doc-name').val() == "") {
+        $('#id-doc-name').css('border', '1px solid red');
+        return;
+      } else {
+        $('#id-doc-name').css('border', '1px solid gray');
+      }
+
+      var passedValidations = true;
+      $('.field-label, .field-name').each(function(i, el) {
+        if ($(el).val() == "" ) {
+          $(el).css('border', '1px solid red');
+          passedValidations = false;
+        } else {
+          $(el).css('border', '1px solid gray');
+        }
+      });
+
+      // submission
+
+      if (passedValidations) {
+        $('form').submit();
+      }
+    });
   });
 
   </script>
