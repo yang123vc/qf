@@ -12,3 +12,8 @@ one authentication system to log on to the system (comfort).
 * Golang
 * MySQL
 * Ubuntu
+
+
+## License
+
+Released with the MIT License
