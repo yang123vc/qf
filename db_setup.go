@@ -23,8 +23,8 @@ func DBSetup() {
     _, err := SQLDB.Exec(`create table qf_forms (
       id int not null auto_increment,
       doc_name varchar(100) not null,
-      is_child_table char(1),
-      is_singleton char(1),
+      child_table char(1),
+      singleton char(1),
       primary key (id),
       unique (doc_name)
       )`)
@@ -35,13 +35,16 @@ func DBSetup() {
     // create fields table
     _, err = SQLDB.Exec(`create table qf_fields (
       id int not null auto_increment,
-      field_label varchar(100) not null,
-      field_name varchar(100) not null,
-      field_type varchar(100) not null,
-      field_options varchar(255),
+      formid int not null,
+      label varchar(100) not null,
+      name varchar(100) not null,
+      type varchar(100) not null,
+      options varchar(255),
       default_value varchar(255),
-      field_other_options varchar(255),
-      primary key (id)
+      other_options varchar(255),
+      primary key (id),
+      foreign key (formid) references qf_forms(id),
+      unique (formid, name)
       )`)
     if err != nil {
       panic(err)
