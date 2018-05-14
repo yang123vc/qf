@@ -7,6 +7,7 @@ import (
   "path/filepath"
   "strconv"
   "strings"
+  "html/template"
   // "database/sql"
   // _ "github.com/go-sql-driver/mysql"
 )
@@ -97,7 +98,32 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "Document Schema saved.")
 
   } else {
-    http.ServeFile(w, r, filepath.Join(getProjectPath(), "new-document-schema.html"))
+    type Context struct {
+      DocNames string
+    }
+    tempSlice := make([]string, 0)
+    var str string
+    rows, err := SQLDB.Query("select doc_name from qf_forms")
+    if err != nil {
+      fmt.Fprintf(w, "An error occured: " + err.Error())
+      return
+    }
+    defer rows.Close()
+    for rows.Next() {
+      err := rows.Scan(&str)
+      if err != nil {
+        panic(err)
+      }
+      tempSlice = append(tempSlice, str)
+    }
+    err = rows.Err()
+    if err != nil {
+      fmt.Fprintf(w, "An error occured: " + err.Error())
+      return
+    }
+    ctx := Context{strings.Join(tempSlice, ",")}
+    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "new-document-schema.html")))
+    tmpl.Execute(w, ctx)
   }
 }
 
