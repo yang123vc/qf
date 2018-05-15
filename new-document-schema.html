@@ -41,9 +41,12 @@
     </div>
 
     <h3>Fields</h3>
-    <span>Please note that you can't use the following names for your fields: id, created, owner,
-      modified
-    </span>
+    <span>Help</span><br>
+    <ol>
+      <li>Please note that you can't use the following names for your fields: id, created, owner,
+      modified</li>
+      <li>You can't use any SQL keyword</li>
+    </ol>
     <table>
       <thead>
         <tr>
@@ -61,16 +64,25 @@
           <td><input type="text" class="field-name" name="name-1" /></td>
           <td>
             <select name="type-1" class="field-type">
-              <option>Data</option>
+              <option>Check</option>
+              <option selected="selected">Data</option>
+              <option>Date</option>
+              <option>Date and Time</option>
               <option>Email</option>
+              <option>Float</option>
+              <option>Int</option>
+              <option>Link</option>
+              <option>Password</option>
+              <option>Read Only </option>
+              <option>Section Break </option>
+              <!-- <option>Table</option> -->
               <option>Text</option>
               <option>URL</option>
             </select>
           </td>
           <td>
             <label>Required <input type="checkbox" class="option-required" name="options-1" value="required" /></label>
-            <label>Unique <input type="checkbox" class="option-unique" name="options-1" value="unique" /></label>
-            <label>Default Value </label><input type="text" class="default-value" name="default-value-1" /><br>
+            <label>Unique <input type="checkbox" class="option-unique" name="options-1" value="unique" /></label><br>
             <label>Index <input type="checkbox" class="option-index" name="options-1" value="index" /></label>
             <label>In List View <input type="checkbox" class="option-ilv" name="options-1" value="in-list-view" /></label><br>
             <label>Other Options </label><br><textarea class="other-options" name="other-options-1"></textarea><br>
@@ -101,7 +113,6 @@
       $('.option-unique', el).attr('name', 'options-' + strNewNo);
       $('.option-index', el).attr('name', 'options-' + strNewNo);
       $('.option-ilv', el).attr('name', 'options-' + strNewNo);
-      $('.default-value', el).attr('name', 'default-value-' + strNewNo);
       $('.other-options', el).attr('name', 'other-options-' + strNewNo);
       $('.delete-field-btn', el).attr('id', 'delete-field-' + strNewNo);
     });
@@ -145,6 +156,7 @@
       }
 
       docNamesList = docNames.split(',');
+
       if ( docNamesList.indexOf( $('#id-doc-name').val() ) != -1 ) {
         $('#error-box').text('The document name is already taken.');
         $('#error-box').show();
@@ -164,18 +176,37 @@
         }
       });
 
-      names = [];
+      var names = [];
       $('.field-name').each(function(i, el) {
         names.push( $(el).val() );
       });
-      names_set = new Set(names);
+      var names_set = new Set(names);
       if (names_set.size != names.length) {
-        $('#error-box').text('Duplicate names exists.');
+        $('#error-box').text('Duplicate field names.');
         $('#error-box').show();
         return;
       }
 
+      var linkFields = []
       // submission
+      $('.field-type').each(function(i, el) {
+        var data = {};
+        if ( $(el).val() == "Link") {
+          var ot = $(el).parents('tr').find(".other-options");
+          if ( $(ot).val() == "" ) {
+            $('#error-box').text("If you have a link field, also submit an existing document schema in the other options.")
+            $('#error-box').show();
+            passedValidations = false;
+          }
+          else if ( docNamesList.indexOf( $(ot).val()) == -1) {
+            $('#error-box').text("The other options value is not a created document schema.")
+            $('#error-box').show();
+            passedValidations = false;
+          } else {
+            $('#error-box').hide();
+          }
+        }
+      });
 
       if (passedValidations) {
         $('form').submit();

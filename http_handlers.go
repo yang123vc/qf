@@ -8,8 +8,7 @@ import (
   "strconv"
   "strings"
   "html/template"
-  // "database/sql"
-  // _ "github.com/go-sql-driver/mysql"
+  "sort"
 )
 
 
@@ -30,13 +29,12 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
     name string
     type_ string
     options string
-    default_value string
     other_options string
   }
 
-  qffs := make([]QFField, 0)
 
   if r.Method == http.MethodPost {
+    qffs := make([]QFField, 0)
     r.ParseForm()
     i := 1
     for i < 100 {
@@ -49,7 +47,6 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
           name: r.FormValue("name-" + iStr),
           type_: r.FormValue("type-" + iStr),
           options: strings.Join(r.PostForm["options-" + iStr], ","),
-          default_value: r.FormValue("default-value-" + iStr),
           other_options: r.FormValue("other-options-" + iStr),
         }
         qffs = append(qffs, qff)
@@ -80,18 +77,82 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
     }
 
     formId, _:= res.LastInsertId()
-    stmt, err := tx.Prepare(`insert into qf_fields(formid, label, name, type, options, default_value, other_options)
-      values(?, ?, ?, ?, ?, ?, ?)`)
+    stmt, err := tx.Prepare(`insert into qf_fields(formid, label, name, type, options, other_options)
+      values(?, ?, ?, ?, ?, ?)`)
     if err != nil {
       tx.Rollback()
       panic(err)
     }
     for i:= 0; i < len(qffs); i++ {
       o := qffs[i]
-      _, err := stmt.Exec(formId, o.label, o.name, o.type_, o.options, o.default_value, o.other_options)
+      _, err := stmt.Exec(formId, o.label, o.name, o.type_, o.options, o.other_options)
       if err != nil {
         tx.Rollback()
         panic(err)
+      }
+    }
+
+    // create actual form data tables, we've only stored the form schema to the database
+    tbl := newTableName(r.FormValue("doc-name"))
+    sql := fmt.Sprintf("create table `%s` (", tbl)
+    sql += "id bigint unsigned not null auto_increment,"
+    sql += "created datetime not null,"
+    sql += "modified datetime not null,"
+
+    sqlEnding := ""
+    for i:= 0; i < len(qffs); i++ {
+      qff := qffs[i]
+      sql += qff.name + " "
+      if qff.type_ == "Check" {
+        sql += "char(1)"
+      } else if qff.type_ == "Date" {
+        sql += "date"
+      } else if qff.type_ == "Date and Time" {
+        sql += "datetime"
+      } else if qff.type_ == "Float" {
+        sql += "float"
+      } else if qff.type_ == "Int" {
+        sql += "int"
+      } else if qff.type_ == "Link" {
+        sql += "bigint unsigned"
+      } else if qff.type_ == "Password" {
+        sql += "varchar(255)"
+      } else if qff.type_ == "Data" || qff.type_ == "Email" || qff.type_ == "URL" || qff.type_ == "Section Break"{
+        sql += "varchar(255)"
+      } else if qff.type_ == "Read Only" || qff.type_ == "Text" || qff.type_ == "Table" {
+        sql += "text"
+      }
+      if optionSearch(qff.options, "required") {
+        sql += " not null"
+      }
+      sql += ", "
+
+      if optionSearch(qff.options, "unique") {
+        sqlEnding += fmt.Sprintf(", unique(%s)", qff.name)
+      }
+      if qff.type_ == "Link" {
+        sqlEnding += fmt.Sprintf(", foreign key (%s) references `%s`(id)", qff.name, newTableName(qff.other_options))
+      }
+    }
+    sql += "primary key (id)" + sqlEnding + ")"
+
+    fmt.Println(sql)
+    _, err1 := tx.Exec(sql)
+    if err1 != nil {
+      tx.Rollback()
+      panic(err1)
+    }
+
+    for i := 0; i < len(qffs); i++ {
+      qff := qffs[i]
+      if optionSearch(qff.options, "index") && ! optionSearch(qff.options, "unique") {
+        indexSql := fmt.Sprintf("create index idx_%s on `%s`(%s)", qff.name, tbl, qff.name)
+        fmt.Println(indexSql)
+        _, err := tx.Exec(indexSql)
+        if err != nil {
+          tx.Rollback()
+          panic(err)
+        }
       }
     }
     tx.Commit()
@@ -130,4 +191,26 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
 
 func JQuery(w http.ResponseWriter, r *http.Request) {
   http.ServeFile(w, r, filepath.Join(getProjectPath(), "statics/jquery-3.3.1.min.js"))
+}
+
+
+// repeating code
+func optionSearch(commaSeperatedOptions, option string) bool {
+  if commaSeperatedOptions == "" {
+    return false
+  } else {
+    options := strings.Split(commaSeperatedOptions, ",")
+    sort.Strings(options)
+    i := sort.SearchStrings(options, option)
+    if i != len(options) {
+      return true
+      } else {
+        return false
+      }
+  }
+}
+
+
+func newTableName(name string) string {
+  return fmt.Sprintf("qf%s", name)
 }

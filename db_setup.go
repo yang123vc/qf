@@ -40,7 +40,6 @@ func DBSetup() {
       name varchar(100) not null,
       type varchar(100) not null,
       options varchar(255),
-      default_value varchar(255),
       other_options varchar(255),
       primary key (id),
       foreign key (formid) references qf_forms(id),

@@ -1,5 +1,4 @@
 check
-column break
 data
 date and time
 email
