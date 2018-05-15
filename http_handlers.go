@@ -84,8 +84,7 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
       tx.Rollback()
       panic(err)
     }
-    for i:= 0; i < len(qffs); i++ {
-      o := qffs[i]
+    for _, o := range(qffs) {
       _, err := stmt.Exec(formId, o.label, o.name, o.type_, o.options, o.other_options)
       if err != nil {
         tx.Rollback()
@@ -101,8 +100,7 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
     sql += "modified datetime not null,"
 
     sqlEnding := ""
-    for i:= 0; i < len(qffs); i++ {
-      qff := qffs[i]
+    for _, qff := range qffs {
       sql += qff.name + " "
       if qff.type_ == "Check" {
         sql += "char(1)"
@@ -142,8 +140,7 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
       panic(err1)
     }
 
-    for i := 0; i < len(qffs); i++ {
-      qff := qffs[i]
+    for _, qff := range qffs {
       if optionSearch(qff.options, "index") && ! optionSearch(qff.options, "unique") {
         indexSql := fmt.Sprintf("create index idx_%s on `%s`(%s)", qff.name, tbl, qff.name)
         _, err := tx.Exec(indexSql)
@@ -154,7 +151,7 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
       }
     }
     tx.Commit()
-    fmt.Fprintf(w, "Document Schema saved.")
+    http.Redirect(w, r, "/list-document-schemas/", 307)
 
   } else {
     type Context struct {
@@ -260,7 +257,7 @@ func DeleteDocumentSchema(w http.ResponseWriter, r *http.Request) {
     panic(err)
   }
 
-  fmt.Fprintf(w, "Document Schema \"%s\" deleted.", doc)
+  http.Redirect(w, r, "/list-document-schemas/", 307)
 }
 
 
@@ -281,7 +278,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     Type string
     Required bool
     Unique bool
-    OtherOptions string
+    OtherOptions []string
   }
   dds := make([]DocData, 0)
   rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where formid = ? order by id asc", id)
@@ -301,7 +298,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     if optionSearch(options, "unique") {
       unique = true
     }
-    dd := DocData{label, name, type_, required, unique, otherOptions}
+    dd := DocData{label, name, type_, required, unique, strings.Split(otherOptions, "\n")}
     dds = append(dds, dd)
   }
   err = rows.Err()
@@ -317,5 +314,40 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     ctx := Context{doc, dds}
     tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/create-document.html")))
     tmpl.Execute(w, ctx)
+  } else if r.Method == http.MethodPost {
+    colNames := make([]string, 0)
+    formData := make([]string, 0)
+    for _, dd := range dds {
+      colNames = append(colNames, dd.Name)
+      switch dd.Type {
+      case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
+        data := fmt.Sprintf("\"%s\"", r.FormValue(dd.Name))
+        formData = append(formData, data)
+      case "Check":
+        var data string
+        if r.FormValue(dd.Name) == "on" {
+          data = "\"t\""
+        } else {
+          data = "\"f\""
+        }
+        formData = append(formData, data)
+      default:
+        formData = append(formData, r.FormValue(dd.Name))
+      }
+    }
+    colNamesStr := strings.Join(colNames, ", ")
+    formDataStr := strings.Join(formData, ", ")
+    sql := fmt.Sprintf("insert into `%s`(created, modified, %s) values(now(), now(), %s)", tableName(doc), colNamesStr, formDataStr)
+    fmt.Println(sql)
+    _, err := SQLDB.Exec(sql)
+    if err != nil {
+      panic(err)
+    }
+    // lastId, err := res.LastInsertId()
+    // if err != nil {
+    //   panic(err)
+    // }
+    //
+    fmt.Fprintln(w, "Successfully inserted values.")
   }
 }

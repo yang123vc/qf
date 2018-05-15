@@ -13,7 +13,7 @@
   input, select, textarea {
     width: 300px;
   }
-  input[type=submit] {
+  input[type=submit], input[type=checkbox] {
     width:auto;
   }
   </style>
@@ -69,6 +69,13 @@
           {{else}}
             <input type="number" name="{{.Name}}">
           {{end}}
+
+        {{ else if eq .Type "Select"}}
+          <select name="{{.Name}}">
+            {{range .OtherOptions}}
+              <option>{{.}}</option>
+            {{end}}
+          </select>
 
         {{else if eq .Type "Text"}}
           {{if .Required}}
