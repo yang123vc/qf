@@ -46,6 +46,7 @@
       <li>Please note that you can't use the following names for your fields: id, created, owner,
       modified</li>
       <li>You can't use any SQL keyword</li>
+      <li>Please not that the first three fields would be in the list view of the documents.</li>
     </ol>
     <table>
       <thead>
@@ -75,6 +76,7 @@
               <option>Password</option>
               <option>Read Only </option>
               <option>Section Break </option>
+              <option>Select</option>
               <!-- <option>Table</option> -->
               <option>Text</option>
               <option>URL</option>
@@ -82,9 +84,8 @@
           </td>
           <td>
             <label>Required <input type="checkbox" class="option-required" name="options-1" value="required" /></label>
-            <label>Unique <input type="checkbox" class="option-unique" name="options-1" value="unique" /></label><br>
-            <label>Index <input type="checkbox" class="option-index" name="options-1" value="index" /></label>
-            <label>In List View <input type="checkbox" class="option-ilv" name="options-1" value="in-list-view" /></label><br>
+            <label>Unique <input type="checkbox" class="option-unique" name="options-1" value="unique" /></label>
+            <label>Index <input type="checkbox" class="option-index" name="options-1" value="index" /></label><br>
             <label>Other Options </label><br><textarea class="other-options" name="other-options-1"></textarea><br>
           </td>
           <td><button class='delete-field-btn' id="delete-field-1">Delete</button></td>
@@ -112,7 +113,6 @@
       $('.option-required', el).attr('name', 'options-' + strNewNo);
       $('.option-unique', el).attr('name', 'options-' + strNewNo);
       $('.option-index', el).attr('name', 'options-' + strNewNo);
-      $('.option-ilv', el).attr('name', 'options-' + strNewNo);
       $('.other-options', el).attr('name', 'other-options-' + strNewNo);
       $('.delete-field-btn', el).attr('id', 'delete-field-' + strNewNo);
     });
@@ -187,8 +187,6 @@
         return;
       }
 
-      var linkFields = []
-      // submission
       $('.field-type').each(function(i, el) {
         var data = {};
         if ( $(el).val() == "Link") {
@@ -196,18 +194,36 @@
           if ( $(ot).val() == "" ) {
             $('#error-box').text("If you have a link field, also submit an existing document schema in the other options.")
             $('#error-box').show();
+            $(ot).css('border', '1px solid red');
             passedValidations = false;
           }
           else if ( docNamesList.indexOf( $(ot).val()) == -1) {
             $('#error-box').text("The other options value is not a created document schema.")
             $('#error-box').show();
+            $(ot).css('border', '1px solid red');
             passedValidations = false;
           } else {
             $('#error-box').hide();
+            $(ot).css('border', '1px solid gray');
           }
+        }
+
+        if ( $(el).val() == "Select") {
+          var ot = $(el).parents('tr').find('.other-options');
+          if ( $(ot).val() == "") {
+            $('#error-box').text("When you have a select field, also submit the options seperated by newlines in the other options field.");
+            $('#error-box').show();
+            $(ot).css('border', '1px solid red');
+            passedValidations = true;
+          } else {
+            $('#error-box').hide();
+            $(ot).css('border', '1px solid gray');
+          }
+
         }
       });
 
+      // submission
       if (passedValidations) {
         $('form').submit();
       }
