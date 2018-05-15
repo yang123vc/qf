@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>List Document Schemas</title>
+  <style>
+  li {
+    margin-bottom: 20px;
+  }
+  .view-link {
+    margin-right: 20px;
+    text-decoration: none;
+    color: skyBlue;
+  }
+  .view-link:hover {
+    text-decoration: underline;
+  }
+  .delete-link {
+    text-decoration: none;
+    background-color: gray;
+    color: white;
+    border: 1px solid #999;
+    border-radius: 3px;
+    padding: 3px;
+  }
+  </style>
+</head>
+<body>
+  <h3>List of Document Schemas</h3>
+  <ol>
+  {{range .DocNames}}
+    <li> <a class='view-link' href='/doc/{{.}}/'>{{.}}</a><a class='delete-link' href='/delete-document-schema/{{.}}/'>Delete</a> </li>
+  {{end}}
+  </ol>
+</body>
+</html>

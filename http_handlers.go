@@ -135,8 +135,6 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
       }
     }
     sql += "primary key (id)" + sqlEnding + ")"
-
-    fmt.Println(sql)
     _, err1 := tx.Exec(sql)
     if err1 != nil {
       tx.Rollback()
@@ -147,7 +145,6 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
       qff := qffs[i]
       if optionSearch(qff.options, "index") && ! optionSearch(qff.options, "unique") {
         indexSql := fmt.Sprintf("create index idx_%s on `%s`(%s)", qff.name, tbl, qff.name)
-        fmt.Println(indexSql)
         _, err := tx.Exec(indexSql)
         if err != nil {
           tx.Rollback()
@@ -162,28 +159,8 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
     type Context struct {
       DocNames string
     }
-    tempSlice := make([]string, 0)
-    var str string
-    rows, err := SQLDB.Query("select doc_name from qf_forms")
-    if err != nil {
-      fmt.Fprintf(w, "An error occured: " + err.Error())
-      return
-    }
-    defer rows.Close()
-    for rows.Next() {
-      err := rows.Scan(&str)
-      if err != nil {
-        panic(err)
-      }
-      tempSlice = append(tempSlice, str)
-    }
-    err = rows.Err()
-    if err != nil {
-      fmt.Fprintf(w, "An error occured: " + err.Error())
-      return
-    }
-    ctx := Context{strings.Join(tempSlice, ",")}
-    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "new-document-schema.html")))
+    ctx := Context{strings.Join(getDocNames(w), ",")}
+    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/new-document-schema.html")))
     tmpl.Execute(w, ctx)
   }
 }
@@ -213,4 +190,39 @@ func optionSearch(commaSeperatedOptions, option string) bool {
 
 func newTableName(name string) string {
   return fmt.Sprintf("qf%s", name)
+}
+
+
+func getDocNames(w http.ResponseWriter) []string {
+  tempSlice := make([]string, 0)
+  var str string
+  rows, err := SQLDB.Query("select doc_name from qf_forms")
+  if err != nil {
+    fmt.Fprintf(w, "An error occured: " + err.Error())
+    panic(err)
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&str)
+    if err != nil {
+      panic(err)
+    }
+    tempSlice = append(tempSlice, str)
+  }
+  err = rows.Err()
+  if err != nil {
+    fmt.Fprintf(w, "An error occured: " + err.Error())
+    panic(err)
+  }
+  return tempSlice
+}
+
+
+func ListDocumentSchemas(w http.ResponseWriter, r *http.Request) {
+  type Context struct {
+    DocNames []string
+  }
+  ctx := Context{DocNames: getDocNames(w)}
+  tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/list-document-schemas.html")))
+  tmpl.Execute(w, ctx)
 }
