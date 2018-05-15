@@ -186,6 +186,15 @@
         return;
       }
 
+      $('.field-name').each(function(i, el) {
+        if ( $(el).val() == "id" || $(el).val() == "created" || $(el).val() == "owner" || $(el).val() == "modified") {
+          $(el).css('border', '1px solid red');
+          passedValidations = false;
+        } else {
+          $(el).css('border', '1px solid gray');
+        }
+      })
+
       $('.field-type').each(function(i, el) {
         var data = {};
         if ( $(el).val() == "Link") {
