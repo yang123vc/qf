@@ -9,6 +9,7 @@ import (
   "strings"
   "html/template"
   "sort"
+  "github.com/gorilla/mux"
 )
 
 
@@ -93,7 +94,7 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
     }
 
     // create actual form data tables, we've only stored the form schema to the database
-    tbl := newTableName(r.FormValue("doc-name"))
+    tbl := tableName(r.FormValue("doc-name"))
     sql := fmt.Sprintf("create table `%s` (", tbl)
     sql += "id bigint unsigned not null auto_increment,"
     sql += "created datetime not null,"
@@ -131,7 +132,7 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
         sqlEnding += fmt.Sprintf(", unique(%s)", qff.name)
       }
       if qff.type_ == "Link" {
-        sqlEnding += fmt.Sprintf(", foreign key (%s) references `%s`(id)", qff.name, newTableName(qff.other_options))
+        sqlEnding += fmt.Sprintf(", foreign key (%s) references `%s`(id)", qff.name, tableName(qff.other_options))
       }
     }
     sql += "primary key (id)" + sqlEnding + ")"
@@ -188,7 +189,7 @@ func optionSearch(commaSeperatedOptions, option string) bool {
 }
 
 
-func newTableName(name string) string {
+func tableName(name string) string {
   return fmt.Sprintf("qf%s", name)
 }
 
@@ -225,4 +226,39 @@ func ListDocumentSchemas(w http.ResponseWriter, r *http.Request) {
   ctx := Context{DocNames: getDocNames(w)}
   tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/list-document-schemas.html")))
   tmpl.Execute(w, ctx)
+}
+
+
+func DeleteDocumentSchema(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  doc := vars["document-schema"]
+
+  tx, _ := SQLDB.Begin()
+  var id int
+  err := tx.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
+  if err != nil {
+    tx.Rollback()
+    panic(err)
+  }
+
+  _, err = tx.Exec("delete from qf_fields where formid = ?", id)
+  if err != nil {
+    tx.Rollback()
+    panic(err)
+  }
+
+  _, err = tx.Exec("delete from qf_forms where doc_name = ?", doc)
+  if err != nil {
+    tx.Rollback()
+    panic(err)
+  }
+
+  sql := fmt.Sprintf("drop table `%s`", tableName(doc))
+  _, err = tx.Exec(sql)
+  if err != nil {
+    tx.Rollback()
+    panic(err)
+  }
+
+  fmt.Fprintf(w, "Document Schema \"%s\" deleted.", doc)
 }
