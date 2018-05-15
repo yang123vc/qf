@@ -116,12 +116,12 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
         sql += "int"
       } else if qff.type_ == "Link" {
         sql += "bigint unsigned"
-      } else if qff.type_ == "Password" {
+      } else if qff.type_ == "Data" || qff.type_ == "Email" || qff.type_ == "URL" || qff.type_ == "Section Break" {
         sql += "varchar(255)"
-      } else if qff.type_ == "Data" || qff.type_ == "Email" || qff.type_ == "URL" || qff.type_ == "Section Break"{
-        sql += "varchar(255)"
-      } else if qff.type_ == "Read Only" || qff.type_ == "Text" || qff.type_ == "Table" {
+      } else if qff.type_ == "Text" || qff.type_ == "Table" {
         sql += "text"
+      } else if qff.type_ == "Select" || qff.type_ == "Read Only"{
+        sql += "varchar(255)"
       }
       if optionSearch(qff.options, "required") {
         sql += " not null"
@@ -261,4 +261,61 @@ func DeleteDocumentSchema(w http.ResponseWriter, r *http.Request) {
   }
 
   fmt.Fprintf(w, "Document Schema \"%s\" deleted.", doc)
+}
+
+
+func CreateDocument(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  doc := vars["document-schema"]
+
+  var id int
+  err := SQLDB.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
+  if err != nil {
+    panic(err)
+  }
+
+  var label, name, type_, options, otherOptions string
+  type DocData struct {
+    Label string
+    Name string
+    Type string
+    Required bool
+    Unique bool
+    OtherOptions string
+  }
+  dds := make([]DocData, 0)
+  rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where formid = ? order by id asc", id)
+  if err != nil {
+    panic(err)
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&label, &name, &type_, &options, &otherOptions)
+    if err != nil {
+      panic(err)
+    }
+    var required, unique bool
+    if optionSearch(options, "required") {
+      required = true
+    }
+    if optionSearch(options, "unique") {
+      unique = true
+    }
+    dd := DocData{label, name, type_, required, unique, otherOptions}
+    dds = append(dds, dd)
+  }
+  err = rows.Err()
+  if err != nil {
+    panic(err)
+  }
+
+  if r.Method == http.MethodGet {
+    type Context struct {
+      DocName string
+      DDs []DocData
+    }
+    ctx := Context{doc, dds}
+    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/create-document.html")))
+    tmpl.Execute(w, ctx)
+  }
 }

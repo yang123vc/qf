@@ -1,13 +1,13 @@
 check
 data
-date and time
+date
+datetime
 email
 file
 float
 image
 int
-link to another document
-password
+link
 read only
 section break
 select
