@@ -105,7 +105,8 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     sql := fmt.Sprintf("insert into `%s`(created, modified, %s) values(now(), now(), %s)", tableName(doc), colNamesStr, formDataStr)
     _, err := SQLDB.Exec(sql)
     if err != nil {
-      panic(err)
+      fmt.Fprintf(w, "An error occured while saving: " + err.Error())
+      return
     }
 
     fmt.Fprintln(w, "Successfully inserted values.")
@@ -211,7 +212,8 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
     fmt.Println(sql)
     _, err := SQLDB.Exec(sql)
     if err != nil {
-      panic(err)
+      fmt.Fprintf(w, "An error occured while saving: " + err.Error())
+      return
     }
 
     fmt.Fprintln(w, "Successfully updated.")
