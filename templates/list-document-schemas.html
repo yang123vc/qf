@@ -7,15 +7,18 @@
   li {
     margin-bottom: 20px;
   }
-  .view-link {
+  a {
     margin-right: 20px;
+  }
+
+  .view-link {
     text-decoration: none;
     color: skyBlue;
   }
   .view-link:hover {
     text-decoration: underline;
   }
-  .delete-link {
+  .button-look {
     text-decoration: none;
     background-color: gray;
     color: white;
@@ -23,13 +26,20 @@
     border-radius: 3px;
     padding: 3px;
   }
+  .button-look:hover {
+    background-color: #ccc;
+  }
   </style>
 </head>
 <body>
   <h3>List of Document Schemas</h3>
   <ol>
   {{range .DocNames}}
-    <li> <a class='view-link' href='/doc/{{.}}/list/'>{{.}}</a><a class='delete-link' href='/delete-document-schema/{{.}}/'>Delete</a> </li>
+    <li>
+      <a class='view-link' href='/doc/{{.}}/list/'>{{.}}</a>
+      <a class="button-look" href='/doc/{{.}}/create/'>Create Document</a>
+      <a class='button-look' href='/delete-document-schema/{{.}}/'>Delete</a>
+    </li>
   {{end}}
   </ol>
 </body>

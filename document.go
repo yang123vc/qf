@@ -174,7 +174,47 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
     ctx := Context{created, modified, doc, docAndSchemaSlice}
     tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-document.html")))
     tmpl.Execute(w, ctx)
-  }
 
+  } else if r.Method == http.MethodPost {
+
+    colNames := make([]string, 0)
+    formData := make([]string, 0)
+    for _, docAndSchema := range docAndSchemaSlice {
+      if docAndSchema.Data != r.FormValue(docAndSchema.DocData.Name) {
+        colNames = append(colNames, docAndSchema.DocData.Name)
+        switch docAndSchema.DocData.Type {
+        case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
+          data := fmt.Sprintf("\"%s\"", r.FormValue(docAndSchema.DocData.Name))
+          formData = append(formData, data)
+        case "Check":
+          var data string
+          if r.FormValue(docAndSchema.DocData.Name) == "on" {
+            data = "\"t\""
+          } else {
+            data = "\"f\""
+          }
+          formData = append(formData, data)
+        default:
+          formData = append(formData, r.FormValue(docAndSchema.DocData.Name))
+        }
+      }
+    }
+
+    updatePartStmt := make([]string, 0)
+    updatePartStmt = append(updatePartStmt, "modified = now()")
+    for i := 0; i < len(colNames); i++ {
+      stmt1 := fmt.Sprintf("%s = %s", colNames[i], formData[i])
+      updatePartStmt = append(updatePartStmt, stmt1)
+    }
+
+    sql := fmt.Sprintf("update `%s` set %s where id = %s", tableName(doc), strings.Join(updatePartStmt, ", "), docid)
+    fmt.Println(sql)
+    _, err := SQLDB.Exec(sql)
+    if err != nil {
+      panic(err)
+    }
+
+    fmt.Fprintln(w, "Successfully updated.")
+  }
 
 }
