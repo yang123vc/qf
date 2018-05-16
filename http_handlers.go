@@ -230,6 +230,11 @@ func DeleteDocumentSchema(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   doc := vars["document-schema"]
 
+  if ! docExists(doc, w) {
+    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    return
+  }
+
   tx, _ := SQLDB.Begin()
   var id int
   err := tx.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
@@ -261,27 +266,21 @@ func DeleteDocumentSchema(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func CreateDocument(w http.ResponseWriter, r *http.Request) {
-  vars := mux.Vars(r)
-  doc := vars["document-schema"]
+type DocData struct {
+  Label string
+  Name string
+  Type string
+  Required bool
+  Unique bool
+  OtherOptions []string
+}
 
-  var id int
-  err := SQLDB.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
-  if err != nil {
-    panic(err)
-  }
 
+func getDocData(formId int) []DocData{
   var label, name, type_, options, otherOptions string
-  type DocData struct {
-    Label string
-    Name string
-    Type string
-    Required bool
-    Unique bool
-    OtherOptions []string
-  }
+
   dds := make([]DocData, 0)
-  rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where formid = ? order by id asc", id)
+  rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where formid = ? order by id asc", formId)
   if err != nil {
     panic(err)
   }
@@ -306,6 +305,27 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     panic(err)
   }
 
+  return dds
+}
+
+
+func CreateDocument(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  doc := vars["document-schema"]
+
+  if ! docExists(doc, w) {
+    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    return
+  }
+
+  var id int
+  err := SQLDB.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
+  if err != nil {
+    panic(err)
+  }
+
+  dds := getDocData(id)
+
   if r.Method == http.MethodGet {
     type Context struct {
       DocName string
@@ -314,6 +334,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     ctx := Context{doc, dds}
     tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/create-document.html")))
     tmpl.Execute(w, ctx)
+
   } else if r.Method == http.MethodPost {
     colNames := make([]string, 0)
     formData := make([]string, 0)
@@ -338,16 +359,90 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     colNamesStr := strings.Join(colNames, ", ")
     formDataStr := strings.Join(formData, ", ")
     sql := fmt.Sprintf("insert into `%s`(created, modified, %s) values(now(), now(), %s)", tableName(doc), colNamesStr, formDataStr)
-    fmt.Println(sql)
     _, err := SQLDB.Exec(sql)
     if err != nil {
       panic(err)
     }
-    // lastId, err := res.LastInsertId()
-    // if err != nil {
-    //   panic(err)
-    // }
-    //
+
     fmt.Fprintln(w, "Successfully inserted values.")
   }
+
+}
+
+
+func docExists(documentName string, w http.ResponseWriter) bool {
+  docNames := getDocNames(w)
+  sort.Strings(docNames)
+  i := sort.SearchStrings(docNames, documentName)
+  if i != len(docNames) {
+    return true
+  } else {
+    return false
+  }
+}
+
+
+func EditDocument(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  doc := vars["document-schema"]
+  docid := vars["id"]
+
+  if ! docExists(doc, w) {
+    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    return
+  }
+
+  var count uint64
+  sql := fmt.Sprintf("select count(*) from %s where id = %s", tableName(doc), docid)
+  err := SQLDB.QueryRow(sql).Scan(&count)
+  if count == 0 {
+    fmt.Fprintf(w, "The document with id %s do not exists", docid)
+    return
+  }
+
+  var id int
+  err = SQLDB.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
+  if err != nil {
+    panic(err)
+  }
+
+  docDatas := getDocData(id)
+
+  type docAndSchema struct {
+    DocData
+    Data string
+  }
+
+  docAndSchemaSlice := make([]docAndSchema, 0)
+  for _, docData := range docDatas {
+    var data string
+    sql := fmt.Sprintf("select %s from `%s` where id = %s", docData.Name, tableName(doc), docid)
+    err := SQLDB.QueryRow(sql).Scan(&data)
+    if err != nil {
+      panic(err)
+    }
+    docAndSchemaSlice = append(docAndSchemaSlice, docAndSchema{docData, data})
+  }
+
+  var created, modified string
+  sql = fmt.Sprintf("select created, modified from %s where id = %s", tableName(doc), docid)
+  err = SQLDB.QueryRow(sql).Scan(&created, &modified)
+  if err != nil {
+    panic(err)
+  }
+
+  if r.Method == http.MethodGet {
+    type Context struct {
+      Created string
+      Modified string
+      DocName string
+      DocAndSchemas []docAndSchema
+    }
+
+    ctx := Context{created, modified, doc, docAndSchemaSlice}
+    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-document.html")))
+    tmpl.Execute(w, ctx)
+  }
+
+
 }

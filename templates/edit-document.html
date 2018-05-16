@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Edit {{.DocName}} Document</title>
+  <style>
+  label {
+    display: block;
+  }
+  form div {
+    margin-bottom: 10px;
+  }
+  input, select, textarea {
+    width: 300px;
+  }
+  input[type=submit], input[type=checkbox] {
+    width:auto;
+  }
+  </style>
+</head>
+<body>
+  <h3>Edit {{.DocName}} Document</h3>
+
+  <span> Creation Date : <b>{{.Created}}</b></span><br>
+  <span> Last Modification Date : <b>{{.Modified}}</b></span><br>
+
+  <form method="post" action="">
+    {{range .DocAndSchemas}}
+      <div>
+        <label>{{.Label}}</label>
+        {{ if eq .Type "Check"}}
+          {{ if eq .Data "t"}}
+            <input type="checkbox" name="{{.Name}}" checked>
+          {{else}}
+            <input type="checkbox" name="{{.Name}}">
+          {{end}}
+
+        {{else if eq .Type "Data"}}
+          {{ if .Required}}
+            <input type="text" name="{{.Name}}" value="{{.Data}}" required>
+          {{ else }}
+            <input type="text" name="{{.Name}}" value="{{.Data}}">
+          {{ end }}
+
+        {{else if eq .Type "Date"}}
+          {{ if .Required }}
+            <input type="date" name="{{.Name}}" value="{{.Data}}" required>
+          {{ else }}
+            <input type="date" name="{{.Name}}" value="{{.Data}}">
+          {{end}}
+
+        {{ else if eq .Type "Datetime"}}
+          {{ if .Required }}
+            <input type="datetime-local" name={{.Name}} value="{{.Data}}" required>
+          {{else}}
+            <input type="datetime-local" name="{{.Name}}" value="{{.Data}}">
+          {{end}}
+
+        {{else if eq .Type "Email"}}
+          {{if .Required}}
+            <input type="email" name="{{.Name}}" value="{{.Data}}" required>
+          {{else}}
+            <input type="email" name="{{.Name}}" value="{{.Data}}">
+          {{end}}
+
+        {{else if eq .Type "Float"}}
+          {{if .Required}}
+            <input type="number" step="0.0000001" name="{{.Name}}" value="{{.Data}}" required>
+          {{else}}
+            <input type="number" step="0.0000001" name="{{.Name}}" value="{{.Data}}">
+          {{end}}
+
+        {{else if or (eq .Type "Int") (eq .Type "Link")}}
+          {{if .Required}}
+            <input type="number" name="{{.Name}}" value="{{.Data}}" required>
+          {{else}}
+            <input type="number" name="{{.Name}}" value="{{.Data}}">
+          {{end}}
+
+        {{ else if eq .Type "Select"}}
+          <select name="{{.Name}}">
+            {{range .OtherOptions}}
+              {{ if eq .Data .}}
+                <option selected>{{.}}</option>
+              {{ else }}
+                <option>{{.}}</option>
+              {{end}}
+            {{end}}
+          </select>
+
+        {{else if eq .Type "Text"}}
+          {{if .Required}}
+            <textarea name="{{.Name}}" required>{{.Data}}</textarea>
+          {{else}}
+            <textarea name="{{.Name}}">{{.Data}}</textarea>
+          {{end}}
+
+        {{else if eq .Type "URL"}}
+          {{if .Required}}
+            <input type="url" name="{{.Name}}" value="{{.Data}}" required>
+          {{else}}
+            <input type="url" name="{{.Name}}" value="{{.Data}}">
+          {{end}}
+
+        {{end}}
+      </div>
+    {{end}}
+
+    <div>
+      <input type="submit" value="Save" >
+    </div>
+  </form>
+
+</body>
+</html>
