@@ -16,6 +16,17 @@
   input[type=submit], input[type=checkbox] {
     width:auto;
   }
+  .button-look {
+    text-decoration: none;
+    background-color: gray;
+    color: white;
+    border: 1px solid #999;
+    border-radius: 3px;
+    padding: 3px;
+  }
+  .button-look:hover {
+    background-color: #ccc;
+  }
   </style>
 </head>
 <body>
@@ -23,6 +34,8 @@
 
   <span> Creation Date : <b>{{.Created}}</b></span><br>
   <span> Last Modification Date : <b>{{.Modified}}</b></span><br><br>
+
+  <a class='button-look' href='/doc/{{.DocName}}/delete/{{.Id}}/'>Delete</a><br><br>
 
   <form method="post" action="">
     {{range .DocAndSchemas}}
@@ -79,13 +92,9 @@
 
         {{ else if eq .Type "Select"}}
           <select name="{{.Name}}">
-            {{$Data := .Data}}
+            <option selected>{{.Data}}</option>
             {{range .OtherOptions}}
-              {{ if eq . $Data}}
-                <option selected>{{.}}</option>
-              {{ else }}
-                <option>{{.}}</option>
-              {{end}}
+              <option>{{.}}</option>
             {{end}}
           </select>
 

@@ -170,9 +170,10 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
       Modified string
       DocName string
       DocAndSchemas []docAndSchema
+      Id string
     }
 
-    ctx := Context{created, modified, doc, docAndSchemaSlice}
+    ctx := Context{created, modified, doc, docAndSchemaSlice, docid}
     tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-document.html")))
     tmpl.Execute(w, ctx)
 
@@ -317,4 +318,34 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
   ctx := Context{doc, colNames, myRows}
   tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/list-documents.html")))
   tmpl.Execute(w, ctx)
+}
+
+
+func DeleteDocument(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  doc := vars["document-schema"]
+  docid := vars["id"]
+
+  if ! docExists(doc, w) {
+    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    return
+  }
+
+  var count uint64
+  sql := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(doc), docid)
+  err := SQLDB.QueryRow(sql).Scan(&count)
+  if count == 0 {
+    fmt.Fprintf(w, "The document with id %s do not exists", docid)
+    return
+  }
+
+  sql = fmt.Sprintf("delete from `%s` where id = %s", tableName(doc), docid)
+  _, err = SQLDB.Exec(sql)
+  if err != nil {
+    fmt.Fprintf(w, "An error occured: " + err.Error())
+    return
+  }
+
+  redirectURL := fmt.Sprintf("/doc/%s/list/", doc)
+  http.Redirect(w, r, redirectURL, 307)
 }
