@@ -126,7 +126,7 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   var count uint64
-  sql := fmt.Sprintf("select count(*) from %s where id = %s", tableName(doc), docid)
+  sql := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(doc), docid)
   err := SQLDB.QueryRow(sql).Scan(&count)
   if count == 0 {
     fmt.Fprintf(w, "The document with id %s do not exists", docid)
@@ -158,7 +158,7 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   var created, modified string
-  sql = fmt.Sprintf("select created, modified from %s where id = %s", tableName(doc), docid)
+  sql = fmt.Sprintf("select created, modified from `%s` where id = %s", tableName(doc), docid)
   err = SQLDB.QueryRow(sql).Scan(&created, &modified)
   if err != nil {
     panic(err)
@@ -219,4 +219,102 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintln(w, "Successfully updated.")
   }
 
+}
+
+
+func ListDocuments(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  doc := vars["document-schema"]
+
+  if ! docExists(doc, w) {
+    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    return
+  }
+
+  var count uint64
+  sql := fmt.Sprintf("select count(*) from `%s`", tableName(doc))
+  err := SQLDB.QueryRow(sql).Scan(&count)
+  if count == 0 {
+    fmt.Fprintf(w, "There are no documents to display.")
+    return
+  }
+
+  var id int
+  err = SQLDB.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
+  if err != nil {
+    panic(err)
+  }
+
+  colNames := make([]string, 0)
+  var colName string
+  rows, err := SQLDB.Query("select name from qf_fields where formid = ? order by id asc limit 3", id)
+  if err != nil {
+    panic(err)
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&colName)
+    if err != nil {
+      panic(err)
+    }
+    colNames = append(colNames, colName)
+  }
+  if err = rows.Err(); err != nil {
+    panic(err)
+  }
+
+  ids := make([]uint64, 0)
+  var idd uint64
+  sql = fmt.Sprintf("select id from `%s` order by id asc limit 50", tableName(doc))
+  rows, err = SQLDB.Query(sql)
+  if err != nil {
+    panic(err)
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&idd)
+    if err != nil {
+      panic(err)
+    }
+    ids = append(ids, idd)
+  }
+  if err = rows.Err(); err != nil {
+    panic(err)
+  }
+
+  type ColAndData struct {
+    ColName string
+    Data string
+  }
+
+  type Row struct {
+    Id uint64
+    ColAndDatas []ColAndData
+  }
+  myRows := make([]Row, 0)
+  for _, id := range ids {
+    colAndDatas := make([]ColAndData, 0)
+    for _, col := range colNames {
+      var data string
+      sql := fmt.Sprintf("select %s from `%s` where id = %d order by id asc limit 50", col, tableName(doc), id)
+      err := SQLDB.QueryRow(sql).Scan(&data)
+      if err != nil {
+        panic(err)
+      }
+      colAndDatas = append(colAndDatas, ColAndData{col, data})
+    }
+    myRows = append(myRows, Row{id, colAndDatas})
+  }
+
+
+  // fmt.Fprintln(w, myRows)
+  type Context struct {
+    DocName string
+    ColNames []string
+    MyRows []Row
+  }
+
+  ctx := Context{doc, colNames, myRows}
+  tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/list-documents.html")))
+  tmpl.Execute(w, ctx)
 }

@@ -79,8 +79,9 @@
 
         {{ else if eq .Type "Select"}}
           <select name="{{.Name}}">
+            {{$Data := .Data}}
             {{range .OtherOptions}}
-              {{ if eq .Data .}}
+              {{ if eq . $Data}}
                 <option selected>{{.}}</option>
               {{ else }}
                 <option>{{.}}</option>
