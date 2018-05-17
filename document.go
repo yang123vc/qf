@@ -9,6 +9,7 @@ import (
   "github.com/gorilla/mux"
   "encoding/json"
   "os/exec"
+  "strconv"
 )
 
 
@@ -69,6 +70,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
   if err != nil {
     panic(err)
   }
+  cmdString := fmt.Sprintf("qfec%d", id)
 
   dds := getDocData(id)
 
@@ -91,7 +93,6 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     }
     jsonString, err := json.Marshal(fData)
 
-    cmdString := fmt.Sprintf("qfec%d", id)
     _, err = exec.LookPath(cmdString)
     if err == nil {
       out, err := exec.Command(cmdString, "v", string(jsonString)).Output()
@@ -124,10 +125,20 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     colNamesStr := strings.Join(colNames, ", ")
     formDataStr := strings.Join(formData, ", ")
     sql := fmt.Sprintf("insert into `%s`(created, modified, %s) values(now(), now(), %s)", tableName(doc), colNamesStr, formDataStr)
-    _, err = SQLDB.Exec(sql)
+    res, err := SQLDB.Exec(sql)
     if err != nil {
       fmt.Fprintf(w, "An error occured while saving: " + err.Error())
       return
+    }
+
+    // post save extra code
+    lastid, err := res.LastInsertId()
+    if err != nil {
+      fmt.Fprintf(w, "An error occured while trying to run extra code: " + err.Error())
+    }
+    _, err = exec.LookPath(cmdString)
+    if err == nil {
+      exec.Command(cmdString, "n", strconv.FormatInt(lastid, 10)).Run()
     }
 
     fmt.Fprintln(w, "Successfully inserted values.")
