@@ -131,7 +131,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    // post save extra code
+    // new document extra code
     lastid, err := res.LastInsertId()
     if err != nil {
       fmt.Fprintf(w, "An error occured while trying to run extra code: " + err.Error())
@@ -247,6 +247,12 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
     if err != nil {
       fmt.Fprintf(w, "An error occured while saving: " + err.Error())
       return
+    }
+
+    // post save extra code
+    _, err = exec.LookPath(cmdString)
+    if err == nil {
+      exec.Command(cmdString, "e", docid).Run()
     }
 
     fmt.Fprintln(w, "Successfully updated.")
