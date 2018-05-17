@@ -21,7 +21,6 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
     other_options string
   }
 
-
   if r.Method == http.MethodPost {
     qffs := make([]QFField, 0)
     r.ParseForm()
@@ -204,4 +203,37 @@ func DeleteDocumentSchema(w http.ResponseWriter, r *http.Request) {
   }
 
   http.Redirect(w, r, "/list-document-schemas/", 307)
+}
+
+
+func ViewDocumentSchema(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  doc := vars["document-schema"]
+
+  if ! docExists(doc, w) {
+    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    return
+  }
+
+  var id int
+  err := SQLDB.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
+  if err != nil {
+    panic(err)
+  }
+
+  var childTable, singleton string
+  err = SQLDB.QueryRow("select child_table, singleton from qf_forms where id = ?", id).Scan(&childTable, &singleton)
+  if err != nil {
+    panic(err)
+  }
+
+  docDatas := getDocData(id)
+  type Context struct {
+    DocName string
+    DocDatas []DocData
+    Id int
+  }
+  ctx := Context{doc, docDatas, id}
+  tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/view-document-schema.html")))
+  tmpl.Execute(w, ctx)
 }

@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <title>View Document Schema of {{.DocName}}</title>
+  <style>
+  thead {
+    font-weight: bold;
+  }
+  td {
+    border-right: 1px solid gray;
+    padding: 5px;
+  }
+  td:last-child {
+    border-right: none;
+  }
+  .button-look {
+    text-decoration: none;
+    background-color: gray;
+    color: white;
+    border: 1px solid #999;
+    border-radius: 3px;
+    padding: 3px;
+  }
+  .button-look:hover {
+    background-color: #ccc;
+  }
+  </style>
+</head>
+<body>
+  <h3>View Document Schema of {{.DocName}}</h3>
+
+  <span>ID : <b>{{.Id}}</b></span><br>
+
+  <table>
+    <thead>
+      <tr>
+        <td>Label</td>
+        <td>Name</td>
+        <td>Type</td>
+        <td>Required</td>
+        <td>Unique</td>
+        <td>Other Options</td>
+      </tr>
+    </thead>
+    <tbody>
+      {{range $index, $element := .DocDatas}}
+      <tr>
+        <td>{{$index}}</td>
+        <td>{{$element.Label}}</td>
+        <td>{{$element.Name}}</td>
+        <td>{{$element.Type}}</td>
+        <td>{{$element.Required}}</td>
+        <td>{{$element.Unique}}</td>
+        <td>{{$element.OtherOptions}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+
+  <h4>Help on Adding Extra Codes (eg. Validation) to this Document Schema</h4>
+  <p>To create the extra code for this object create an executable with name "qfec{{.Id}}".</p>
+</body>
+</html>
