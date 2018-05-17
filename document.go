@@ -10,6 +10,7 @@ import (
   "encoding/json"
   "os/exec"
   "strconv"
+  "database/sql"
 )
 
 
@@ -108,7 +109,12 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
       colNames = append(colNames, dd.Name)
       switch dd.Type {
       case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
-        data := fmt.Sprintf("\"%s\"", r.FormValue(dd.Name))
+        var data string
+        if r.FormValue(dd.Name) == "" {
+          data = "null"
+        } else {
+          data = fmt.Sprintf("\"%s\"", r.FormValue(dd.Name))
+        }
         formData = append(formData, data)
       case "Check":
         var data string
@@ -119,13 +125,19 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
         }
         formData = append(formData, data)
       default:
-        formData = append(formData, r.FormValue(dd.Name))
+        var data string
+        if r.FormValue(dd.Name) == "" {
+          data = "null"
+        } else {
+          data = r.FormValue(dd.Name)
+        }
+        formData = append(formData, data)
       }
     }
     colNamesStr := strings.Join(colNames, ", ")
     formDataStr := strings.Join(formData, ", ")
-    sql := fmt.Sprintf("insert into `%s`(created, modified, %s) values(now(), now(), %s)", tableName(doc), colNamesStr, formDataStr)
-    res, err := SQLDB.Exec(sql)
+    sqlStmt := fmt.Sprintf("insert into `%s`(created, modified, %s) values(now(), now(), %s)", tableName(doc), colNamesStr, formDataStr)
+    res, err := SQLDB.Exec(sqlStmt)
     if err != nil {
       fmt.Fprintf(w, "An error occured while saving: " + err.Error())
       return
@@ -158,8 +170,8 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   var count uint64
-  sql := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(doc), docid)
-  err := SQLDB.QueryRow(sql).Scan(&count)
+  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(doc), docid)
+  err := SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     fmt.Fprintf(w, "The document with id %s do not exists", docid)
     return
@@ -181,17 +193,23 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
   docAndSchemaSlice := make([]docAndSchema, 0)
   for _, docData := range docDatas {
     var data string
-    sql := fmt.Sprintf("select %s from `%s` where id = %s", docData.Name, tableName(doc), docid)
-    err := SQLDB.QueryRow(sql).Scan(&data)
+    var dataFromDB sql.NullString
+    sqlStmt := fmt.Sprintf("select %s from `%s` where id = %s", docData.Name, tableName(doc), docid)
+    err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
     if err != nil {
       panic(err)
+    }
+    if dataFromDB.Valid {
+      data = dataFromDB.String
+    } else {
+      data = ""
     }
     docAndSchemaSlice = append(docAndSchemaSlice, docAndSchema{docData, data})
   }
 
   var created, modified string
-  sql = fmt.Sprintf("select created, modified from `%s` where id = %s", tableName(doc), docid)
-  err = SQLDB.QueryRow(sql).Scan(&created, &modified)
+  sqlStmt = fmt.Sprintf("select created, modified from `%s` where id = %s", tableName(doc), docid)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&created, &modified)
   if err != nil {
     panic(err)
   }
@@ -241,15 +259,15 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
       updatePartStmt = append(updatePartStmt, stmt1)
     }
 
-    sql := fmt.Sprintf("update `%s` set %s where id = %s", tableName(doc), strings.Join(updatePartStmt, ", "), docid)
-    fmt.Println(sql)
-    _, err := SQLDB.Exec(sql)
+    sqlStmt := fmt.Sprintf("update `%s` set %s where id = %s", tableName(doc), strings.Join(updatePartStmt, ", "), docid)
+    _, err := SQLDB.Exec(sqlStmt)
     if err != nil {
       fmt.Fprintf(w, "An error occured while saving: " + err.Error())
       return
     }
 
     // post save extra code
+    cmdString := fmt.Sprintf("qfec%d", id)
     _, err = exec.LookPath(cmdString)
     if err == nil {
       exec.Command(cmdString, "e", docid).Run()
@@ -271,8 +289,8 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
   }
 
   var count uint64
-  sql := fmt.Sprintf("select count(*) from `%s`", tableName(doc))
-  err := SQLDB.QueryRow(sql).Scan(&count)
+  sqlStmt := fmt.Sprintf("select count(*) from `%s`", tableName(doc))
+  err := SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     fmt.Fprintf(w, "There are no documents to display.")
     return
@@ -304,8 +322,8 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 
   ids := make([]uint64, 0)
   var idd uint64
-  sql = fmt.Sprintf("select id from `%s` order by id asc limit 50", tableName(doc))
-  rows, err = SQLDB.Query(sql)
+  sqlStmt = fmt.Sprintf("select id from `%s` order by id asc limit 50", tableName(doc))
+  rows, err = SQLDB.Query(sqlStmt)
   if err != nil {
     panic(err)
   }
@@ -335,10 +353,16 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     colAndDatas := make([]ColAndData, 0)
     for _, col := range colNames {
       var data string
-      sql := fmt.Sprintf("select %s from `%s` where id = %d order by id asc limit 50", col, tableName(doc), id)
-      err := SQLDB.QueryRow(sql).Scan(&data)
+      var dataFromDB sql.NullString
+      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d order by id asc limit 50", col, tableName(doc), id)
+      err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
       if err != nil {
         panic(err)
+      }
+      if dataFromDB.Valid {
+        data = dataFromDB.String
+      } else {
+        data = ""
       }
       colAndDatas = append(colAndDatas, ColAndData{col, data})
     }
@@ -370,15 +394,15 @@ func DeleteDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   var count uint64
-  sql := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(doc), docid)
-  err := SQLDB.QueryRow(sql).Scan(&count)
+  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(doc), docid)
+  err := SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     fmt.Fprintf(w, "The document with id %s do not exists", docid)
     return
   }
 
-  sql = fmt.Sprintf("delete from `%s` where id = %s", tableName(doc), docid)
-  _, err = SQLDB.Exec(sql)
+  sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tableName(doc), docid)
+  _, err = SQLDB.Exec(sqlStmt)
   if err != nil {
     fmt.Fprintf(w, "An error occured: " + err.Error())
     return
