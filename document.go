@@ -7,6 +7,8 @@ import (
   "strings"
   "html/template"
   "github.com/gorilla/mux"
+  "encoding/json"
+  "os/exec"
 )
 
 
@@ -80,6 +82,25 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
+
+    // first check if it passes the extra code validation for this document.
+    r.ParseForm()
+    fData := make(map[string]string)
+    for k := range r.PostForm {
+      fData[k] = r.FormValue(k)
+    }
+    jsonString, err := json.Marshal(fData)
+
+    cmdString := fmt.Sprintf("qfec%d", id)
+    _, err = exec.LookPath(cmdString)
+    if err == nil {
+      out, err := exec.Command(cmdString, "v", string(jsonString)).Output()
+      if err == nil && string(out) != "" {
+        fmt.Fprintln(w, "Extra Code Validation Error: " + string(out))
+        return
+      }
+    }
+
     colNames := make([]string, 0)
     formData := make([]string, 0)
     for _, dd := range dds {
@@ -103,7 +124,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     colNamesStr := strings.Join(colNames, ", ")
     formDataStr := strings.Join(formData, ", ")
     sql := fmt.Sprintf("insert into `%s`(created, modified, %s) values(now(), now(), %s)", tableName(doc), colNamesStr, formDataStr)
-    _, err := SQLDB.Exec(sql)
+    _, err = SQLDB.Exec(sql)
     if err != nil {
       fmt.Fprintf(w, "An error occured while saving: " + err.Error())
       return
