@@ -232,8 +232,14 @@ func ViewDocumentSchema(w http.ResponseWriter, r *http.Request) {
     DocName string
     DocDatas []DocData
     Id int
+    Add func(x, y int) int
   }
-  ctx := Context{doc, docDatas, id}
+
+  add := func(x, y int) int {
+    return x + y
+  }
+
+  ctx := Context{doc, docDatas, id, add}
   tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/view-document-schema.html")))
   tmpl.Execute(w, ctx)
 }

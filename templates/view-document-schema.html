@@ -44,9 +44,10 @@
       </tr>
     </thead>
     <tbody>
+      {{$add := .Add}}
       {{range $index, $element := .DocDatas}}
       <tr>
-        <td>{{$index}}</td>
+        <td>{{call $add $index 1}}</td>
         <td>{{$element.Label}}</td>
         <td>{{$element.Name}}</td>
         <td>{{$element.Type}}</td>
