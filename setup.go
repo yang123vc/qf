@@ -113,19 +113,6 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    // create permissions table
-    sqlStmt := "create table qf_user_roles ("
-    sqlStmt += "id bigint unsigned not null auto_increment,"
-    sqlStmt += "userid bigint unsigned not null,"
-    sqlStmt += "roles varchar(255), primary key(id), unique(userid),"
-    sqlStmt += fmt.Sprintf("foreign key (userid) references `%s`(id))", UsersTable)
-    _, err = tx.Exec(sqlStmt)
-    if err != nil {
-      tx.Rollback()
-      fmt.Fprintf(w, "An error occured: %s", err.Error())
-      return
-    }
-
     _, err = tx.Exec(`create table qf_roles (
       id int not null auto_increment,
       role varchar(50) not null,
@@ -139,20 +126,34 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
     }
 
     _, err = tx.Exec(`create table qf_permissions (
-      id not null auto_increment,
+      id int not null auto_increment,
       roleid int not null,
-      object varchar(255), not null,
+      object varchar(255) not null,
       permissions varchar(255) not null,
       primary key (id),
       unique(roleid, object),
       foreign key (roleid) references qf_roles (id)
       )`)
-      if err != nil {
-        tx.Rollback()
-        fmt.Fprintf(w, "An error occured: %s", err.Error())
-        return
-      }
+    if err != nil {
+      tx.Rollback()
+      fmt.Fprintf(w, "An error occured: %s", err.Error())
+      return
+    }
+
+    sqlStmt := "create table qf_user_roles ("
+    sqlStmt += "id bigint unsigned not null auto_increment,"
+    sqlStmt += "userid bigint unsigned not null,"
+    sqlStmt += "roles varchar(255), primary key(id), unique(userid),"
+    sqlStmt += fmt.Sprintf("foreign key (userid) references `%s`(id))", UsersTable)
+    _, err = tx.Exec(sqlStmt)
+    if err != nil {
+      tx.Rollback()
+      fmt.Fprintf(w, "An error occured: %s", err.Error())
+      return
+    }
 
     tx.Commit()
+    fmt.Fprintf(w, "Setup Completed.")
+
   }
 }
