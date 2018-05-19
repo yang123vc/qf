@@ -14,6 +14,12 @@ one authentication system to log on to the system (comfort).
 * Ubuntu
 
 
+## Limitations
+
+* Document Schemas can't be edited (doesn't seem necessary). A workaround would be to delete the document schema and
+  create another one.
+
+
 ## License
 
 Released with the MIT License
