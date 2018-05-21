@@ -1,7 +1,7 @@
 package qf
 
 import (
-  // "github.com/gorilla/mux"
+  "github.com/gorilla/mux"
   "net/http"
   "fmt"
   "path/filepath"
@@ -62,4 +62,18 @@ func RolesView(w http.ResponseWriter, r *http.Request) {
 
     fmt.Fprintf(w, "Successfully create role.")
   }
+}
+
+
+func DeleteRole(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  role := vars["role"]
+
+  _, err := SQLDB.Exec("delete from qf_roles where role=?", role)
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while deleting role \"%s\". Exact Error: " + err.Error())
+    return
+  }
+
+  http.Redirect(w, r, "/roles-view/", 307)
 }
