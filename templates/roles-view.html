@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Roles List And Creation</title>
+  <style>
+  #error-box {
+    margin-bottom: 5px;
+    display: none;
+  }
+  </style>
+</head>
+<body>
+  <h3>Roles List And Creation</h3>
+  {{if .NumberOfRoles}}
+  <ol>
+    {{ range .Roles }}
+      <li>{{.}} <a href="/role-delete/{{.}}/">Delete</a></li>
+    {{end}}
+  </ol>
+  {{ else }}
+    <p>You have not defined any roles </p>
+  {{ end }}
+
+  <span id='error-box'></span>
+  <form method="post" action="" >
+    <div>
+      <label for='id-role'>Name of role</label> &nbsp;&nbsp;
+      <input type="text" id="id-role" name="role" required/>
+    </div>
+    <br>
+    <div>
+      <input type="submit" value="Create Role" />
+    </div>
+  </form>
+</body>
+</html>
