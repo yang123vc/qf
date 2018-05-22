@@ -72,6 +72,7 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
   }
 
   if count == 1 {
+    fmt.Fprintf(w, "This setup has been executed.")
     return
   } else { // do setup
     tx, err := SQLDB.Begin()
@@ -143,7 +144,8 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
     sqlStmt := "create table qf_user_roles ("
     sqlStmt += "id bigint unsigned not null auto_increment,"
     sqlStmt += "userid bigint unsigned not null,"
-    sqlStmt += "roles varchar(255), primary key(id), unique(userid),"
+    sqlStmt += "roleid int not null, primary key(id), unique(userid, roleid),"
+    sqlStmt += "foreign key (roleid) references qf_roles (id),"
     sqlStmt += fmt.Sprintf("foreign key (userid) references `%s`(id))", UsersTable)
     _, err = tx.Exec(sqlStmt)
     if err != nil {
