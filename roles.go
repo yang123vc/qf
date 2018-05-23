@@ -232,7 +232,35 @@ func EditUserRoles(w http.ResponseWriter, r *http.Request) {
     ctx := Context{userid, userRoles, strings.Join(roles, ","), firstname + " " + surname}
     tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-user-roles.html")))
     tmpl.Execute(w, ctx)
+
+  } else if r.Method == http.MethodPost {
+
+    newRoles := strings.Split(r.FormValue("roles"), "\n")
+    stmt, err := SQLDB.Prepare("insert into qf_user_roles(userid, roleid) values(?, ?)")
+    if err != nil {
+      fmt.Fprintf(w, "An error occured while trying to make prepared statemnt. Exact Error: " + err.Error())
+      return
+    }
+    for _, str := range newRoles {
+      t := strings.TrimSpace(str)
+      if t == "" {
+        continue
+      }
+      roleid, err := getRoleId(t)
+      if err != nil {
+        fmt.Fprintf(w, "An error occured while trying to get roleid. Exact Error: " + err.Error())
+        return
+      }
+      _, err = stmt.Exec(useridUint64, roleid)
+      if err != nil {
+        fmt.Fprintf(w, "An error occured while writing a user role. Exact Error: " + err.Error())
+        return
+      }
+    }
+
+    fmt.Fprintf(w, "Successfully updated the roles for this user.")
   }
+
 }
 
 

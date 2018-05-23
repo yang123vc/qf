@@ -6,6 +6,7 @@
   <style>
   #error-box {
     display: none;
+    color: red;
   }
   </style>
 </head>
@@ -22,11 +23,41 @@
   <form method="post" action="">
     <div>
       <label>Roles:</label> <br>
-      <textarea name="roles"></textarea>
+      <textarea name="roles" required></textarea>
     </div>
     <div>
       <input type="submit" value="Submit" />
     </div>
   </form>
+
+  <script src="/jquery/"></script>
+  <script>
+  var rolesStr = "{{.RolesStr}}";
+
+  $(document).ready(function() {
+
+    $('form input[type=submit]').click(function(e) {
+      e.preventDefault();
+      $('#error-box').hide();
+
+      if (! $('form')[0].checkValidity()) {
+        return;
+      }
+
+      var existingRoles = rolesStr.split(',');
+      var newRoles = $('textarea[name=roles]').val().split('\n');
+      for (i = 0; i < newRoles.length; i++) {
+        if ( existingRoles.indexOf( newRoles[i] ) == -1) {
+          $('#error-box').text("Some of the roles have not yet been created.");
+          $('#error-box').show();
+          return;
+        }
+      }
+
+      $('form').submit();
+    });
+  });
+
+  </script>
 </body>
 </html>
