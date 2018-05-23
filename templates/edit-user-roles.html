@@ -3,29 +3,30 @@
 <head>
   <meta charset="utf-8">
   <title>Edit Roles of User {{.FullName}}</title>
+  <style>
+  #error-box {
+    display: none;
+  }
+  </style>
 </head>
 <body>
   <h3> Edit Roles of User {{.FullName}} </h3>
+  <h4> Delete Roles Section</h4>
+  {{range .UserRoles}}
+    <p>{{.}}&nbsp;&nbsp;<a href='/remove-role-from-user/{{$.UserId}}/{{.}}/'>Delete</a></p>
+  {{end}}
 
+  <h4>Add Roles Section</h4>
+  <p>Enter each role on a new line.</p>
+  <p id='error-box'></p>
   <form method="post" action="">
     <div>
-      <textarea name="roles">
-{{.RolesConcatenated}}
-</textarea>
+      <label>Roles:</label> <br>
+      <textarea name="roles"></textarea>
     </div>
     <div>
-      <input type="submit" value="Update" />
+      <input type="submit" value="Submit" />
     </div>
-
   </form>
-  <script src="/jquery/"></script>
-  <script>
-  var roles = "{{.RolesStr}}";
-
-  $(document).ready(function() {
-
-  });
-
-  </script>
 </body>
 </html>

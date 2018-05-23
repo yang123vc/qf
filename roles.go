@@ -186,20 +186,29 @@ func EditUserRoles(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  if r.Method == http.MethodGet {
-    var rolesConcatenated string
-    var strFromDB sql.NullString
-    err = SQLDB.QueryRow(`select group_concat(qf_roles.role separator "\n")
-    from qf_roles inner join qf_user_roles on qf_roles.id = qf_user_roles.roleid
-    where qf_user_roles.userid = ?`, useridUint64).Scan(&strFromDB)
+  userRoles := make([]string, 0)
+  var role string
+  rows, err := SQLDB.Query(`select qf_roles.role from qf_roles inner join qf_user_roles on qf_roles.id = qf_user_roles.roleid
+    where qf_user_roles.userid = ?`, useridUint64)
+  if err != nil {
+    fmt.Fprintf(w, "Error reading roles. Exact Error: " + err.Error())
+    return
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&role)
     if err != nil {
-      fmt.Fprintf(w, "Error reading roles. Exact Error: " + err.Error())
+      fmt.Fprintf(w, "Error reading single row. Exact Error: " + err.Error())
       return
     }
-    if strFromDB.Valid {
-      rolesConcatenated = strFromDB.String
-    }
+    userRoles = append(userRoles, role)
+  }
+  if err = rows.Err(); err != nil {
+    fmt.Fprintf(w, "Error after reading roles. Exact Error: " + err.Error())
+    return
+  }
 
+  if r.Method == http.MethodGet {
     roles, ok := getRoles(w)
     if ! ok {
       return
@@ -215,15 +224,58 @@ func EditUserRoles(w http.ResponseWriter, r *http.Request) {
 
     type Context struct {
       UserId string
-      RolesConcatenated string
+      UserRoles []string
       RolesStr string
       FullName string
     }
 
-    ctx := Context{userid, rolesConcatenated, strings.Join(roles, ","), firstname + " " + surname}
+    ctx := Context{userid, userRoles, strings.Join(roles, ","), firstname + " " + surname}
     tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-user-roles.html")))
     tmpl.Execute(w, ctx)
   }
+}
 
 
+func getRoleId(role string) (int, error) {
+  var roleid int
+  err := SQLDB.QueryRow("select id from qf_roles where role = ? ", role).Scan(&roleid)
+  return roleid, err
+}
+
+
+func RemoveRoleFromUser(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  userid := vars["userid"]
+  role := vars["role"]
+  useridUint64, err := strconv.ParseUint(userid, 10, 64)
+  if err != nil {
+    fmt.Fprintf(w, "The userid is not a uint64. Exact Error: " + err.Error())
+    return
+  }
+
+  var count int
+  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", UsersTable, userid)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+  if err != nil {
+    fmt.Fprintf(w, "An error occured when verifiying whether the user id exists. Exact error: " + err.Error())
+    return
+  }
+  if count == 0 {
+    fmt.Fprintf(w, "The userid does not exist.")
+    return
+  }
+
+  roleid, err := getRoleId(role)
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while getting role id. Exact Error: " + err.Error())
+    return
+  }
+
+  _, err = SQLDB.Exec("delete from qf_user_roles where userid = ? and roleid = ?", useridUint64, roleid)
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while deleting role. Exact Error: " + err.Error())
+    return
+  }
+
+  fmt.Fprintf(w, "Successfully deleted that role.")
 }
