@@ -8,36 +8,41 @@ import (
   "html/template"
   "sort"
   "database/sql"
+  "strconv"
+  "strings"
 )
 
 
-func getRoles(w http.ResponseWriter) []string {
+func getRoles(w http.ResponseWriter) ([]string, bool) {
   strSlice := make([]string, 0)
   var str string
   rows, err := SQLDB.Query("select role from qf_roles order by role asc")
   if err != nil {
     fmt.Fprintf(w, "Error occured while trying to collect roles. Exact Error: " + err.Error())
-    return strSlice
+    return strSlice, false
   }
   defer rows.Close()
   for rows.Next() {
     err := rows.Scan(&str)
     if err != nil {
       fmt.Fprintf(w, "Error occured while trying to collect role. Exact Error: " + err.Error())
-      return strSlice
+      return strSlice, false
     }
     strSlice = append(strSlice, str)
   }
   if err = rows.Err(); err != nil {
     fmt.Fprintf(w, "An error occured: " + err.Error())
-    return strSlice
+    return strSlice, false
   }
-  return strSlice
+  return strSlice, true
 }
 
 
 func RolesView(w http.ResponseWriter, r *http.Request) {
-  roles := getRoles(w)
+  roles, ok := getRoles(w)
+  if ! ok {
+    return
+  }
 
   if r.Method == http.MethodGet {
     type Context struct {
@@ -161,4 +166,64 @@ func UsersToRolesList(w http.ResponseWriter, r *http.Request) {
   ctx := Context{udsNoDuplicates}
   tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/users-to-roles-list.html")))
   tmpl.Execute(w, ctx)
+}
+
+
+func EditUserRoles(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  userid := vars["userid"]
+  useridUint64, err := strconv.ParseUint(userid, 10, 64)
+
+  var count int
+  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", UsersTable, userid)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+  if err != nil {
+    fmt.Fprintf(w, "An error occured when verifiying whether the user id exists. Exact error: " + err.Error())
+    return
+  }
+  if count == 0 {
+    fmt.Fprintf(w, "The userid does not exist.")
+    return
+  }
+
+  if r.Method == http.MethodGet {
+    var rolesConcatenated string
+    var strFromDB sql.NullString
+    err = SQLDB.QueryRow(`select group_concat(qf_roles.role separator "\n")
+    from qf_roles inner join qf_user_roles on qf_roles.id = qf_user_roles.roleid
+    where qf_user_roles.userid = ?`, useridUint64).Scan(&strFromDB)
+    if err != nil {
+      fmt.Fprintf(w, "Error reading roles. Exact Error: " + err.Error())
+      return
+    }
+    if strFromDB.Valid {
+      rolesConcatenated = strFromDB.String
+    }
+
+    roles, ok := getRoles(w)
+    if ! ok {
+      return
+    }
+
+    var firstname, surname string
+    sqlStmt = fmt.Sprintf("select firstname, surname from `%s` where id = %d", UsersTable, useridUint64)
+    err = SQLDB.QueryRow(sqlStmt).Scan(&firstname, &surname)
+    if err != nil {
+      fmt.Fprintf(w, "Error reading user details. Exact Error: " + err.Error())
+      return
+    }
+
+    type Context struct {
+      UserId string
+      RolesConcatenated string
+      RolesStr string
+      FullName string
+    }
+
+    ctx := Context{userid, rolesConcatenated, strings.Join(roles, ","), firstname + " " + surname}
+    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-user-roles.html")))
+    tmpl.Execute(w, ctx)
+  }
+
+
 }
