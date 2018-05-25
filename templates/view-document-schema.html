@@ -28,8 +28,9 @@
   </style>
 </head>
 <body>
-  <h3>View Document Schema of {{.DocName}}</h3>
+  <h2>View Document Schema of {{.DocName}}</h2>
 
+  <h3>Field Data</h3>
   <span>ID : <b>{{.Id}}</b></span><br>
 
   <table>
@@ -62,5 +63,24 @@
 
   <h4>Help on Adding Extra Codes (eg. Validation) to this Document Schema</h4>
   <p>To create the extra code for this object create an executable with name "qfec{{.Id}}".</p>
+
+  <h3>Permissions Data of Roles on Document Schema {{.DocName}}</h3>
+  <table>
+    <thead>
+      <tr>
+        <td>Role</td>
+        <td>Permissions</td>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .RPS}}
+        <tr>
+          <td>{{.Role}}</td>
+          <td>{{.Permissions}}</td>
+        </tr>
+      {{end}}
+    </tbody>
+  </table>
+  <a href="/edit-document-schema-permissions/{{.DocName}}/">Edit Permissions</a>
 </body>
 </html>

@@ -138,7 +138,8 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
       }
     }
     tx.Commit()
-    http.Redirect(w, r, "/list-document-schemas/", 307)
+    redirectURL := fmt.Sprintf("/edit-document-schema-permissions/%s/", r.FormValue("doc-name"))
+    http.Redirect(w, r, redirectURL, 307)
 
   } else {
     type Context struct {
@@ -206,6 +207,36 @@ func DeleteDocumentSchema(w http.ResponseWriter, r *http.Request) {
 }
 
 
+type RolePermissions struct {
+  Role string
+  Permissions string
+}
+
+
+func getRolePermissions(documentSchema string) ([]RolePermissions, error) {
+  var role, permissions string
+  rps := make([]RolePermissions, 0)
+  rows, err := SQLDB.Query(`select qf_roles.role, qf_permissions.permissions
+    from qf_roles inner join qf_permissions on qf_roles.id = qf_permissions.roleid
+    where qf_permissions.object = ?`, documentSchema)
+  if err != nil {
+    return rps, err
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&role, &permissions)
+    if err != nil {
+      return rps, err
+    }
+    rps = append(rps, RolePermissions{role, permissions})
+  }
+  if err = rows.Err(); err != nil {
+    return rps, err
+  }
+  return rps, nil
+}
+
+
 func ViewDocumentSchema(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   doc := vars["document-schema"]
@@ -233,13 +264,20 @@ func ViewDocumentSchema(w http.ResponseWriter, r *http.Request) {
     DocDatas []DocData
     Id int
     Add func(x, y int) int
+    RPS []RolePermissions
   }
 
   add := func(x, y int) int {
     return x + y
   }
 
-  ctx := Context{doc, docDatas, id, add}
+  rps, err := getRolePermissions(doc)
+  if err != nil {
+    fmt.Fprintf(w, "An error occured when trying to get the permissions on roles for this document. Exact error: " + err.Error())
+    return
+  }
+
+  ctx := Context{doc, docDatas, id, add, rps}
   tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/view-document-schema.html")))
   tmpl.Execute(w, ctx)
 }
@@ -254,34 +292,6 @@ func EditDocumentSchemaPermissions(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  type RolePermissions struct {
-    Role string
-    Permissions string
-  }
-
-  var role, permissions string
-  rps := make([]RolePermissions, 0)
-  rows, err := SQLDB.Query(`select qf_roles.role, qf_permissions.permissions
-    from qf_roles inner join qf_permissions on qf_roles.id = qf_permissions.roleid
-    where qf_permissions.object = ?`, doc)
-  if err != nil {
-    fmt.Fprintf(w, "An error occured while trying to read permissions of roles for this document schema. Exact Error: " + err.Error())
-    return
-  }
-  defer rows.Close()
-  for rows.Next() {
-    err := rows.Scan(&role, &permissions)
-    if err != nil {
-      fmt.Fprintf(w, "Error reading a row. Exact Error: " + err.Error())
-      return
-    }
-    rps = append(rps, RolePermissions{role, permissions})
-  }
-  if err = rows.Err(); err != nil {
-    fmt.Fprintf(w, "Error occured after reading. Exact Error: " + err.Error())
-    return
-  }
-
   if r.Method == http.MethodGet {
 
     type Context struct {
@@ -293,6 +303,12 @@ func EditDocumentSchemaPermissions(w http.ResponseWriter, r *http.Request) {
 
     roles, ok := getRoles(w)
     if ! ok {
+      return
+    }
+
+    rps, err := getRolePermissions(doc)
+    if err != nil {
+      fmt.Fprintf(w, "An error occured when trying to get the permissions on roles for this document. Exact error: " + err.Error())
       return
     }
 
