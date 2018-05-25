@@ -308,3 +308,30 @@ func RemoveRoleFromUser(w http.ResponseWriter, r *http.Request) {
   redirectURL := fmt.Sprintf("/edit-user-roles/%s/", userid)
   http.Redirect(w, r, redirectURL, 307)
 }
+
+
+func DeleteRolePermissions(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  role := vars["role"]
+  documentSchema := vars["document-schema"]
+
+  if ! docExists(documentSchema, w) {
+    fmt.Fprintf(w, "The document schema %s does not exists.", documentSchema)
+    return
+  }
+
+  roleid, err := getRoleId(role)
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while getting role id. Exact Error: " + err.Error())
+    return
+  }
+
+  _, err = SQLDB.Exec("delete from qf_permissions where roleid = ? and object = ?", roleid, documentSchema)
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while trying to delete permission of roles on this document. Exact Error: " + err.Error())
+    return
+  }
+
+  redirectURL := fmt.Sprintf("/edit-document-schema-permissions/%s/", documentSchema)
+  http.Redirect(w, r, redirectURL, 307)
+}
