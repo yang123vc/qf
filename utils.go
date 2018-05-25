@@ -76,3 +76,10 @@ func getDocNames(w http.ResponseWriter) []string {
   }
   return tempSlice
 }
+
+
+func getRoleId(role string) (int, error) {
+  var roleid int
+  err := SQLDB.QueryRow("select id from qf_roles where role = ? ", role).Scan(&roleid)
+  return roleid, err
+}

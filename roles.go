@@ -80,7 +80,24 @@ func DeleteRole(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   role := vars["role"]
 
-  _, err := SQLDB.Exec("delete from qf_roles where role=?", role)
+  roleid, err := getRoleId(role)
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while getting role id. Exact Error: " + err.Error())
+    return
+  }
+
+  _, err = SQLDB.Exec("delete from qf_permissions where roleid = ?", roleid)
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while deleting role permissions. Exact Error: " + err.Error())
+    return
+  }
+  _, err = SQLDB.Exec("delete from qf_user_roles where roleid = ?", roleid)
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while deleting user and this role data. Exact Error: " + err.Error())
+    return
+  }
+
+  _, err = SQLDB.Exec("delete from qf_roles where role=?", role)
   if err != nil {
     fmt.Fprintf(w, "Error occured while deleting role \"%s\". Exact Error: " + err.Error())
     return
@@ -261,13 +278,6 @@ func EditUserRoles(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, "/users-to-roles-list/", 307)
   }
 
-}
-
-
-func getRoleId(role string) (int, error) {
-  var roleid int
-  err := SQLDB.QueryRow("select id from qf_roles where role = ? ", role).Scan(&roleid)
-  return roleid, err
 }
 
 
