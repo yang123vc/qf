@@ -243,3 +243,91 @@ func ViewDocumentSchema(w http.ResponseWriter, r *http.Request) {
   tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/view-document-schema.html")))
   tmpl.Execute(w, ctx)
 }
+
+
+func EditDocumentSchemaPermissions(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  doc := vars["document-schema"]
+
+  if ! docExists(doc, w) {
+    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    return
+  }
+
+  type RolePermissions struct {
+    Role string
+    Permissions string
+  }
+
+  var role, permissions string
+  rps := make([]RolePermissions, 0)
+  rows, err := SQLDB.Query(`select qf_roles.role, qf_permissions.permissions
+    from qf_roles inner join qf_permissions on qf_roles.id = qf_permissions.roleid
+    where qf_permissions.object = ?`, doc)
+  if err != nil {
+    fmt.Fprintf(w, "An error occured while trying to read permissions of roles for this document schema. Exact Error: " + err.Error())
+    return
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&role, &permissions)
+    if err != nil {
+      fmt.Fprintf(w, "Error reading a row. Exact Error: " + err.Error())
+      return
+    }
+    rps = append(rps, RolePermissions{role, permissions})
+  }
+  if err = rows.Err(); err != nil {
+    fmt.Fprintf(w, "Error occured after reading. Exact Error: " + err.Error())
+    return
+  }
+
+  if r.Method == http.MethodGet {
+
+    type Context struct {
+      DocName string
+      RPS []RolePermissions
+      LenRPS int
+      Roles []string
+    }
+
+    roles, ok := getRoles(w)
+    if ! ok {
+      return
+    }
+
+    ctx := Context{doc, rps, len(rps), roles}
+    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-document-schema-permissions.html")))
+    tmpl.Execute(w, ctx)
+
+  } else if r.Method == http.MethodPost {
+
+    nrps := make([]RolePermissions, 0)
+    for i := 1; i < 1000; i++ {
+      p := strconv.Itoa(i)
+      if r.FormValue("role-" + p) == "" {
+        break
+      } else {
+        rp := RolePermissions{r.FormValue("role-" + p), r.FormValue("permissions-" + p)}
+        nrps = append(nrps, rp)
+      }
+    }
+
+    for _, rp := range nrps {
+      roleid, err := getRoleId(rp.Role)
+      if err != nil {
+        fmt.Fprintf(w, "Error occured while getting role id. Exact Error: " + err.Error())
+        return
+      }
+      _, err = SQLDB.Exec("insert into qf_permissions(roleid, object, permissions) values(?,?,?)", roleid, doc, rp.Permissions)
+      if err != nil {
+        fmt.Fprintf(w, "Error storing role permissions. Exact error: " + err.Error())
+        return
+      }
+    }
+
+    redirectURL := fmt.Sprintf("/view-document-schema/%s/", doc)
+    http.Redirect(w, r, redirectURL, 307)
+  }
+
+}

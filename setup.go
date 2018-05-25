@@ -12,7 +12,7 @@ var SQLDB *sql.DB
 var SiteDB string
 var UsersTable string
 var Admins []uint64
-var CurrentUser uint64
+var GetCurrentUser func(r *http.Request) (uint64, error)
 
 
 func QFSetup(w http.ResponseWriter, r *http.Request) {

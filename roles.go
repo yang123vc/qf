@@ -258,7 +258,7 @@ func EditUserRoles(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    fmt.Fprintf(w, "Successfully updated the roles for this user.")
+    http.Redirect(w, r, "/users-to-roles-list/", 307)
   }
 
 }
@@ -305,5 +305,6 @@ func RemoveRoleFromUser(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  fmt.Fprintf(w, "Successfully deleted that role.")
+  redirectURL := fmt.Sprintf("/edit-user-roles/%s/", userid)
+  http.Redirect(w, r, redirectURL, 307)
 }

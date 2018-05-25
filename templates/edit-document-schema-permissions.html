@@ -1,0 +1,163 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Edit Permissions of Document Schema {{.DocName}}</title>
+  <style>
+  .perms-input {
+    width: 400px;
+  }
+  input:invalid {
+    border: 1px solid red;
+  }
+  #error-box {
+    color: red;
+  }
+  </style>
+</head>
+<body>
+  <h2>Edit Permissions of Document Schema {{.DocName}}</h2>
+
+  {{ if .LenRPS }}
+    <h3>Delete Old Permissions Selection </h3>
+    <p>Help to edit a permission, delete and then add it a new</p>
+
+    <table>
+      <thead>
+        <tr>
+          <td>Role</td>
+          <td>Permissions</td>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .RPS}}
+          <tr>
+            <td>{{.Role}}</td>
+            <td>{{.Permissions}}</td>
+            <td>
+              <a href='/delete-role-permissions/{{$.DocName}}/{{.Role}}/'>Delete</a>
+            </td>
+          </tr>
+        {{end}}
+      </tbody>
+    </table>
+  {{end}}
+
+  <h3>Add New Permissions Section</h3>
+  <span>Help:</span>
+  <ol>
+    <li>Administrator users have all the permissions for any document schema</li>
+    <li>Permissions can be one or more of create, read, update, delete</li>
+    <li>Set the permissions field to any/some of the above values seperated by comma eg. create, read, edit</li>
+    <li>All your permissions must be in lower case.</li>
+  </ol>
+
+  <p id='error-box'></p>
+  <form method="post" action="">
+    <table>
+      <thead>
+        <tr>
+          <td>No</td>
+          <td>Role</td>
+          <td>Permissions</td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+        <td>1</td>
+        <td>
+          <select name="role-1" class="role-select">
+            {{range $.Roles}}
+              <option>{{.}}</option>
+            {{end}}
+          </select>
+        </td>
+        <td><input type="text" class="perms-input" name="permissions-1" required/></td>
+        <td><button type="button" id="delete-role-1">Delete</button></td>
+      </tr>
+      </tbody>
+    </table>
+    <br>
+    <div>
+      <button type="button" id='add-role-btn'>Add Role</button>
+    </div>
+    <br>
+    <div>
+      <input type="submit" value="Add" />
+    </div>
+  </form>
+  <script src='/jquery/'></script>
+  <script>
+  $('#error-box').hide();
+  $("#delete-role-1").hide();
+
+  function deleteRoleHandler(e) {
+    $(e.target).parents('tr').remove();
+    // reset the numbers
+    $('tbody tr').each(function(i, el) {
+      var newNo = i + 1;
+      var strNewNo = newNo.toString()
+      $('td:first', el).text(strNewNo);
+      $('.role-select', el).attr('name', 'role-' + strNewNo)
+      $('.perms-input', el).attr('name', 'permissions-' + strNewNo);
+    });
+  }
+
+  $('#add-role-btn').click(function(e) {
+    var currentNo = parseInt($('tr:last td:first').text());
+    var newNo = currentNo + 1;
+    var html = $('tr:last').html();
+    var re = new RegExp(currentNo.toString(), 'g');
+    html = html.replace(re, newNo.toString());
+
+    html = "<tr>" + html + "</tr>";
+    $('tbody').append(html);
+
+    $('#delete-role-' + newNo.toString()).click(deleteRoleHandler);
+    $('#delete-role-' + newNo.toString()).show();
+
+    $('html, body').scrollTop($(document).height());
+  });
+
+  $('form input[type=submit]').click(function(e) {
+    e.preventDefault();
+    $('#error-box').hide();
+
+    form = document.querySelector('form')
+    if (form.checkValidity()) {
+      var RolesSelected = [];
+      for (i = 0; i < $('.role-select').length; i++) {
+        var el = $('.role-select')[i]
+
+        if ( RolesSelected.indexOf( $(el).val() ) == -1) {
+          RolesSelected.push( $(el).val() );
+        } else {
+          $('#error-box').text("Can't have two roles of the same name.");
+          $('#error-box').show();
+          return
+        }
+      }
+
+      var possiblePermissions = ['create', 'read', 'update', 'delete'];
+      for (i = 0; i < $('.perms-input').length; i++) {
+        var el = $('.perms-input')[i];
+        var elValue = $(el).val();
+        var elValueParts = elValue.split(',');
+
+        for (j = 0; j < elValueParts.length; j++) {
+          var str = elValueParts[j].trim()
+          if ( possiblePermissions.indexOf(str) == -1) {
+            $('#error-box').text("Permissions must be one of : create, read, update, delete")
+            $('#error-box').show()
+            return
+          }
+        }
+      }
+
+      $('form').submit();
+    }
+  });
+
+  </script>
+</body>
+</html>
