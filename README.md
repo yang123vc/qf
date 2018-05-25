@@ -16,7 +16,7 @@ one authentication system to log on to the system (comfort).
 
 ## Limitations
 
-* Document Schemas can't be edited (doesn't seem necessary). A workaround would be to delete the document schema and
+* Document Structures can't be edited (doesn't seem necessary). A workaround would be to delete the document structure and
   create another one.
 
 

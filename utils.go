@@ -56,7 +56,7 @@ func docExists(documentName string, w http.ResponseWriter) bool {
 func getDocNames(w http.ResponseWriter) []string {
   tempSlice := make([]string, 0)
   var str string
-  rows, err := SQLDB.Query("select doc_name from qf_forms")
+  rows, err := SQLDB.Query("select doc_name from qf_document_structures")
   if err != nil {
     fmt.Fprintf(w, "An error occured: " + err.Error())
     panic(err)

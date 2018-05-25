@@ -59,15 +59,15 @@ func getDocData(formId int) []DocData{
 
 func CreateDocument(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  doc := vars["document-schema"]
+  doc := vars["document-structure"]
 
   if ! docExists(doc, w) {
-    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
 
   var id int
-  err := SQLDB.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
+  err := SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
     panic(err)
   }
@@ -161,11 +161,11 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
 
 func EditDocument(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  doc := vars["document-schema"]
+  doc := vars["document-structure"]
   docid := vars["id"]
 
   if ! docExists(doc, w) {
-    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
 
@@ -178,19 +178,19 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
     panic(err)
   }
 
   docDatas := getDocData(id)
 
-  type docAndSchema struct {
+  type docAndStructure struct {
     DocData
     Data string
   }
 
-  docAndSchemaSlice := make([]docAndSchema, 0)
+  docAndStructureSlice := make([]docAndStructure, 0)
   for _, docData := range docDatas {
     var data string
     var dataFromDB sql.NullString
@@ -204,7 +204,7 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
     } else {
       data = ""
     }
-    docAndSchemaSlice = append(docAndSchemaSlice, docAndSchema{docData, data})
+    docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, data})
   }
 
   var created, modified string
@@ -219,11 +219,11 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
       Created string
       Modified string
       DocName string
-      DocAndSchemas []docAndSchema
+      DocAndStructures []docAndStructure
       Id string
     }
 
-    ctx := Context{created, modified, doc, docAndSchemaSlice, docid}
+    ctx := Context{created, modified, doc, docAndStructureSlice, docid}
     tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-document.html")))
     tmpl.Execute(w, ctx)
 
@@ -231,23 +231,23 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
 
     colNames := make([]string, 0)
     formData := make([]string, 0)
-    for _, docAndSchema := range docAndSchemaSlice {
-      if docAndSchema.Data != r.FormValue(docAndSchema.DocData.Name) {
-        colNames = append(colNames, docAndSchema.DocData.Name)
-        switch docAndSchema.DocData.Type {
+    for _, docAndStructure := range docAndStructureSlice {
+      if docAndStructure.Data != r.FormValue(docAndStructure.DocData.Name) {
+        colNames = append(colNames, docAndStructure.DocData.Name)
+        switch docAndStructure.DocData.Type {
         case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
-          data := fmt.Sprintf("\"%s\"", r.FormValue(docAndSchema.DocData.Name))
+          data := fmt.Sprintf("\"%s\"", r.FormValue(docAndStructure.DocData.Name))
           formData = append(formData, data)
         case "Check":
           var data string
-          if r.FormValue(docAndSchema.DocData.Name) == "on" {
+          if r.FormValue(docAndStructure.DocData.Name) == "on" {
             data = "\"t\""
           } else {
             data = "\"f\""
           }
           formData = append(formData, data)
         default:
-          formData = append(formData, r.FormValue(docAndSchema.DocData.Name))
+          formData = append(formData, r.FormValue(docAndStructure.DocData.Name))
         }
       }
     }
@@ -281,10 +281,10 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
 
 func ListDocuments(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  doc := vars["document-schema"]
+  doc := vars["document-structure"]
 
   if ! docExists(doc, w) {
-    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
 
@@ -297,7 +297,7 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
   }
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
     panic(err)
   }
@@ -385,11 +385,11 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 
 func DeleteDocument(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  doc := vars["document-schema"]
+  doc := vars["document-structure"]
   docid := vars["id"]
 
   if ! docExists(doc, w) {
-    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
 

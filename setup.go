@@ -65,7 +65,7 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
 
   var count int
   err := SQLDB.QueryRow(`select count(*) as count from information_schema.tables
-  where table_schema=? and table_name=?`, SiteDB, "qf_forms").Scan(&count)
+  where table_schema=? and table_name=?`, SiteDB, "qf_document_structures").Scan(&count)
   if err != nil {
     fmt.Fprintf(w, "An error occured: %s", err.Error())
     return
@@ -81,7 +81,7 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
     // create forms general table
-    _, err = tx.Exec(`create table qf_forms (
+    _, err = tx.Exec(`create table qf_document_structures (
       id int not null auto_increment,
       doc_name varchar(100) not null,
       child_table char(1),
@@ -105,7 +105,7 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
       options varchar(255),
       other_options varchar(255),
       primary key (id),
-      foreign key (formid) references qf_forms(id),
+      foreign key (formid) references qf_document_structures(id),
       unique (formid, name)
       )`)
     if err != nil {

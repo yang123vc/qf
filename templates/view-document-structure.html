@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset='utf-8'>
-  <title>View Document Schema of {{.DocName}}</title>
+  <title>View Document Structure of {{.DocName}}</title>
   <style>
   thead {
     font-weight: bold;
@@ -28,7 +28,7 @@
   </style>
 </head>
 <body>
-  <h2>View Document Schema of {{.DocName}}</h2>
+  <h2>View Document Structure of {{.DocName}}</h2>
 
   <h3>Field Data</h3>
   <span>ID : <b>{{.Id}}</b></span><br>
@@ -61,10 +61,10 @@
     </tbody>
   </table>
 
-  <h4>Help on Adding Extra Codes (eg. Validation) to this Document Schema</h4>
+  <h4>Help on Adding Extra Codes (eg. Validation) to this Document Structure</h4>
   <p>To create the extra code for this object create an executable with name "qfec{{.Id}}".</p>
 
-  <h3>Permissions Data of Roles on Document Schema {{.DocName}}</h3>
+  <h3>Permissions Data of Roles on Document Structure {{.DocName}}</h3>
   <table>
     <thead>
       <tr>

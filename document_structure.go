@@ -11,7 +11,7 @@ import (
 )
 
 
-func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
+func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   type QFField struct {
     label string
@@ -57,7 +57,7 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
       childTable = "f"
     }
 
-    res, err := tx.Exec(`insert into qf_forms(doc_name, child_table, singleton)
+    res, err := tx.Exec(`insert into qf_document_structures(doc_name, child_table, singleton)
       values(?, ?, ?)`, r.FormValue("doc-name"), childTable, singleton)
     if err != nil {
       tx.Rollback()
@@ -79,7 +79,7 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    // create actual form data tables, we've only stored the form schema to the database
+    // create actual form data tables, we've only stored the form structure to the database
     tbl := tableName(r.FormValue("doc-name"))
     sql := fmt.Sprintf("create table `%s` (", tbl)
     sql += "id bigint unsigned not null auto_increment,"
@@ -138,7 +138,7 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
       }
     }
     tx.Commit()
-    redirectURL := fmt.Sprintf("/edit-document-schema-permissions/%s/", r.FormValue("doc-name"))
+    redirectURL := fmt.Sprintf("/edit-document-structure-permissions/%s/", r.FormValue("doc-name"))
     http.Redirect(w, r, redirectURL, 307)
 
   } else {
@@ -146,7 +146,7 @@ func NewDocumentSchema(w http.ResponseWriter, r *http.Request) {
       DocNames string
     }
     ctx := Context{strings.Join(getDocNames(w), ",")}
-    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/new-document-schema.html")))
+    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/new-document-structure.html")))
     tmpl.Execute(w, ctx)
   }
 }
@@ -157,28 +157,28 @@ func JQuery(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func ListDocumentSchemas(w http.ResponseWriter, r *http.Request) {
+func ListDocumentStructures(w http.ResponseWriter, r *http.Request) {
   type Context struct {
     DocNames []string
   }
   ctx := Context{DocNames: getDocNames(w)}
-  tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/list-document-schemas.html")))
+  tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/list-document-structures.html")))
   tmpl.Execute(w, ctx)
 }
 
 
-func DeleteDocumentSchema(w http.ResponseWriter, r *http.Request) {
+func DeleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  doc := vars["document-schema"]
+  doc := vars["document-structure"]
 
   if ! docExists(doc, w) {
-    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
 
   tx, _ := SQLDB.Begin()
   var id int
-  err := tx.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
+  err := tx.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
     tx.Rollback()
     panic(err)
@@ -190,7 +190,7 @@ func DeleteDocumentSchema(w http.ResponseWriter, r *http.Request) {
     panic(err)
   }
 
-  _, err = tx.Exec("delete from qf_forms where doc_name = ?", doc)
+  _, err = tx.Exec("delete from qf_document_structures where doc_name = ?", doc)
   if err != nil {
     tx.Rollback()
     panic(err)
@@ -203,7 +203,7 @@ func DeleteDocumentSchema(w http.ResponseWriter, r *http.Request) {
     panic(err)
   }
 
-  http.Redirect(w, r, "/list-document-schemas/", 307)
+  http.Redirect(w, r, "/list-document-structures/", 307)
 }
 
 
@@ -213,12 +213,12 @@ type RolePermissions struct {
 }
 
 
-func getRolePermissions(documentSchema string) ([]RolePermissions, error) {
+func getRolePermissions(documentStructure string) ([]RolePermissions, error) {
   var role, permissions string
   rps := make([]RolePermissions, 0)
   rows, err := SQLDB.Query(`select qf_roles.role, qf_permissions.permissions
     from qf_roles inner join qf_permissions on qf_roles.id = qf_permissions.roleid
-    where qf_permissions.object = ?`, documentSchema)
+    where qf_permissions.object = ?`, documentStructure)
   if err != nil {
     return rps, err
   }
@@ -237,23 +237,23 @@ func getRolePermissions(documentSchema string) ([]RolePermissions, error) {
 }
 
 
-func ViewDocumentSchema(w http.ResponseWriter, r *http.Request) {
+func ViewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  doc := vars["document-schema"]
+  doc := vars["document-structure"]
 
   if ! docExists(doc, w) {
-    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
 
   var id int
-  err := SQLDB.QueryRow("select id from qf_forms where doc_name = ?", doc).Scan(&id)
+  err := SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
     panic(err)
   }
 
   var childTable, singleton string
-  err = SQLDB.QueryRow("select child_table, singleton from qf_forms where id = ?", id).Scan(&childTable, &singleton)
+  err = SQLDB.QueryRow("select child_table, singleton from qf_document_structures where id = ?", id).Scan(&childTable, &singleton)
   if err != nil {
     panic(err)
   }
@@ -278,17 +278,17 @@ func ViewDocumentSchema(w http.ResponseWriter, r *http.Request) {
   }
 
   ctx := Context{doc, docDatas, id, add, rps}
-  tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/view-document-schema.html")))
+  tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/view-document-structure.html")))
   tmpl.Execute(w, ctx)
 }
 
 
-func EditDocumentSchemaPermissions(w http.ResponseWriter, r *http.Request) {
+func EditDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  doc := vars["document-schema"]
+  doc := vars["document-structure"]
 
   if ! docExists(doc, w) {
-    fmt.Fprintf(w, "The document schema %s does not exists.", doc)
+    fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
 
@@ -313,7 +313,7 @@ func EditDocumentSchemaPermissions(w http.ResponseWriter, r *http.Request) {
     }
 
     ctx := Context{doc, rps, len(rps), roles}
-    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-document-schema-permissions.html")))
+    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-document-structure-permissions.html")))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
@@ -342,7 +342,7 @@ func EditDocumentSchemaPermissions(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    redirectURL := fmt.Sprintf("/view-document-schema/%s/", doc)
+    redirectURL := fmt.Sprintf("/view-document-structure/%s/", doc)
     http.Redirect(w, r, redirectURL, 307)
   }
 
