@@ -58,6 +58,12 @@ func getDocData(formId int) []DocData{
 
 
 func CreateDocument(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
+    return
+  }
+
   vars := mux.Vars(r)
   doc := vars["document-structure"]
 
@@ -67,7 +73,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   var id int
-  err := SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
     panic(err)
   }
@@ -136,7 +142,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     }
     colNamesStr := strings.Join(colNames, ", ")
     formDataStr := strings.Join(formData, ", ")
-    sqlStmt := fmt.Sprintf("insert into `%s`(created, modified, %s) values(now(), now(), %s)", tableName(doc), colNamesStr, formDataStr)
+    sqlStmt := fmt.Sprintf("insert into `%s`(created, modified, created_by, %s) values(now(), now(), %d, %s)", tableName(doc), colNamesStr, useridUint64, formDataStr)
     res, err := SQLDB.Exec(sqlStmt)
     if err != nil {
       fmt.Fprintf(w, "An error occured while saving: " + err.Error())

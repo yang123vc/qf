@@ -38,7 +38,7 @@
   <a class='button-look' href='/doc/{{.DocName}}/delete/{{.Id}}/'>Delete</a><br><br>
 
   <form method="post" action="">
-    {{range .DocAndSchemas}}
+    {{range .DocAndStructures}}
       <div>
         <label>{{.Label}}</label>
         {{ if eq .Type "Check"}}

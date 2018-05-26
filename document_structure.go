@@ -94,6 +94,7 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     sql += "id bigint unsigned not null auto_increment,"
     sql += "created datetime not null,"
     sql += "modified datetime not null,"
+    sql += "created_by bigint unsigned not null,"
 
     sqlEnding := ""
     for _, qff := range qffs {
@@ -129,7 +130,7 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
         sqlEnding += fmt.Sprintf(", foreign key (%s) references `%s`(id)", qff.name, tableName(qff.other_options))
       }
     }
-    sql += "primary key (id)" + sqlEnding + ")"
+    sql += "primary key (id), " + fmt.Sprintf("foreign key (created_by) references `%s`(id)", UsersTable) + sqlEnding + ")"
     _, err1 := tx.Exec(sql)
     if err1 != nil {
       tx.Rollback()
@@ -197,7 +198,7 @@ func DeleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   tx, _ := SQLDB.Begin()
   var id int
-  err := tx.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
+  err = tx.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
     tx.Rollback()
     panic(err)
@@ -276,7 +277,7 @@ func ViewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   var id int
-  err := SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
     panic(err)
   }
