@@ -12,6 +12,15 @@ import (
 
 
 func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
 
   type QFField struct {
     label string
@@ -168,6 +177,16 @@ func ListDocumentStructures(w http.ResponseWriter, r *http.Request) {
 
 
 func DeleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
   vars := mux.Vars(r)
   doc := vars["document-structure"]
 
@@ -238,6 +257,16 @@ func getRolePermissions(documentStructure string) ([]RolePermissions, error) {
 
 
 func ViewDocumentStructure(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
   vars := mux.Vars(r)
   doc := vars["document-structure"]
 
@@ -284,6 +313,17 @@ func ViewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
 
 func EditDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
+
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
   vars := mux.Vars(r)
   doc := vars["document-structure"]
 

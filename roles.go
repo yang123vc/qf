@@ -39,6 +39,16 @@ func getRoles(w http.ResponseWriter) ([]string, bool) {
 
 
 func RolesView(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
   roles, ok := getRoles(w)
   if ! ok {
     return
@@ -77,6 +87,16 @@ func RolesView(w http.ResponseWriter, r *http.Request) {
 
 
 func DeleteRole(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
   vars := mux.Vars(r)
   role := vars["role"]
 
@@ -108,6 +128,15 @@ func DeleteRole(w http.ResponseWriter, r *http.Request) {
 
 
 func UsersToRolesList(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
 
   type UserData struct {
     UserId uint64
@@ -187,6 +216,16 @@ func UsersToRolesList(w http.ResponseWriter, r *http.Request) {
 
 
 func EditUserRoles(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
   vars := mux.Vars(r)
   userid := vars["userid"]
   useridUint64, err := strconv.ParseUint(userid, 10, 64)
@@ -282,6 +321,16 @@ func EditUserRoles(w http.ResponseWriter, r *http.Request) {
 
 
 func RemoveRoleFromUser(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
   vars := mux.Vars(r)
   userid := vars["userid"]
   role := vars["role"]
@@ -321,6 +370,16 @@ func RemoveRoleFromUser(w http.ResponseWriter, r *http.Request) {
 
 
 func DeleteRolePermissions(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
   vars := mux.Vars(r)
   role := vars["role"]
   documentStructure := vars["document-structure"]

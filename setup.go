@@ -63,6 +63,11 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  if GetCurrentUser == nil {
+    fmt.Fprintf(w, "You must set the \"qf.GetCurrentUser\". Please set this variable to a function with signature func(r *http.Request) (uint64, err).")
+    return
+  }
+
   var count int
   err := SQLDB.QueryRow(`select count(*) as count from information_schema.tables
   where table_schema=? and table_name=?`, SiteDB, "qf_document_structures").Scan(&count)

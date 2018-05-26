@@ -83,3 +83,17 @@ func getRoleId(role string) (int, error) {
   err := SQLDB.QueryRow("select id from qf_roles where role = ? ", role).Scan(&roleid)
   return roleid, err
 }
+
+
+func isUserAdmin(r *http.Request) (bool, error) {
+  userid, err := GetCurrentUser(r)
+  if err != nil {
+    return false, err
+  }
+  for _, id := range Admins {
+    if userid == id {
+      return true, nil
+    }
+  }
+  return false, nil
+}
