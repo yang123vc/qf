@@ -33,7 +33,8 @@
   <h3>Edit {{.DocName}} Document</h3>
 
   <span> Creation Date : <b>{{.Created}}</b></span><br>
-  <span> Last Modification Date : <b>{{.Modified}}</b></span><br><br>
+  <span> Last Modification Date : <b>{{.Modified}}</b></span><br>
+  <span> Created By : <b>{{.FirstName}} {{.Surname}} with User id {{.CreatedBy}} <b><br><br>
 
   <a class='button-look' href='/doc/{{.DocName}}/delete/{{.Id}}/'>Delete</a><br><br>
 

@@ -72,6 +72,17 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  truthValue, err := doesCurrrentUserHavePerm(r, doc, "create")
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You don't have the create permission for this document structure.")
+    return
+  }
+
+
   var id int
   err = SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
@@ -166,6 +177,12 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
 
 
 func EditDocument(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
+    return
+  }
+
   vars := mux.Vars(r)
   doc := vars["document-structure"]
   docid := vars["id"]
@@ -175,9 +192,19 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  truthValue, err := doesCurrrentUserHavePerm(r, doc, "update")
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You don't have the update permission for this document structure.")
+    return
+  }
+
   var count uint64
   sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(doc), docid)
-  err := SQLDB.QueryRow(sqlStmt).Scan(&count)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     fmt.Fprintf(w, "The document with id %s do not exists", docid)
     return
@@ -186,7 +213,8 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
   var id int
   err = SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
-    panic(err)
+    fmt.Fprintf(w, "An error occurred when reading document structure. Exact Error" + err.Error())
+    return
   }
 
   docDatas := getDocData(id)
@@ -203,7 +231,8 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
     sqlStmt := fmt.Sprintf("select %s from `%s` where id = %s", docData.Name, tableName(doc), docid)
     err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
     if err != nil {
-      panic(err)
+      fmt.Fprintf(w, "Error occurred when getting edit data. Exact Error: " + err.Error())
+      return
     }
     if dataFromDB.Valid {
       data = dataFromDB.String
@@ -213,12 +242,15 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
     docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, data})
   }
 
-  var created, modified string
-  sqlStmt = fmt.Sprintf("select created, modified from `%s` where id = %s", tableName(doc), docid)
-  err = SQLDB.QueryRow(sqlStmt).Scan(&created, &modified)
+  var created, modified, firstname, surname string
+  var created_by uint64
+  sqlStmt = fmt.Sprintf("select `%[1]s`.created, `%[1]s`.modified, `%[2]s`.firstname, `%[2]s`.surname, `%[2]s`.id ", tableName(doc), UsersTable)
+  sqlStmt += fmt.Sprintf("from `%[1]s` inner join `%[2]s` on `%[1]s`.created_by = `%[2]s`.id where `%[1]s`.id = ?", tableName(doc), UsersTable)
+  err = SQLDB.QueryRow(sqlStmt, docid).Scan(&created, &modified, &firstname, &surname, &created_by)
   if err != nil {
     panic(err)
   }
+
 
   if r.Method == http.MethodGet {
     type Context struct {
@@ -227,9 +259,12 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
       DocName string
       DocAndStructures []docAndStructure
       Id string
+      FirstName string
+      Surname string
+      CreatedBy uint64
     }
 
-    ctx := Context{created, modified, doc, docAndStructureSlice, docid}
+    ctx := Context{created, modified, doc, docAndStructureSlice, docid, firstname, surname, created_by}
     tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-document.html")))
     tmpl.Execute(w, ctx)
 
@@ -286,11 +321,27 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
 
 
 func ListDocuments(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
+    return
+  }
+
   vars := mux.Vars(r)
   doc := vars["document-structure"]
 
   if ! docExists(doc, w) {
     fmt.Fprintf(w, "The document structure %s does not exists.", doc)
+    return
+  }
+
+  truthValue, err := doesCurrrentUserHavePerm(r, doc, "read")
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You don't have the read permission for this document structure.")
     return
   }
 
@@ -390,12 +441,28 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 
 
 func DeleteDocument(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
+    return
+  }
+
   vars := mux.Vars(r)
   doc := vars["document-structure"]
   docid := vars["id"]
 
   if ! docExists(doc, w) {
     fmt.Fprintf(w, "The document structure %s does not exists.", doc)
+    return
+  }
+
+  truthValue, err := doesCurrrentUserHavePerm(r, doc, "delete")
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You don't have the delete permission for this document structure.")
     return
   }
 

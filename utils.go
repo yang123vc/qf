@@ -7,6 +7,7 @@ import (
   "sort"
   "net/http"
   "fmt"
+  "database/sql"
 )
 
 
@@ -25,8 +26,12 @@ func optionSearch(commaSeperatedOptions, option string) bool {
     return false
   } else {
     options := strings.Split(commaSeperatedOptions, ",")
-    sort.Strings(options)
-    i := sort.SearchStrings(options, option)
+    optionsTrimmed := make([]string, 0)
+    for _, opt := range options {
+      optionsTrimmed = append(optionsTrimmed, strings.TrimSpace(opt))
+    }
+    sort.Strings(optionsTrimmed)
+    i := sort.SearchStrings(optionsTrimmed, option)
     if i != len(options) {
       return true
       } else {
@@ -95,5 +100,50 @@ func isUserAdmin(r *http.Request) (bool, error) {
       return true, nil
     }
   }
+  return false, nil
+}
+
+
+func doesCurrrentUserHavePerm(r *http.Request, object, permission string) (bool, error) {
+  adminTruth, err := isUserAdmin(r)
+  if err == nil && adminTruth {
+    return true, nil
+  }
+
+  userid, err := GetCurrentUser(r)
+  if err != nil {
+    return false, err
+  }
+
+  var roles sql.NullString
+  err = SQLDB.QueryRow("select group_concat(roleid separator ',') from qf_user_roles where userid = ?", userid).Scan(&roles)
+  if err != nil {
+    return false, err
+  }
+  if ! roles.Valid {
+    return false, nil
+  }
+  rids := strings.Split(roles.String, ",")
+
+  for _, rid := range rids {
+    var count int
+    err = SQLDB.QueryRow("select count(*) from qf_permissions where object = ? and roleid = ?", object, rid).Scan(&count)
+    if err != nil {
+      return false, err
+      // panic(err)
+    }
+    if count == 0 {
+      continue
+    }
+    var permissions string
+    err = SQLDB.QueryRow("select permissions from qf_permissions where object = ? and roleid = ?", object, rid).Scan(&permissions)
+    if err != nil {
+      return false, nil
+    }
+    if optionSearch(permissions, permission) {
+      return true, nil
+    }
+  }
+
   return false, nil
 }
