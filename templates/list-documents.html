@@ -30,6 +30,9 @@
 <body>
   <h3>Lists of {{.DocName}} Documents</h3>
 
+  <a class="button-look" href="/doc/{{.DocName}}/create/">Create {{.DocName}} Document</a>
+  <br><br>
+
   <table>
     <thead>
       <tr>
@@ -48,10 +51,20 @@
             <td>{{.Data }}</td>
           {{end}}
           <td>
-            <a class='button-look' href='/doc/{{$.DocName}}/edit/{{.Id}}/'>View/Edit</a>
+            <a class='button-look' href='/doc/{{$.DocName}}/update/{{.Id}}/'>View/Edit</a>
             <a class='button-look' href='/doc/{{$.DocName}}/delete/{{.Id}}/'>Delete</a>
           </td>
         </tr>
       {{end}}
     </tbody>
   </table>
+  
+  <br><br>
+  <div id="pagination">
+    Pages:
+    {{range .Pages}}
+      <a href='/doc/{{$.DocName}}/list/{{.}}/'>{{.}}</a>
+    {{end}}
+  </div>
+</body>
+</html>

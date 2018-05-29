@@ -70,7 +70,8 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
       values(?, ?, ?)`, r.FormValue("doc-name"), childTable, singleton)
     if err != nil {
       tx.Rollback()
-      panic(err)
+      fmt.Fprintf(w, "An error ocurred while saving this document structure. Exact Error: " + err.Error())
+      return
     }
 
     formId, _:= res.LastInsertId()
@@ -78,13 +79,14 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
       values(?, ?, ?, ?, ?, ?)`)
     if err != nil {
       tx.Rollback()
-      panic(err)
+      fmt.Fprintf(w, "An internal error occured. Exact Error: " + err.Error())
     }
     for _, o := range(qffs) {
       _, err := stmt.Exec(formId, o.label, o.name, o.type_, o.options, o.other_options)
       if err != nil {
         tx.Rollback()
-        panic(err)
+        fmt.Fprintf(w, "An error occured while saving fields data. Exact Error: " + err.Error())
+        return
       }
     }
 
@@ -134,7 +136,8 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     _, err1 := tx.Exec(sql)
     if err1 != nil {
       tx.Rollback()
-      panic(err1)
+      fmt.Fprintf(w, "Error occured when creating document structure mysql table. Exact Error: " + err.Error())
+      return
     }
 
     for _, qff := range qffs {
@@ -143,7 +146,8 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
         _, err := tx.Exec(indexSql)
         if err != nil {
           tx.Rollback()
-          panic(err)
+          fmt.Fprintf(w, "An error occured while creating indexes on the document structure table. Exact Error: " + err.Error())
+          return
         }
       }
     }
@@ -201,26 +205,30 @@ func DeleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
   err = tx.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
     tx.Rollback()
-    panic(err)
+    fmt.Fprintf(w, "Error occurred when trying to get document structure id. Exact Error: " + err.Error())
+    return
   }
 
   _, err = tx.Exec("delete from qf_fields where formid = ?", id)
   if err != nil {
     tx.Rollback()
-    panic(err)
+    fmt.Fprintf(w, "Error occurred when deleting document structure fields. Exact Error: " + err.Error())
+    return
   }
 
   _, err = tx.Exec("delete from qf_document_structures where doc_name = ?", doc)
   if err != nil {
     tx.Rollback()
-    panic(err)
+    fmt.Fprintf(w, "Error occurred when deleting document structure. Exact Error: " + err.Error())
+    return
   }
 
   sql := fmt.Sprintf("drop table `%s`", tableName(doc))
   _, err = tx.Exec(sql)
   if err != nil {
     tx.Rollback()
-    panic(err)
+    fmt.Fprintf(w, "Error occurred when dropping document structure table. Exact Error: " + err.Error())
+    return
   }
 
   http.Redirect(w, r, "/list-document-structures/", 307)

@@ -11,6 +11,7 @@ import (
   "os/exec"
   "strconv"
   "database/sql"
+  "math"
 )
 
 
@@ -176,8 +177,8 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func EditDocument(w http.ResponseWriter, r *http.Request) {
-  useridUint64, err := GetCurrentUser(r)
+func UpdateDocument(w http.ResponseWriter, r *http.Request) {
+  _, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
     return
@@ -321,7 +322,7 @@ func EditDocument(w http.ResponseWriter, r *http.Request) {
 
 
 func ListDocuments(w http.ResponseWriter, r *http.Request) {
-  useridUint64, err := GetCurrentUser(r)
+  _, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
     return
@@ -329,6 +330,17 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 
   vars := mux.Vars(r)
   doc := vars["document-structure"]
+  page := vars["page"]
+  var pageI uint64
+  if page != "" {
+    pageI, err = strconv.ParseUint(page, 10, 64)
+    if err != nil {
+      fmt.Fprintf(w, "The page number is invalid. Exact Error: " + err.Error())
+      return
+    }
+  } else {
+    pageI = 1
+  }
 
   if ! docExists(doc, w) {
     fmt.Fprintf(w, "The document structure %s does not exists.", doc)
@@ -347,7 +359,7 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 
   var count uint64
   sqlStmt := fmt.Sprintf("select count(*) from `%s`", tableName(doc))
-  err := SQLDB.QueryRow(sqlStmt).Scan(&count)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     fmt.Fprintf(w, "There are no documents to display.")
     return
@@ -376,11 +388,17 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
   if err = rows.Err(); err != nil {
     panic(err)
   }
+  colNames = append(colNames, "created", "created_by")
+
+  var itemsPerPage uint64 = 50
+  startIndex := (pageI - 1) * itemsPerPage
+  totalItems := count
+  totalPages := math.Ceil( float64(totalItems) / float64(itemsPerPage) )
 
   ids := make([]uint64, 0)
   var idd uint64
-  sqlStmt = fmt.Sprintf("select id from `%s` order by id asc limit 50", tableName(doc))
-  rows, err = SQLDB.Query(sqlStmt)
+  sqlStmt = fmt.Sprintf("select id from `%s` order by id asc limit ?, ?", tableName(doc))
+  rows, err = SQLDB.Query(sqlStmt, startIndex, itemsPerPage)
   if err != nil {
     panic(err)
   }
@@ -411,7 +429,7 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     for _, col := range colNames {
       var data string
       var dataFromDB sql.NullString
-      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d order by id asc limit 50", col, tableName(doc), id)
+      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", col, tableName(doc), id)
       err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
       if err != nil {
         panic(err)
@@ -432,16 +450,21 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     DocName string
     ColNames []string
     MyRows []Row
+    CurrentPage uint64
+    Pages []uint64
   }
-
-  ctx := Context{doc, colNames, myRows}
+  pages := make([]uint64, 0)
+  for i := uint64(0); i < uint64(totalPages); i++ {
+    pages = append(pages, i+1)
+  }
+  ctx := Context{doc, colNames, myRows, pageI, pages}
   tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/list-documents.html")))
   tmpl.Execute(w, ctx)
 }
 
 
 func DeleteDocument(w http.ResponseWriter, r *http.Request) {
-  useridUint64, err := GetCurrentUser(r)
+  _, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
     return
@@ -468,7 +491,7 @@ func DeleteDocument(w http.ResponseWriter, r *http.Request) {
 
   var count uint64
   sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(doc), docid)
-  err := SQLDB.QueryRow(sqlStmt).Scan(&count)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     fmt.Fprintf(w, "The document with id %s do not exists", docid)
     return
