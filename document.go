@@ -397,7 +397,7 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 
   ids := make([]uint64, 0)
   var idd uint64
-  sqlStmt = fmt.Sprintf("select id from `%s` order by id asc limit ?, ?", tableName(doc))
+  sqlStmt = fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(doc))
   rows, err = SQLDB.Query(sqlStmt, startIndex, itemsPerPage)
   if err != nil {
     panic(err)
