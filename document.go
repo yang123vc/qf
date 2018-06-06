@@ -171,7 +171,8 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
       exec.Command(cmdString, "n", strconv.FormatInt(lastid, 10)).Run()
     }
 
-    fmt.Fprintln(w, "Successfully inserted values.")
+    redirectURL := fmt.Sprintf("/doc/%s/list/", doc)
+    http.Redirect(w, r, redirectURL, 307)
   }
 
 }
@@ -315,7 +316,8 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
       exec.Command(cmdString, "e", docid).Run()
     }
 
-    fmt.Fprintln(w, "Successfully updated.")
+    redirectURL := fmt.Sprintf("/doc/%s/list/", doc)
+    http.Redirect(w, r, redirectURL, 307)
   }
 
 }

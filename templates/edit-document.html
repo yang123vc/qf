@@ -46,7 +46,7 @@
         {{ else }}
           <label>{{.Label}}</label>
         {{ end }}
-        
+
         {{ if eq .Type "Check"}}
           {{ if eq .Data "t"}}
             <input type="checkbox" name="{{.Name}}" checked>
@@ -95,6 +95,9 @@
           {{else}}
             <input type="number" name="{{.Name}}" value="{{.Data}}">
           {{end}}
+
+        {{else if eq .Type "Read Only" }}
+          <input type="text" name="{{.Name}}" value="{{.Data}}" disabled/>
 
         {{ else if eq .Type "Select"}}
           <select name="{{.Name}}">
