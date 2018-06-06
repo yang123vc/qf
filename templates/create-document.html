@@ -24,7 +24,12 @@
   <form method="post" action="">
     {{range .DDs}}
       <div>
-        <label>{{.Label}}</label>
+        {{ if eq .Type "Section Break"}}
+          <h4>{{.Label}}</h4>
+        {{ else }}
+          <label>{{.Label}}</label>
+        {{ end }}
+        
         {{ if eq .Type "Check"}}
           <input type="checkbox" name="{{.Name}}">
 

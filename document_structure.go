@@ -99,12 +99,10 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
         sql += "int"
       } else if qff.type_ == "Link" {
         sql += "bigint unsigned"
-      } else if qff.type_ == "Data" || qff.type_ == "Email" || qff.type_ == "URL" || qff.type_ == "Section Break" {
+      } else if qff.type_ == "Data" || qff.type_ == "Email" || qff.type_ == "URL" || qff.type_ == "Select" || qff.type_ == "Read Only" {
         sql += "varchar(255)"
-      } else if qff.type_ == "Text" || qff.type_ == "Table" {
+      } else if qff.type_ == "Text" {
         sql += "text"
-      } else if qff.type_ == "Select" || qff.type_ == "Read Only"{
-        sql += "varchar(255)"
       }
       if optionSearch(qff.options, "required") {
         sql += " not null"
