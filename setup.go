@@ -89,8 +89,6 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
     _, err = tx.Exec(`create table qf_document_structures (
       id int not null auto_increment,
       doc_name varchar(100) not null,
-      child_table char(1),
-      singleton char(1),
       primary key (id),
       unique (doc_name)
       )`)
@@ -103,15 +101,15 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
     // create fields table
     _, err = tx.Exec(`create table qf_fields (
       id int not null auto_increment,
-      formid int not null,
+      dsid int not null,
       label varchar(100) not null,
       name varchar(100) not null,
       type varchar(100) not null,
       options varchar(255),
       other_options varchar(255),
       primary key (id),
-      foreign key (formid) references qf_document_structures(id),
-      unique (formid, name)
+      foreign key (dsid) references qf_document_structures(id),
+      unique (dsid, name)
       )`)
     if err != nil {
       tx.Rollback()

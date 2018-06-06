@@ -52,22 +52,8 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     }
 
     tx, _ := SQLDB.Begin()
-    var singleton string
-    if r.FormValue("singleton") != "" {
-      singleton = "t"
-    } else {
-      singleton = "f"
-    }
 
-    var childTable string
-    if r.FormValue("child-table") != "" {
-      childTable = "t"
-    } else {
-      childTable = "f"
-    }
-
-    res, err := tx.Exec(`insert into qf_document_structures(doc_name, child_table, singleton)
-      values(?, ?, ?)`, r.FormValue("doc-name"), childTable, singleton)
+    res, err := tx.Exec(`insert into qf_document_structures(doc_name) values(?)`, r.FormValue("doc-name"))
     if err != nil {
       tx.Rollback()
       fmt.Fprintf(w, "An error ocurred while saving this document structure. Exact Error: " + err.Error())
@@ -75,7 +61,7 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     }
 
     formId, _:= res.LastInsertId()
-    stmt, err := tx.Prepare(`insert into qf_fields(formid, label, name, type, options, other_options)
+    stmt, err := tx.Prepare(`insert into qf_fields(dsid, label, name, type, options, other_options)
       values(?, ?, ?, ?, ?, ?)`)
     if err != nil {
       tx.Rollback()
@@ -209,7 +195,7 @@ func DeleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  _, err = tx.Exec("delete from qf_fields where formid = ?", id)
+  _, err = tx.Exec("delete from qf_fields where dsid = ?", id)
   if err != nil {
     tx.Rollback()
     fmt.Fprintf(w, "Error occurred when deleting document structure fields. Exact Error: " + err.Error())
@@ -287,13 +273,8 @@ func ViewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   var id int
   err = SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
-    panic(err)
-  }
-
-  var childTable, singleton string
-  err = SQLDB.QueryRow("select child_table, singleton from qf_document_structures where id = ?", id).Scan(&childTable, &singleton)
-  if err != nil {
-    panic(err)
+    fmt.Fprintf(w, "An error occured when trying to get the document structure id. Exact Error: " + err.Error())
+    return
   }
 
   docDatas := getDocData(id)

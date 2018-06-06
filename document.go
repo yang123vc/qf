@@ -29,7 +29,7 @@ func getDocData(formId int) []DocData{
   var label, name, type_, options, otherOptions string
 
   dds := make([]DocData, 0)
-  rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where formid = ? order by id asc", formId)
+  rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where dsid = ? order by id asc", formId)
   if err != nil {
     panic(err)
   }
@@ -373,7 +373,7 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 
   colNames := make([]string, 0)
   var colName string
-  rows, err := SQLDB.Query("select name from qf_fields where formid = ? order by id asc limit 3", id)
+  rows, err := SQLDB.Query("select name from qf_fields where dsid = ? order by id asc limit 3", id)
   if err != nil {
     panic(err)
   }
