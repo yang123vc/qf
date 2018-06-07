@@ -1,8 +1,7 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Edit {{.DocName}} Document</title>
+{{define "title"}} Edit {{.DocName}} Document {{end}}
+
+
+{{define "styles"}}
   <style>
   label {
     display: block;
@@ -28,8 +27,10 @@
     background-color: #ccc;
   }
   </style>
-</head>
-<body>
+{{end}}
+
+
+{{define "main"}}
   <h3>Edit {{.DocName}} Document</h3>
 
   <span> Creation Date : <b>{{.Created}}</b></span><br>
@@ -130,5 +131,4 @@
     </div>
   </form>
 
-</body>
-</html>
+{{end}}

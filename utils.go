@@ -147,3 +147,13 @@ func doesCurrrentUserHavePerm(r *http.Request, object, permission string) (bool,
 
   return false, nil
 }
+
+
+func getBaseTemplate() string {
+  if BaseTemplate != "" {
+    return BaseTemplate
+  } else {
+    badBasePath := filepath.Join(getProjectPath(), "templates/bad-base.html")
+    return badBasePath
+  }
+}

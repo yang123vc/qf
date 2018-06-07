@@ -1,8 +1,7 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset='utf-8'>
-  <title>View Document Structure of {{.DocName}}</title>
+{{define "title"}}View Document Structure of {{.DocName}}{{end}}
+
+
+{{define "styles"}}
   <style>
   thead {
     font-weight: bold;
@@ -26,8 +25,10 @@
     background-color: #ccc;
   }
   </style>
-</head>
-<body>
+{{end}}
+
+
+{{define "main"}}
   <h2>View Document Structure of {{.DocName}}</h2>
 
   <h3>Field Data</h3>
@@ -82,5 +83,5 @@
     </tbody>
   </table>
   <a href="/edit-document-structure-permissions/{{.DocName}}/">Edit Permissions</a>
-</body>
-</html>
+  
+{{end}}

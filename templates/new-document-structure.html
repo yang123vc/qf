@@ -1,8 +1,7 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>New Document Structure</title>
+{{define "title"}}New Document Structure{{end}}
+
+
+{{define "styles"}}
   <style>
   thead {
     font-weight: bold;
@@ -23,8 +22,10 @@
     color: red;
   }
   </style>
-</head>
-<body>
+{{end}}
+
+
+{{define "main"}}
   <h1>New Document Structure</h1>
   <span id='error-box'></span>
   <form method="post" action="">
@@ -86,7 +87,10 @@
     <button id='new-field'>Add Field</button><br><br>
     <button type="submit">Create</button>
   </form>
-  <script src="/jquery/"></script>
+{{end}}
+
+
+{{define "scripts"}}
   <script>
   var docNames = "{{.DocNames}}";
 
@@ -231,5 +235,4 @@
   });
 
   </script>
-</body>
-</html>
+{{end}}

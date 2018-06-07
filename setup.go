@@ -13,6 +13,7 @@ var SiteDB string
 var UsersTable string
 var Admins []uint64
 var GetCurrentUser func(r *http.Request) (uint64, error)
+var BaseTemplate string
 
 
 func QFSetup(w http.ResponseWriter, r *http.Request) {

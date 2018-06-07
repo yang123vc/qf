@@ -144,7 +144,9 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
       DocNames string
     }
     ctx := Context{strings.Join(getDocNames(w), ",")}
-    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/new-document-structure.html")))
+
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/new-document-structure.html")
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
   }
 }
@@ -160,7 +162,9 @@ func ListDocumentStructures(w http.ResponseWriter, r *http.Request) {
     DocNames []string
   }
   ctx := Context{DocNames: getDocNames(w)}
-  tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/list-document-structures.html")))
+
+  fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-document-structures.html")
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
 }
 
@@ -295,7 +299,8 @@ func ViewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   ctx := Context{doc, docDatas, id, add, rps}
-  tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/view-document-structure.html")))
+  fullTemplatePath := filepath.Join(getProjectPath(), "templates/view-document-structure.html")
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
 }
 
@@ -341,7 +346,8 @@ func EditDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
     }
 
     ctx := Context{doc, rps, len(rps), roles}
-    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-document-structure-permissions.html")))
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-document-structure-permissions.html")
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {

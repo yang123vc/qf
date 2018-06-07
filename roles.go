@@ -60,7 +60,8 @@ func RolesView(w http.ResponseWriter, r *http.Request) {
       NumberOfRoles int
     }
     ctx := Context{roles, len(roles)}
-    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/roles-view.html")))
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/roles-view.html")
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
@@ -210,7 +211,8 @@ func UsersToRolesList(w http.ResponseWriter, r *http.Request) {
     UserDatas []UserData
   }
   ctx := Context{udsNoDuplicates}
-  tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/users-to-roles-list.html")))
+  fullTemplatePath := filepath.Join(getProjectPath(), "templates/users-to-roles-list.html")
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
 }
 
@@ -286,7 +288,8 @@ func EditUserRoles(w http.ResponseWriter, r *http.Request) {
     }
 
     ctx := Context{userid, userRoles, strings.Join(roles, ","), firstname + " " + surname}
-    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-user-roles.html")))
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-user-roles.html")
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {

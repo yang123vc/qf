@@ -99,7 +99,8 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
       DDs []DocData
     }
     ctx := Context{doc, dds}
-    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/create-document.html")))
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/create-document.html")
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
@@ -267,7 +268,8 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
     }
 
     ctx := Context{created, modified, doc, docAndStructureSlice, docid, firstname, surname, created_by}
-    tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/edit-document.html")))
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-document.html")
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
@@ -460,7 +462,8 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     pages = append(pages, i+1)
   }
   ctx := Context{doc, colNames, myRows, pageI, pages}
-  tmpl := template.Must(template.ParseFiles(filepath.Join(getProjectPath(), "templates/list-documents.html")))
+  fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-documents.html")
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
 }
 

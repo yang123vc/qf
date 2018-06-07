@@ -1,16 +1,17 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Roles List And Creation</title>
+{{define "title"}}Roles List And Creation{{end}}
+
+
+{{define "styles"}}
   <style>
   #error-box {
     margin-bottom: 5px;
     display: none;
   }
   </style>
-</head>
-<body>
+{{end}}
+
+
+{{define "main"}}
   <h3>Roles List And Creation</h3>
   {{if .NumberOfRoles}}
   <ol>
@@ -33,5 +34,4 @@
       <input type="submit" value="Create Role" />
     </div>
   </form>
-</body>
-</html>
+{{end}}

@@ -1,16 +1,17 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Edit Roles of User {{.FullName}}</title>
+{{define "title"}}Edit Roles of User {{.FullName}} {{end}}
+
+
+{{define "styles"}}
   <style>
   #error-box {
     display: none;
     color: red;
   }
   </style>
-</head>
-<body>
+{{end}}
+
+
+{{define "main"}}
   <h3> Edit Roles of User {{.FullName}} </h3>
   <h4> Delete Roles Section</h4>
   {{range .UserRoles}}
@@ -29,8 +30,10 @@
       <input type="submit" value="Submit" />
     </div>
   </form>
+{{end}}
 
-  <script src="/jquery/"></script>
+
+{{define "scripts"}}
   <script>
   var rolesStr = "{{.RolesStr}}";
 
@@ -59,5 +62,5 @@
   });
 
   </script>
-</body>
-</html>
+
+{{end}}
