@@ -21,6 +21,18 @@ Get the framework through the following command
 
 There is a sample application which details how to complete the setup. Take a look at it [here](https://github.com/bankole7782/qf_example)
 
+After copying the paths in the sample, go to `/qf-setup/` to create some tables that
+the project would need.
+
+
+
+## Theming Your Project
+
+The sample project has no design. To add yours copy the template `templates/bad-base.html` to your project.
+Edit it and then point your version to `qf.BaseTemplate` before registering any handlers.
+
+
+
 ## License
 
 Released with the MIT License
