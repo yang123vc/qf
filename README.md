@@ -33,6 +33,30 @@ Edit it and then point your version to `qf.BaseTemplate` before registering any 
 
 
 
+## Adding Extra Code to Your Project
+
+Extra code does things like document validation, after save actions like sending emails, updating read only values.
+
+Steps:
+
+1. Go to `/view-document-structure/{document-structure}/` where document-structure is changed to
+  the name of a document structure that you created.
+
+2. You would see some instructions on the name of the command to create.
+
+3. The command is expected going to receive some arguments.
+
+  1.  For validation `qfec3 v {jsonstring}` where jsonString is a json representation of the input.
+  If you print from this command, it would be returned as an error to the page.
+
+  2. For after new save `qfec3 n {id}` where id is the primary key of the newly created document.
+
+  3. For after update `qfec3 u {id}` where id is the primary key of the updated document.
+
+3. Create the command and add it to path.
+
+
+
 ## License
 
 Released with the MIT License

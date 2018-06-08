@@ -219,6 +219,7 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "An error occurred when reading document structure. Exact Error" + err.Error())
     return
   }
+  cmdString := fmt.Sprintf("qfec%d", id)
 
   docDatas := getDocData(id)
 
@@ -274,6 +275,23 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
 
   } else if r.Method == http.MethodPost {
 
+    // first check if it passes the extra code validation for this document.
+    r.ParseForm()
+    fData := make(map[string]string)
+    for k := range r.PostForm {
+      fData[k] = r.FormValue(k)
+    }
+    jsonString, err := json.Marshal(fData)
+
+    _, err = exec.LookPath(cmdString)
+    if err == nil {
+      out, err := exec.Command(cmdString, "v", string(jsonString)).Output()
+      if err == nil && string(out) != "" {
+        fmt.Fprintln(w, "Extra Code Validation Error: " + string(out))
+        return
+      }
+    }
+
     colNames := make([]string, 0)
     formData := make([]string, 0)
     for _, docAndStructure := range docAndStructureSlice {
@@ -305,17 +323,16 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
     }
 
     sqlStmt := fmt.Sprintf("update `%s` set %s where id = %s", tableName(doc), strings.Join(updatePartStmt, ", "), docid)
-    _, err := SQLDB.Exec(sqlStmt)
+    _, err = SQLDB.Exec(sqlStmt)
     if err != nil {
       fmt.Fprintf(w, "An error occured while saving: " + err.Error())
       return
     }
 
     // post save extra code
-    cmdString := fmt.Sprintf("qfec%d", id)
     _, err = exec.LookPath(cmdString)
     if err == nil {
-      exec.Command(cmdString, "e", docid).Run()
+      exec.Command(cmdString, "u", docid).Run()
     }
 
     redirectURL := fmt.Sprintf("/doc/%s/list/", doc)
