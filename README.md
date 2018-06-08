@@ -1,6 +1,6 @@
 # qf
 
-__qf : quick forms__
+**qf : quick forms**
 
 The method in use here is to mix it with complicated forms. This provides the
 benefits of one installation ( reducing server maintenance works) and also using
@@ -39,21 +39,21 @@ Extra code does things like document validation, after save actions like sending
 
 Steps:
 
-1. Go to `/view-document-structure/{document-structure}/` where document-structure is changed to
+- Go to `/view-document-structure/{document-structure}/` where document-structure is changed to
   the name of a document structure that you created.
 
-2. You would see some instructions on the name of the command to create.
+- You would see some instructions on the name of the command to create.
 
-3. The command is expected going to receive some arguments.
+- The command is expected going to receive some arguments.
 
-  1.  For validation `qfec3 v {jsonstring}` where jsonString is a json representation of the input.
-  If you print from this command, it would be returned as an error to the page.
+  - For validation `qfec3 v {jsonstring}` where jsonString is a json representation of the input.
+    If you print from this command, it would be returned as an error to the page.
 
-  2. For after new save `qfec3 n {id}` where id is the primary key of the newly created document.
+  - For after new save `qfec3 n {id}` where id is the primary key of the newly created document.
 
-  3. For after update `qfec3 u {id}` where id is the primary key of the updated document.
+  - For after update `qfec3 u {id}` where id is the primary key of the updated document.
 
-3. Create the command and add it to path.
+- Create the command and add it to path.
 
 
 
