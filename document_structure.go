@@ -152,8 +152,15 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func JQuery(w http.ResponseWriter, r *http.Request) {
-  http.ServeFile(w, r, filepath.Join(getProjectPath(), "statics/jquery-3.3.1.min.js"))
+func ServeJS(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  lib := vars["library"]
+
+  if lib == "jquery" {
+    http.ServeFile(w, r, filepath.Join(getProjectPath(), "statics/jquery-3.3.1.min.js"))
+  } else if lib == "autosize" {
+    http.ServeFile(w, r, filepath.Join(getProjectPath(), "statics/autosize.min.js"))
+  }
 }
 
 
@@ -167,7 +174,7 @@ func ListDocumentStructures(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
-  
+
   type Context struct {
     DocNames []string
   }

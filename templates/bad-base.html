@@ -9,7 +9,13 @@
 </head>
 <body>
   {{block "main" .}} {{end}}
-  <script src="/jquery/"></script>
+  <script src="/serve-js/jquery/"></script>
+  <script src="/serve-js/autosize/"></script>
+  <script>
+  $(document).ready(function() {
+    autosize($('textarea'));
+  });
+  </script>
   {{block "scripts" .}} {{end}}
 </body>
 </html>
