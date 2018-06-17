@@ -73,7 +73,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  truthValue, err := doesCurrrentUserHavePerm(r, doc, "create")
+  truthValue, err := doesCurrentUserHavePerm(r, doc, "create")
   if err != nil {
     fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
     return
@@ -195,7 +195,7 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  truthValue, err := doesCurrrentUserHavePerm(r, doc, "update")
+  truthValue, err := doesCurrentUserHavePerm(r, doc, "read")
   if err != nil {
     fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
     return
@@ -266,15 +266,32 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
       FirstName string
       Surname string
       CreatedBy uint64
+      UpdatePerm bool
+      DeletePerm bool
     }
 
-    ctx := Context{created, modified, doc, docAndStructureSlice, docid, firstname, surname, created_by}
+    tv2, err2 := doesCurrentUserHavePerm(r, doc, "update")
+    tv3, err3 := doesCurrentUserHavePerm(r, doc, "delete")
+    if err2 != nil || err3 != nil {
+      fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
+      return
+    }
+    ctx := Context{created, modified, doc, docAndStructureSlice, docid, firstname, surname, created_by, tv2, tv3}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-document.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
-
+    tv2, err2 := doesCurrentUserHavePerm(r, doc, "update")
+    if err2 != nil {
+      fmt.Fprintf(w, "Error checking for permissions for this page. Exact Error: " + err.Error())
+      return
+    }
+    if ! tv2 {
+      fmt.Fprintf(w, "You don't have permissions to update this document.")
+      return
+    }
+    
     // first check if it passes the extra code validation for this document.
     r.ParseForm()
     fData := make(map[string]string)
@@ -368,7 +385,7 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  truthValue, err := doesCurrrentUserHavePerm(r, doc, "read")
+  truthValue, err := doesCurrentUserHavePerm(r, doc, "read")
   if err != nil {
     fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
     return
@@ -466,19 +483,30 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
   }
 
 
-  // fmt.Fprintln(w, myRows)
   type Context struct {
     DocName string
     ColNames []string
     MyRows []Row
     CurrentPage uint64
     Pages []uint64
+    CreatePerm bool
+    UpdatePerm bool
+    DeletePerm bool
   }
   pages := make([]uint64, 0)
   for i := uint64(0); i < uint64(totalPages); i++ {
     pages = append(pages, i+1)
   }
-  ctx := Context{doc, colNames, myRows, pageI, pages}
+
+  tv1, err1 := doesCurrentUserHavePerm(r, doc, "create")
+  tv2, err2 := doesCurrentUserHavePerm(r, doc, "update")
+  tv3, err3 := doesCurrentUserHavePerm(r, doc, "delete")
+  if err1 != nil || err2 != nil || err3 != nil {
+    fmt.Fprintf(w, "An error occurred when getting permissions of this object for this user.")
+    return
+  }
+
+  ctx := Context{doc, colNames, myRows, pageI, pages, tv1, tv2, tv3}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-documents.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
@@ -501,7 +529,7 @@ func DeleteDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  truthValue, err := doesCurrrentUserHavePerm(r, doc, "delete")
+  truthValue, err := doesCurrentUserHavePerm(r, doc, "delete")
   if err != nil {
     fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
     return

@@ -31,8 +31,10 @@
 {{define "main"}}
   <h3>Lists of {{.DocName}} Documents</h3>
 
-  <a class="button-look" href="/doc/{{.DocName}}/create/">Create {{.DocName}} Document</a>
-  <br><br>
+  {{ if eq $.CreatePerm true}}
+    <a class="button-look" href="/doc/{{.DocName}}/create/">Create {{.DocName}} Document</a>
+    <br><br>
+  {{ end}}
 
   <table>
     <thead>
@@ -52,8 +54,14 @@
             <td>{{.Data }}</td>
           {{end}}
           <td>
-            <a class='button-look' href='/doc/{{$.DocName}}/update/{{.Id}}/'>View/Edit</a>
-            <a class='button-look' href='/doc/{{$.DocName}}/delete/{{.Id}}/'>Delete</a>
+            <a class='button-look' href='/doc/{{$.DocName}}/update/{{.Id}}/'>
+              {{ if $.UpdatePerm }}
+                View/Edit
+              {{ else }}
+                View
+              {{ end }}
+            </a>
+            {{ if $.DeletePerm }}<a class='button-look' href='/doc/{{$.DocName}}/delete/{{.Id}}/'>Delete</a> {{end}}
           </td>
         </tr>
       {{end}}

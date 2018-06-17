@@ -30,13 +30,12 @@ func optionSearch(commaSeperatedOptions, option string) bool {
     for _, opt := range options {
       optionsTrimmed = append(optionsTrimmed, strings.TrimSpace(opt))
     }
-    sort.Strings(optionsTrimmed)
-    i := sort.SearchStrings(optionsTrimmed, option)
-    if i != len(options) {
-      return true
-      } else {
-        return false
+    for _, value := range optionsTrimmed {
+      if option == value {
+        return true
       }
+    }
+    return false
   }
 }
 
@@ -104,7 +103,7 @@ func isUserAdmin(r *http.Request) (bool, error) {
 }
 
 
-func doesCurrrentUserHavePerm(r *http.Request, object, permission string) (bool, error) {
+func doesCurrentUserHavePerm(r *http.Request, object, permission string) (bool, error) {
   adminTruth, err := isUserAdmin(r)
   if err == nil && adminTruth {
     return true, nil
@@ -130,7 +129,6 @@ func doesCurrrentUserHavePerm(r *http.Request, object, permission string) (bool,
     err = SQLDB.QueryRow("select count(*) from qf_permissions where object = ? and roleid = ?", object, rid).Scan(&count)
     if err != nil {
       return false, err
-      // panic(err)
     }
     if count == 0 {
       continue
@@ -138,7 +136,7 @@ func doesCurrrentUserHavePerm(r *http.Request, object, permission string) (bool,
     var permissions string
     err = SQLDB.QueryRow("select permissions from qf_permissions where object = ? and roleid = ?", object, rid).Scan(&permissions)
     if err != nil {
-      return false, nil
+      return false, err
     }
     if optionSearch(permissions, permission) {
       return true, nil

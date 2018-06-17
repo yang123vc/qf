@@ -1,4 +1,4 @@
-{{define "title"}} Edit {{.DocName}} Document {{end}}
+{{define "title"}} Update {{.DocName}} Document {{end}}
 
 
 {{define "styles"}}
@@ -36,9 +36,10 @@
   <span> Creation Date : <b>{{.Created}}</b></span><br>
   <span> Last Modification Date : <b>{{.Modified}}</b></span><br>
   <span> Created By : <b>{{.FirstName}} {{.Surname}} with User id {{.CreatedBy}} <b><br><br>
-
-  <a class='button-look' href='/doc/{{.DocName}}/delete/{{.Id}}/'>Delete</a><br><br>
-
+  {{ if $.DeletePerm }}
+    <a class='button-look' href='/doc/{{.DocName}}/delete/{{.Id}}/'>Delete</a><br><br>
+  {{end}}
+  
   <form method="post" action="">
     {{range .DocAndStructures}}
       <div>
@@ -127,7 +128,9 @@
     {{end}}
 
     <div>
-      <input type="submit" value="Save" >
+      {{ if $.UpdatePerm }}
+        <input type="submit" value="Save" >
+      {{ end}}
     </div>
   </form>
 
