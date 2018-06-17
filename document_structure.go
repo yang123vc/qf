@@ -158,6 +158,16 @@ func JQuery(w http.ResponseWriter, r *http.Request) {
 
 
 func ListDocumentStructures(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+  
   type Context struct {
     DocNames []string
   }
