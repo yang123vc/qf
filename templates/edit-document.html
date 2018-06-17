@@ -39,7 +39,7 @@
   {{ if $.DeletePerm }}
     <a class='button-look' href='/doc/{{.DocName}}/delete/{{.Id}}/'>Delete</a><br><br>
   {{end}}
-  
+
   <form method="post" action="">
     {{range .DocAndStructures}}
       <div>
@@ -134,4 +134,15 @@
     </div>
   </form>
 
+{{end}}
+
+
+{{define "scripts"}}
+  {{ if eq $.UpdatePerm false}}
+    <script>
+    $(document).ready(function() {
+      $('input, textarea, select').attr('disabled', 'disabled');
+    })
+    </script>
+  {{end}}
 {{end}}
