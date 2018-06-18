@@ -291,7 +291,7 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
       fmt.Fprintf(w, "You don't have permissions to update this document.")
       return
     }
-    
+
     // first check if it passes the extra code validation for this document.
     r.ParseForm()
     fData := make(map[string]string)
@@ -360,7 +360,7 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
 
 
 func ListDocuments(w http.ResponseWriter, r *http.Request) {
-  _, err := GetCurrentUser(r)
+  useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
     return
@@ -385,12 +385,14 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  truthValue, err := doesCurrentUserHavePerm(r, doc, "read")
-  if err != nil {
-    fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
+  tv1, err1 := doesCurrentUserHavePerm(r, doc, "read")
+  tv2, err2 := doesCurrentUserHavePerm(r, doc, "read-only-created")
+  if err1 != nil || err2 != nil {
+    fmt.Fprintf(w, "Error occured while determining if the user have read permission for this page.")
     return
   }
-  if ! truthValue {
+
+  if ! tv1 && ! tv2 {
     fmt.Fprintf(w, "You don't have the read permission for this document structure.")
     return
   }
@@ -406,7 +408,7 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
   var id int
   err = SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
   if err != nil {
-    panic(err)
+    fmt.Fprintf(w, "An internal error occured. Exact Error: " + err.Error())
   }
 
   colNames := make([]string, 0)
@@ -435,7 +437,13 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 
   ids := make([]uint64, 0)
   var idd uint64
-  sqlStmt = fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(doc))
+  if tv2 && tv1 {
+    sqlStmt = fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(doc))
+  } else if tv2 {
+    sqlStmt = fmt.Sprintf("select id from `%s` where created_by = %d order by created desc limit ?, ?", tableName(doc), useridUint64 )
+  } else {
+    sqlStmt = fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(doc))
+  }
   rows, err = SQLDB.Query(sqlStmt, startIndex, itemsPerPage)
   if err != nil {
     panic(err)
@@ -460,7 +468,17 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
   type Row struct {
     Id uint64
     ColAndDatas []ColAndData
+    RowUpdatePerm bool
+    RowDeletePerm bool
   }
+
+  uocPerm, err1 := doesCurrentUserHavePerm(r, doc, "update-only-created")
+  docPerm, err2 := doesCurrentUserHavePerm(r, doc, "delete-only-created")
+  if err1 != nil || err2 != nil {
+    fmt.Fprintf(w, "Error occured while determining if the user have read permission for this page.")
+    return
+  }
+
   myRows := make([]Row, 0)
   for _, id := range ids {
     colAndDatas := make([]ColAndData, 0)
@@ -470,7 +488,8 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
       sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", col, tableName(doc), id)
       err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
       if err != nil {
-        panic(err)
+        fmt.Fprintf(w, "An internal error occured. Exact Error: " + err.Error())
+        return
       }
       if dataFromDB.Valid {
         data = dataFromDB.String
@@ -479,7 +498,23 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
       }
       colAndDatas = append(colAndDatas, ColAndData{col, data})
     }
-    myRows = append(myRows, Row{id, colAndDatas})
+
+    var createdBy uint64
+    sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %d", tableName(doc), id)
+    err := SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
+    if err != nil {
+      fmt.Fprintf(w, "An internal error occured. Exact Error: " + err.Error())
+      return
+    }
+    rup := false
+    rdp := false
+    if createdBy == useridUint64 && uocPerm {
+      rup = true
+    }
+    if createdBy == useridUint64 && docPerm {
+      rdp = true
+    }
+    myRows = append(myRows, Row{id, colAndDatas, rup, rdp})
   }
 
 
@@ -498,8 +533,8 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     pages = append(pages, i+1)
   }
 
-  tv1, err1 := doesCurrentUserHavePerm(r, doc, "create")
-  tv2, err2 := doesCurrentUserHavePerm(r, doc, "update")
+  tv1, err1 = doesCurrentUserHavePerm(r, doc, "create")
+  tv2, err2 = doesCurrentUserHavePerm(r, doc, "update")
   tv3, err3 := doesCurrentUserHavePerm(r, doc, "delete")
   if err1 != nil || err2 != nil || err3 != nil {
     fmt.Fprintf(w, "An error occurred when getting permissions of this object for this user.")
@@ -514,7 +549,7 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 
 
 func DeleteDocument(w http.ResponseWriter, r *http.Request) {
-  _, err := GetCurrentUser(r)
+  useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
     return
@@ -529,16 +564,6 @@ func DeleteDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  truthValue, err := doesCurrentUserHavePerm(r, doc, "delete")
-  if err != nil {
-    fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
-    return
-  }
-  if ! truthValue {
-    fmt.Fprintf(w, "You don't have the delete permission for this document structure.")
-    return
-  }
-
   var count uint64
   sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(doc), docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
@@ -547,10 +572,49 @@ func DeleteDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tableName(doc), docid)
-  _, err = SQLDB.Exec(sqlStmt)
+  deletePerm, err := doesCurrentUserHavePerm(r, doc, "delete")
   if err != nil {
-    fmt.Fprintf(w, "An error occured: " + err.Error())
+    fmt.Fprintf(w, "Error occured while determining if the user have delete permission. Exact Error: " + err.Error())
+    return
+  }
+  docPerm, err := doesCurrentUserHavePerm(r, doc, "delete-only-created")
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while determining if the user have delete-only-created permission. Exact Error: " + err.Error())
+  }
+
+  if deletePerm {
+    sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tableName(doc), docid)
+    _, err = SQLDB.Exec(sqlStmt)
+    if err != nil {
+      fmt.Fprintf(w, "An error occured while deleting this document: " + err.Error())
+      return
+    }
+
+  } else if docPerm {
+
+    var createdBy uint64
+    sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %s", tableName(doc), docid)
+    err := SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
+    if err != nil {
+      fmt.Fprintf(w, "An internal error occured. Exact Error: " + err.Error())
+      return
+    }
+
+    if createdBy == useridUint64 {
+      sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tableName(doc), docid)
+      _, err = SQLDB.Exec(sqlStmt)
+      if err != nil {
+        fmt.Fprintf(w, "An error occured while deleting this document: " + err.Error())
+        return
+      }
+    } else {
+      fmt.Fprintf(w, "You don't have permissions to delete this document.")
+      return
+    }
+
+  } else {
+
+    fmt.Fprintf(w, "You don't have the delete permission for this document structure.")
     return
   }
 

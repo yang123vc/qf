@@ -55,13 +55,13 @@
           {{end}}
           <td>
             <a class='button-look' href='/doc/{{$.DocName}}/update/{{.Id}}/'>
-              {{ if $.UpdatePerm }}
+              {{ if or $.UpdatePerm .RowUpdatePerm}}
                 View/Edit
               {{ else }}
                 View
               {{ end }}
             </a>
-            {{ if $.DeletePerm }}<a class='button-look' href='/doc/{{$.DocName}}/delete/{{.Id}}/'>Delete</a> {{end}}
+            {{ if or $.DeletePerm .RowDeletePerm }}<a class='button-look' href='/doc/{{$.DocName}}/delete/{{.Id}}/'>Delete</a> {{end}}
           </td>
         </tr>
       {{end}}
