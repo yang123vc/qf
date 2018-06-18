@@ -180,7 +180,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
 
 
 func UpdateDocument(w http.ResponseWriter, r *http.Request) {
-  _, err := GetCurrentUser(r)
+  useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
     return
@@ -195,18 +195,39 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  truthValue, err := doesCurrentUserHavePerm(r, doc, "read")
+  readPerm, err := doesCurrentUserHavePerm(r, doc, "read")
   if err != nil {
-    fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
+    fmt.Fprintf(w, "Error occured while determining if the user have read permission for this document structure. Exact Error: " + err.Error())
     return
   }
-  if ! truthValue {
-    fmt.Fprintf(w, "You don't have the update permission for this document structure.")
+  rocPerm, err := doesCurrentUserHavePerm(r, doc, "read-only-created")
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while determining if the user have read-only-created permission for this document. Exact Error: " + err.Error())
     return
   }
 
+  var createdBy uint64
+  sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %s", tableName(doc), docid)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
+  if err != nil {
+    fmt.Fprintf(w, "An internal error occured. Exact Error: " + err.Error())
+    return
+  }
+
+  if ! readPerm {
+    if rocPerm {
+      if createdBy != useridUint64 {
+        fmt.Fprintf(w, "You are not the owner of this document so can't read it.")
+        return
+      }
+    } else {
+      fmt.Fprintf(w, "You don't have the update permission for this document structure.")
+      return
+    }
+  }
+
   var count uint64
-  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(doc), docid)
+  sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(doc), docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     fmt.Fprintf(w, "The document with id %s do not exists", docid)
@@ -270,13 +291,28 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
       DeletePerm bool
     }
 
-    tv2, err2 := doesCurrentUserHavePerm(r, doc, "update")
-    tv3, err3 := doesCurrentUserHavePerm(r, doc, "delete")
-    if err2 != nil || err3 != nil {
-      fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
+    updatePerm, err := doesCurrentUserHavePerm(r, doc, "update")
+    if err != nil {
+      fmt.Fprintf(w, "Error occured while determining if the user have update permission for this document structure. Exact Error: " + err.Error())
       return
     }
-    ctx := Context{created, modified, doc, docAndStructureSlice, docid, firstname, surname, created_by, tv2, tv3}
+    deletePerm, err := doesCurrentUserHavePerm(r, doc, "delete")
+    if err != nil {
+      fmt.Fprintf(w, "Error occured while determining if the user have delete permission for this document structure. Exact Error: " + err.Error())
+      return
+    }
+    uocPerm, err := doesCurrentUserHavePerm(r, doc, "update-only-created")
+    if err != nil {
+      fmt.Fprintf(w, "Error occured while determining if the user have update-only-created permission for this document. Exact Error: " + err.Error())
+      return
+    }
+
+    if ! updatePerm {
+      if uocPerm && createdBy == useridUint64 {
+        updatePerm = true
+      }
+    }
+    ctx := Context{created, modified, doc, docAndStructureSlice, docid, firstname, surname, created_by, updatePerm, deletePerm}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-document.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
@@ -287,9 +323,20 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
       fmt.Fprintf(w, "Error checking for permissions for this page. Exact Error: " + err.Error())
       return
     }
-    if ! tv2 {
-      fmt.Fprintf(w, "You don't have permissions to update this document.")
+    uocPerm, err := doesCurrentUserHavePerm(r, doc, "update-only-created")
+    if err != nil {
+      fmt.Fprintf(w, "Error checking for permissions of this page. Exact Error: " + err.Error())
       return
+    }
+
+    if ! tv2 {
+      if uocPerm && createdBy != useridUint64 {
+        fmt.Fprintf(w, "You are not the owner of this document. So can't update it.")
+        return
+      } else if ! uocPerm {
+        fmt.Fprintf(w, "You don't have permissions to update this document.")
+        return
+      }
     }
 
     // first check if it passes the extra code validation for this document.
