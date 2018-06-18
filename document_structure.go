@@ -228,6 +228,13 @@ func DeleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  _, err = tx.Exec("delete from qf_permissions where object = ?", doc)
+  if err != nil {
+    tx.Rollback()
+    fmt.Fprintf(w, "Error occurred when deleting document permissions. Exact Error: " + err.Error())
+    return
+  }
+
   sql := fmt.Sprintf("drop table `%s`", tableName(doc))
   _, err = tx.Exec(sql)
   if err != nil {
