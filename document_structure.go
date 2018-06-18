@@ -368,14 +368,17 @@ func EditDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
-
+    r.ParseForm()
     nrps := make([]RolePermissions, 0)
     for i := 1; i < 1000; i++ {
       p := strconv.Itoa(i)
       if r.FormValue("role-" + p) == "" {
         break
       } else {
-        rp := RolePermissions{r.FormValue("role-" + p), r.FormValue("permissions-" + p)}
+        if len(r.PostForm["perms-" + p]) == 0 {
+          continue
+        }
+        rp := RolePermissions{r.FormValue("role-" + p), strings.Join(r.PostForm["perms-" + p], ",")}
         nrps = append(nrps, rp)
       }
     }

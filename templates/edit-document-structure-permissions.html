@@ -21,9 +21,9 @@
 
   {{ if .LenRPS }}
     <h3>Delete Old Permissions Selection </h3>
-    <p>Help to edit a permission, delete and then add it a new</p>
+    <p>Help: To edit permissions on a role, delete and then add it a new</p>
 
-    <table>
+    <table id="delete-role-perms">
       <thead>
         <tr>
           <td>Role</td>
@@ -55,7 +55,7 @@
 
   <p id='error-box'></p>
   <form method="post" action="">
-    <table>
+    <table id="new-role-perms">
       <thead>
         <tr>
           <td>No</td>
@@ -73,7 +73,19 @@
             {{end}}
           </select>
         </td>
-        <td><input type="text" class="perms-input" name="permissions-1" required/></td>
+        <td>
+          <label>Read <input type="checkbox"  class="perms-checkbox" name="perms-1" value="read" /> </label>
+          <label>Create <input type="checkbox" class="perms-checkbox" name="perms-1" value="create" /> </label>
+          <label>Update <input type="checkbox" class="perms-checkbox" name="perms-1" value="update" /> </label>
+          <label>Delete <input type="checkbox" class="perms-checkbox" name="perms-1" value="delete" /> </label>
+          <br>
+          <label>Read Only Documents created by this Role <input type="checkbox" class="perms-checkbox" name="perms-1" value="read-only-created" /> </label>
+          <br>
+          <label>Update Only Documents created by this Role <input type="checkbox" class="perms-checkbox" name="perms-1" value="update-only-created" /> </label>
+          <br>
+          <label>Delete Only Documents created by this Role <input type="checkbox" class="perms-checkbox" name="perms-1" value="delete-only-created" /> </label>
+          <br><br>
+        </td>
         <td><button type="button" id="delete-role-1">Delete</button></td>
       </tr>
       </tbody>
@@ -97,12 +109,12 @@
   function deleteRoleHandler(e) {
     $(e.target).parents('tr').remove();
     // reset the numbers
-    $('tbody tr').each(function(i, el) {
+    $('#new-role-perms tbody tr').each(function(i, el) {
       var newNo = i + 1;
       var strNewNo = newNo.toString()
       $('td:first', el).text(strNewNo);
       $('.role-select', el).attr('name', 'role-' + strNewNo)
-      $('.perms-input', el).attr('name', 'permissions-' + strNewNo);
+      $('.perms-input', el).attr('name', 'perms-' + strNewNo);
     });
   }
 
@@ -114,7 +126,7 @@
     html = html.replace(re, newNo.toString());
 
     html = "<tr>" + html + "</tr>";
-    $('tbody').append(html);
+    $('#new-role-perms tbody').append(html);
 
     $('#delete-role-' + newNo.toString()).click(deleteRoleHandler);
     $('#delete-role-' + newNo.toString()).show();
@@ -138,22 +150,6 @@
           $('#error-box').text("Can't have two roles of the same name.");
           $('#error-box').show();
           return
-        }
-      }
-
-      var possiblePermissions = ['create', 'read', 'update', 'delete'];
-      for (i = 0; i < $('.perms-input').length; i++) {
-        var el = $('.perms-input')[i];
-        var elValue = $(el).val();
-        var elValueParts = elValue.split(',');
-
-        for (j = 0; j < elValueParts.length; j++) {
-          var str = elValueParts[j].trim()
-          if ( possiblePermissions.indexOf(str) == -1) {
-            $('#error-box').text("Permissions must be one of : create, read, update, delete")
-            $('#error-box').show()
-            return
-          }
         }
       }
 
