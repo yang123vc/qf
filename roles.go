@@ -9,7 +9,6 @@ import (
   "sort"
   "database/sql"
   "strconv"
-  "strings"
 )
 
 
@@ -283,29 +282,26 @@ func EditUserRoles(w http.ResponseWriter, r *http.Request) {
     type Context struct {
       UserId string
       UserRoles []string
-      RolesStr string
+      Roles []string
       FullName string
     }
 
-    ctx := Context{userid, userRoles, strings.Join(roles, ","), firstname + " " + surname}
+    ctx := Context{userid, userRoles, roles, firstname + " " + surname}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-user-roles.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
 
-    newRoles := strings.Split(r.FormValue("roles"), "\n")
+    r.ParseForm()
+    newRoles := r.PostForm["roles"]
     stmt, err := SQLDB.Prepare("insert into qf_user_roles(userid, roleid) values(?, ?)")
     if err != nil {
       fmt.Fprintf(w, "An error occured while trying to make prepared statemnt. Exact Error: " + err.Error())
       return
     }
     for _, str := range newRoles {
-      t := strings.TrimSpace(str)
-      if t == "" {
-        continue
-      }
-      roleid, err := getRoleId(t)
+      roleid, err := getRoleId(str)
       if err != nil {
         fmt.Fprintf(w, "An error occured while trying to get roleid. Exact Error: " + err.Error())
         return

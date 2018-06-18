@@ -19,48 +19,16 @@
   {{end}}
 
   <h4>Add Roles Section</h4>
-  <p>Enter each role on a new line.</p>
   <p id='error-box'></p>
   <form method="post" action="">
-    <div>
-      <label>Roles:</label> <br>
-      <textarea name="roles" required></textarea>
-    </div>
+    {{range .Roles}}
+      <div>
+        <label> {{.}} <input type="checkbox" name="roles" value="{{.}}" /> </label>
+      </div>
+    {{end}}
+    <br>
     <div>
       <input type="submit" value="Submit" />
     </div>
   </form>
-{{end}}
-
-
-{{define "scripts"}}
-  <script>
-  var rolesStr = "{{.RolesStr}}";
-
-  $(document).ready(function() {
-
-    $('form input[type=submit]').click(function(e) {
-      e.preventDefault();
-      $('#error-box').hide();
-
-      if (! $('form')[0].checkValidity()) {
-        return;
-      }
-
-      var existingRoles = rolesStr.split(',');
-      var newRoles = $('textarea[name=roles]').val().split('\n');
-      for (i = 0; i < newRoles.length; i++) {
-        if ( existingRoles.indexOf( newRoles[i] ) == -1) {
-          $('#error-box').text("Some of the roles have not yet been created.");
-          $('#error-box').show();
-          return;
-        }
-      }
-
-      $('form').submit();
-    });
-  });
-
-  </script>
-
 {{end}}
