@@ -21,6 +21,8 @@ Get the framework through the following command
 
 There is a sample application which details how to complete the setup. Take a look at it [here](https://github.com/bankole7782/qf_example)
 
+Make sure you look at `main.go` in the sample app and edit it to your own preferences.
+
 After copying the paths in the sample, go to `/qf-setup/` to create some tables that
 the project would need.
 
@@ -42,9 +44,9 @@ Steps:
 - Go to `/view-document-structure/{document-structure}/` where document-structure is changed to
   the name of a document structure that you created.
 
-- You would see some instructions on the name of the command to create.
+- You would see some instructions on the name of the command to create. e.g. qfec3.
 
-- The command is expected going to receive some arguments.
+- The command is expected to receive arguments in the following format. .
 
   - For validation `qfec3 v {jsonstring}` where jsonString is a json representation of the input.
     If you print from this command, it would be returned as an error to the page.
