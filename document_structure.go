@@ -303,7 +303,7 @@ func ViewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  docDatas := getDocData(id)
+  docDatas := GetDocData(id)
   type Context struct {
     DocName string
     DocDatas []DocData

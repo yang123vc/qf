@@ -46,7 +46,7 @@ Steps:
 
 - You would see some instructions on the name of the command to create. e.g. qfec3.
 
-- The command is expected to receive arguments in the following format. .
+- The command is expected to receive arguments in the following format:
 
   - For validation `qfec3 v {jsonstring}` where jsonString is a json representation of the input.
     If you print from this command, it would be returned as an error to the page.

@@ -15,49 +15,6 @@ import (
 )
 
 
-type DocData struct {
-  Label string
-  Name string
-  Type string
-  Required bool
-  Unique bool
-  OtherOptions []string
-}
-
-
-func getDocData(dsid int) []DocData{
-  var label, name, type_, options, otherOptions string
-
-  dds := make([]DocData, 0)
-  rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where dsid = ? order by id asc", dsid)
-  if err != nil {
-    panic(err)
-  }
-  defer rows.Close()
-  for rows.Next() {
-    err := rows.Scan(&label, &name, &type_, &options, &otherOptions)
-    if err != nil {
-      panic(err)
-    }
-    var required, unique bool
-    if optionSearch(options, "required") {
-      required = true
-    }
-    if optionSearch(options, "unique") {
-      unique = true
-    }
-    dd := DocData{label, name, type_, required, unique, strings.Split(otherOptions, "\n")}
-    dds = append(dds, dd)
-  }
-  err = rows.Err()
-  if err != nil {
-    panic(err)
-  }
-
-  return dds
-}
-
-
 func CreateDocument(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
@@ -91,7 +48,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
   }
   cmdString := fmt.Sprintf("qfec%d", id)
 
-  dds := getDocData(id)
+  dds := GetDocData(id)
 
   if r.Method == http.MethodGet {
     type Context struct {
@@ -242,7 +199,7 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
   }
   cmdString := fmt.Sprintf("qfec%d", id)
 
-  docDatas := getDocData(id)
+  docDatas := GetDocData(id)
 
   type docAndStructure struct {
     DocData

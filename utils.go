@@ -155,3 +155,46 @@ func getBaseTemplate() string {
     return badBasePath
   }
 }
+
+
+type DocData struct {
+  Label string
+  Name string
+  Type string
+  Required bool
+  Unique bool
+  OtherOptions []string
+}
+
+
+func GetDocData(dsid int) []DocData{
+  var label, name, type_, options, otherOptions string
+
+  dds := make([]DocData, 0)
+  rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where dsid = ? order by id asc", dsid)
+  if err != nil {
+    panic(err)
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&label, &name, &type_, &options, &otherOptions)
+    if err != nil {
+      panic(err)
+    }
+    var required, unique bool
+    if optionSearch(options, "required") {
+      required = true
+    }
+    if optionSearch(options, "unique") {
+      unique = true
+    }
+    dd := DocData{label, name, type_, required, unique, strings.Split(otherOptions, "\n")}
+    dds = append(dds, dd)
+  }
+  err = rows.Err()
+  if err != nil {
+    panic(err)
+  }
+
+  return dds
+}
