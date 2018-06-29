@@ -87,6 +87,9 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     colNames := make([]string, 0)
     formData := make([]string, 0)
     for _, dd := range dds {
+      if dd.Type == "Section Break" {
+        continue
+      }
       colNames = append(colNames, dd.Name)
       switch dd.Type {
       case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
@@ -218,20 +221,24 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
 
   docAndStructureSlice := make([]docAndStructure, 0)
   for _, docData := range docDatas {
-    var data string
-    var dataFromDB sql.NullString
-    sqlStmt := fmt.Sprintf("select %s from `%s` where id = %s", docData.Name, tableName(doc), docid)
-    err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
-    if err != nil {
-      fmt.Fprintf(w, "Error occurred when getting edit data. Exact Error: " + err.Error())
-      return
-    }
-    if dataFromDB.Valid {
-      data = dataFromDB.String
+    if docData.Type == "Section Break" {
+      docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, ""})
     } else {
-      data = ""
+      var data string
+      var dataFromDB sql.NullString
+      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %s", docData.Name, tableName(doc), docid)
+      err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
+      if err != nil {
+        fmt.Fprintf(w, "Error occurred when getting edit data. Exact Error: " + err.Error())
+        return
+      }
+      if dataFromDB.Valid {
+        data = dataFromDB.String
+        } else {
+          data = ""
+        }
+        docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, data})
     }
-    docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, data})
   }
 
   var created, modified, firstname, surname string

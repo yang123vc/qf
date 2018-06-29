@@ -84,6 +84,9 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
     sqlEnding := ""
     for _, qff := range qffs {
+      if qff.type_ == "Section Break" {
+        continue
+      }
       sql += qff.name + " "
       if qff.type_ == "Check" {
         sql += "char(1)"
