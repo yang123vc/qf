@@ -25,7 +25,12 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   doc := vars["document-structure"]
 
-  if ! docExists(doc, w) {
+  detv, err := docExists(doc)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    return
+  }
+  if detv == false {
     fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
@@ -42,7 +47,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
 
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", doc).Scan(&id)
   if err != nil {
     panic(err)
   }
@@ -147,7 +152,12 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
   doc := vars["document-structure"]
   docid := vars["id"]
 
-  if ! docExists(doc, w) {
+  detv, err := docExists(doc)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    return
+  }
+  if detv == false {
     fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
@@ -192,7 +202,7 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", doc).Scan(&id)
   if err != nil {
     fmt.Fprintf(w, "An error occurred when reading document structure. Exact Error" + err.Error())
     return
@@ -384,7 +394,13 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     pageI = 1
   }
 
-  if ! docExists(doc, w) {
+
+  detv, err := docExists(doc)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    return
+  }
+  if detv == false {
     fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
@@ -410,7 +426,7 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
   }
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", doc).Scan(&id)
   if err != nil {
     fmt.Fprintf(w, "An internal error occured. Exact Error: " + err.Error())
   }
@@ -563,7 +579,12 @@ func DeleteDocument(w http.ResponseWriter, r *http.Request) {
   doc := vars["document-structure"]
   docid := vars["id"]
 
-  if ! docExists(doc, w) {
+  detv, err := docExists(doc)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    return
+  }
+  if detv == false {
     fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }

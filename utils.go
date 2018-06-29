@@ -4,7 +4,6 @@ import (
   "os/user"
   "path/filepath"
   "strings"
-  "sort"
   "net/http"
   "fmt"
   "database/sql"
@@ -40,45 +39,46 @@ func optionSearch(commaSeperatedOptions, option string) bool {
 }
 
 
-func tableName(name string) string {
-  return fmt.Sprintf("qf%s", name)
+func tableName(documentStructure string) string {
+  return fmt.Sprintf("qf%s", documentStructure)
 }
 
 
-func docExists(documentName string, w http.ResponseWriter) bool {
-  docNames := getDocNames(w)
-  sort.Strings(docNames)
-  i := sort.SearchStrings(docNames, documentName)
-  if i != len(docNames) {
-    return true
-  } else {
-    return false
+func docExists(documentName string) (bool, error) {
+  dsList, err := GetDocumentStructureList()
+  if err != nil {
+    return false, err
   }
+
+  for _, value := range dsList {
+    if value == documentName {
+      return true, nil
+    }
+  }
+  return false, nil
 }
 
 
-func getDocNames(w http.ResponseWriter) []string {
+func GetDocumentStructureList() ([]string, error) {
   tempSlice := make([]string, 0)
   var str string
-  rows, err := SQLDB.Query("select doc_name from qf_document_structures")
+  rows, err := SQLDB.Query("select name from qf_document_structures")
   if err != nil {
-    fmt.Fprintf(w, "An error occured: " + err.Error())
-    panic(err)
+    return tempSlice, err
   }
   defer rows.Close()
   for rows.Next() {
     err := rows.Scan(&str)
     if err != nil {
-      panic(err)
+      return tempSlice, err
     }
     tempSlice = append(tempSlice, str)
   }
   err = rows.Err()
   if err != nil {
-    fmt.Fprintf(w, "An error occured: " + err.Error())
-    panic(err)
+    return tempSlice, err
   }
-  return tempSlice
+  return tempSlice, nil
 }
 
 
@@ -197,4 +197,9 @@ func GetDocData(dsid int) []DocData{
   }
 
   return dds
+}
+
+
+func getApprovalTable(documentStructure, role string) string {
+  return fmt.Sprintf("qf%s %s Approvals", documentStructure, role)
 }

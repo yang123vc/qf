@@ -12,28 +12,25 @@ import (
 )
 
 
-func getRoles(w http.ResponseWriter) ([]string, bool) {
+func GetRoles() ([]string, error) {
   strSlice := make([]string, 0)
   var str string
   rows, err := SQLDB.Query("select role from qf_roles order by role asc")
   if err != nil {
-    fmt.Fprintf(w, "Error occured while trying to collect roles. Exact Error: " + err.Error())
-    return strSlice, false
+    return strSlice, err
   }
   defer rows.Close()
   for rows.Next() {
     err := rows.Scan(&str)
     if err != nil {
-      fmt.Fprintf(w, "Error occured while trying to collect role. Exact Error: " + err.Error())
-      return strSlice, false
+      return strSlice, err
     }
     strSlice = append(strSlice, str)
   }
   if err = rows.Err(); err != nil {
-    fmt.Fprintf(w, "An error occured: " + err.Error())
-    return strSlice, false
+    return strSlice, err
   }
-  return strSlice, true
+  return strSlice, nil
 }
 
 
@@ -48,8 +45,9 @@ func RolesView(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  roles, ok := getRoles(w)
-  if ! ok {
+  roles, err := GetRoles()
+  if err != nil {
+    fmt.Fprintf(w, "Error getting roles. Exact Error: " + err.Error())
     return
   }
 
@@ -266,8 +264,9 @@ func EditUserRoles(w http.ResponseWriter, r *http.Request) {
   }
 
   if r.Method == http.MethodGet {
-    roles, ok := getRoles(w)
-    if ! ok {
+    roles, err := GetRoles()
+    if err != nil {
+      fmt.Fprintf(w, "Error getting roles. Exact Error: " + err.Error())
       return
     }
 
@@ -383,7 +382,12 @@ func DeleteRolePermissions(w http.ResponseWriter, r *http.Request) {
   role := vars["role"]
   documentStructure := vars["document-structure"]
 
-  if ! docExists(documentStructure, w) {
+  detv, err := docExists(documentStructure)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    return
+  }
+  if detv == false {
     fmt.Fprintf(w, "The document structure %s does not exists.", documentStructure)
     return
   }

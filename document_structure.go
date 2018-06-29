@@ -33,8 +33,7 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   if r.Method == http.MethodPost {
     qffs := make([]QFField, 0)
     r.ParseForm()
-    i := 1
-    for i < 100 {
+    for i := 1; i < 100; i++ {
       iStr := strconv.Itoa(i)
       if r.FormValue("label-" + iStr) == "" {
         break
@@ -47,13 +46,12 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
           other_options: r.FormValue("other-options-" + iStr),
         }
         qffs = append(qffs, qff)
-        i += 1
       }
     }
 
     tx, _ := SQLDB.Begin()
 
-    res, err := tx.Exec(`insert into qf_document_structures(doc_name) values(?)`, r.FormValue("doc-name"))
+    res, err := tx.Exec(`insert into qf_document_structures(name) values(?)`, r.FormValue("ds-name"))
     if err != nil {
       tx.Rollback()
       fmt.Fprintf(w, "An error ocurred while saving this document structure. Exact Error: " + err.Error())
@@ -77,7 +75,7 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     }
 
     // create actual form data tables, we've only stored the form structure to the database
-    tbl := tableName(r.FormValue("doc-name"))
+    tbl := tableName(r.FormValue("ds-name"))
     sql := fmt.Sprintf("create table `%s` (", tbl)
     sql += "id bigint unsigned not null auto_increment,"
     sql += "created datetime not null,"
@@ -120,7 +118,7 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     _, err1 := tx.Exec(sql)
     if err1 != nil {
       tx.Rollback()
-      fmt.Fprintf(w, "Error occured when creating document structure mysql table. Exact Error: " + err.Error())
+      fmt.Fprintf(w, "Error occured when creating document structure mysql table. Exact Error: " + err1.Error())
       return
     }
 
@@ -136,14 +134,19 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
       }
     }
     tx.Commit()
-    redirectURL := fmt.Sprintf("/edit-document-structure-permissions/%s/", r.FormValue("doc-name"))
+    redirectURL := fmt.Sprintf("/edit-document-structure-permissions/%s/", r.FormValue("ds-name"))
     http.Redirect(w, r, redirectURL, 307)
 
   } else {
     type Context struct {
       DocNames string
     }
-    ctx := Context{strings.Join(getDocNames(w), ",")}
+    dsList, err := GetDocumentStructureList()
+    if err != nil {
+      fmt.Fprintf(w, "An error occured when trying to get the document structure list. Exact Error " + err.Error())
+      return
+    }
+    ctx := Context{strings.Join(dsList, ",")}
 
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/new-document-structure.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
@@ -178,7 +181,12 @@ func ListDocumentStructures(w http.ResponseWriter, r *http.Request) {
   type Context struct {
     DocNames []string
   }
-  ctx := Context{DocNames: getDocNames(w)}
+  dsList, err := GetDocumentStructureList()
+  if err != nil {
+    fmt.Fprintf(w, "An error occured when trying to get the document structure list. Exact Error " + err.Error())
+    return
+  }
+  ctx := Context{DocNames: dsList}
 
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-document-structures.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
@@ -200,14 +208,19 @@ func DeleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   doc := vars["document-structure"]
 
-  if ! docExists(doc, w) {
+  detv, err := docExists(doc)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    return
+  }
+  if detv == false {
     fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
 
   tx, _ := SQLDB.Begin()
   var id int
-  err = tx.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
+  err = tx.QueryRow("select id from qf_document_structures where name = ?", doc).Scan(&id)
   if err != nil {
     tx.Rollback()
     fmt.Fprintf(w, "Error occurred when trying to get document structure id. Exact Error: " + err.Error())
@@ -221,7 +234,7 @@ func DeleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  _, err = tx.Exec("delete from qf_document_structures where doc_name = ?", doc)
+  _, err = tx.Exec("delete from qf_document_structures where name = ?", doc)
   if err != nil {
     tx.Rollback()
     fmt.Fprintf(w, "Error occurred when deleting document structure. Exact Error: " + err.Error())
@@ -291,13 +304,18 @@ func ViewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   doc := vars["document-structure"]
 
-  if ! docExists(doc, w) {
+  detv, err := docExists(doc)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    return
+  }
+  if detv == false {
     fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where doc_name = ?", doc).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", doc).Scan(&id)
   if err != nil {
     fmt.Fprintf(w, "An error occured when trying to get the document structure id. Exact Error: " + err.Error())
     return
@@ -344,7 +362,12 @@ func EditDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   doc := vars["document-structure"]
 
-  if ! docExists(doc, w) {
+  detv, err := docExists(doc)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    return
+  }
+  if detv == false {
     fmt.Fprintf(w, "The document structure %s does not exists.", doc)
     return
   }
@@ -358,8 +381,9 @@ func EditDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
       Roles []string
     }
 
-    roles, ok := getRoles(w)
-    if ! ok {
+    roles, err := GetRoles()
+    if err != nil {
+      fmt.Fprintf(w, "Error getting roles. Exact Error: " + err.Error())
       return
     }
 

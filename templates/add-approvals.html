@@ -1,0 +1,111 @@
+{{define "title"}} Add Approvals {{end}}
+
+
+{{define "styles"}}
+<style>
+form div {
+  margin-bottom: 10px;
+}
+#error-box {
+  color: red;
+}
+</style>
+{{end}}
+
+
+{{define "main"}}
+
+  <h3>Add Approvals</h3>
+  <p id="error-box"></p>
+  <form method="post" action="">
+    <div>
+      <label>Select Document Structure</label>
+      <select name="ds">
+        {{range .DocumentStructures}}
+          <option>{{.}}</option>
+        {{end}}
+      </select>
+    </div>
+
+    <h4>Steps </h4>
+    <table>
+      <tr>
+        <td>1</td>
+        <td>
+          <select class="role-step" name="step-1">
+            {{range .Roles}}
+            <option>{{.}}</option>
+            {{end}}
+          </select>
+        </td>
+        <td>
+          <button type="button" class="delete-step" id="delete-step-1">Delete</button>
+        </td>
+      </tr>
+    </table>
+    <div>
+      <button type="button" id="add-step-btn">Add Step</button>
+    </div>
+    <div>
+      <input type="submit" value="Submit" />
+    </div>
+  </form>
+
+{{end}}
+
+
+{{define "scripts"}}
+  <script>
+  function deleteStepHandler(e) {
+    $(e.target).parents('tr').remove();
+    // reset the numbers
+    $('table tr').each(function(i, el) {
+      var newNo = i + 1;
+      var strNewNo = newNo.toString()
+      $('td:first', el).text(strNewNo);
+      $('.role-step', el).attr('name', 'step-' + strNewNo);
+      $('.delete-step', el).attr('id', 'delete-step-' + strNewNo);
+    });
+  }
+
+
+  $(document).ready(function() {
+    $('#delete-step-1').hide();
+
+    $('#add-step-btn').click(function(e) {
+      var currentNo = parseInt($('tr:last td:first').text());
+      var newNo = currentNo + 1;
+      var html = $('tr:last').html();
+      var re = new RegExp(currentNo.toString(), 'g');
+      html = html.replace(re, newNo.toString());
+
+      html = "<tr>" + html + "</tr>";
+      $('table').append(html);
+
+      $('#delete-step-' + newNo.toString()).click(deleteStepHandler);
+      $('#delete-step-' + newNo.toString()).show();
+
+      $('html, body').scrollTop($(document).height());
+    });
+
+    $('form input[type=submit]').click(function(e) {
+      e.preventDefault();
+      $('#error-box').hide();
+
+      var steps = [];
+      for (var i = 0; i < $('.role-step').length; i++) {
+        el = $('.role-step')[i]
+        if (steps.indexOf($(el).val()) != -1) {
+          $('#error-box').text("Two steps can't have the same role.");
+          $('#error-box').show();
+          return
+        }
+        steps.push($(el).val());
+      }
+
+      $('form').submit();
+    });
+
+  });
+  </script>
+{{end}}

@@ -86,7 +86,7 @@
           <label>Delete Only Documents created by this Role <input type="checkbox" class="perms-checkbox" name="perms-1" value="delete-only-created" /> </label>
           <br><br>
         </td>
-        <td><button type="button" id="delete-role-1">Delete</button></td>
+        <td><button type="button" class="delete-role" id="delete-role-1">Delete</button></td>
       </tr>
       </tbody>
     </table>
@@ -113,8 +113,9 @@
       var newNo = i + 1;
       var strNewNo = newNo.toString()
       $('td:first', el).text(strNewNo);
-      $('.role-select', el).attr('name', 'role-' + strNewNo)
+      $('.role-select', el).attr('name', 'role-' + strNewNo);
       $('.perms-input', el).attr('name', 'perms-' + strNewNo);
+      $('.delete-role', el).attr('id', "delete-role-" + strNewNo);
     });
   }
 

@@ -80,7 +80,9 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
   if count == 1 {
     fmt.Fprintf(w, "This setup has been executed.")
     return
-  } else { // do setup
+
+  } else {
+    // do setup
     tx, err := SQLDB.Begin()
     if err != nil {
       fmt.Fprintf(w, "An error occured: %s", err.Error())
@@ -89,9 +91,10 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
     // create forms general table
     _, err = tx.Exec(`create table qf_document_structures (
       id int not null auto_increment,
-      doc_name varchar(100) not null,
+      name varchar(100) not null,
+      approval_steps varchar(255),
       primary key (id),
-      unique (doc_name)
+      unique (name)
       )`)
     if err != nil {
       tx.Rollback()

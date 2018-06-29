@@ -14,7 +14,7 @@
     padding-top: 5px;
     padding-right: 5px;
   }
-  .field-label, #id-doc-name {
+  .field-label, #id-ds-name {
     width: 300px;
   }
   #error-box {
@@ -30,8 +30,8 @@
   <span id='error-box'></span>
   <form method="post" action="">
     <div>
-      <label for="id-doc-name">Document Name</label>
-      <input type="text" name="doc-name" id="id-doc-name" />
+      <label for="id-ds-name">Document Name</label>
+      <input type="text" name="ds-name" id="id-ds-name" />
     </div>
 
     <h3>Fields</h3>
@@ -143,19 +143,19 @@
 
       // validation
 
-      if ( $('#id-doc-name').val() == "") {
-        $('#id-doc-name').css('border', '1px solid red');
+      if ( $('#id-ds-name').val() == "") {
+        $('#id-ds-name').css('border', '1px solid red');
         return;
       } else {
-        $('#id-doc-name').css('border', '1px solid gray');
+        $('#id-ds-name').css('border', '1px solid gray');
       }
 
       docNamesList = docNames.split(',');
 
-      if ( docNamesList.indexOf( $('#id-doc-name').val() ) != -1 ) {
+      if ( docNamesList.indexOf( $('#id-ds-name').val() ) != -1 ) {
         $('#error-box').text('The document name is already taken.');
         $('#error-box').show();
-        $('#id-doc-name').css('border', '1px solid red');
+        $('#id-ds-name').css('border', '1px solid red');
         return;
       } else {
         $('#error-box').hide();
