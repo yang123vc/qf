@@ -62,6 +62,16 @@
               {{ end }}
             </a>
             {{ if or $.DeletePerm .RowDeletePerm }}<a class='button-look' href='/doc/{{$.DocName}}/delete/{{.Id}}/'>Delete</a> {{end}}
+            {{if $.HasApprovals}}
+              <a class="button-look" href="/approvals/{{$.DocName}}/{{.Id}}/">
+                {{if $.Approver}}
+                  View/Edit
+                {{else}}
+                  View
+                {{end}}
+                Approvals
+              </a>
+            {{end}}
           </td>
         </tr>
       {{end}}

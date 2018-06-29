@@ -394,7 +394,6 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     pageI = 1
   }
 
-
   detv, err := docExists(doc)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
@@ -547,6 +546,8 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     CreatePerm bool
     UpdatePerm bool
     DeletePerm bool
+    HasApprovals bool
+    Approver bool
   }
   pages := make([]uint64, 0)
   for i := uint64(0); i < uint64(totalPages); i++ {
@@ -561,7 +562,33 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  ctx := Context{doc, colNames, myRows, pageI, pages, tv1, tv2, tv3}
+  userRoles, err := GetCurrentUserRoles(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occured when getting user roles. Exact Error: " + err.Error())
+    return
+  }
+  approvers, err := getApprovers(doc)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred when getting approval list of this document stucture. Exact Error: " + err.Error())
+    return
+  }
+  var hasApprovals, approver bool
+  if len(approvers) == 0 {
+    hasApprovals = false
+  } else {
+    hasApprovals = true
+  }
+  outerLoop:
+    for _, apr := range approvers {
+      for _, role := range userRoles {
+        if role == apr {
+          approver = true
+          break outerLoop
+        }
+      }
+    }
+
+  ctx := Context{doc, colNames, myRows, pageI, pages, tv1, tv2, tv3, hasApprovals, approver}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-documents.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)

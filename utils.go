@@ -7,6 +7,7 @@ import (
   "net/http"
   "fmt"
   "database/sql"
+  "strconv"
 )
 
 
@@ -224,4 +225,57 @@ func GetRoles() ([]string, error) {
     return strSlice, err
   }
   return strSlice, nil
+}
+
+
+func GetCurrentUserRoles(r *http.Request) ([]string, error) {
+  userRoles := make([]string, 0)
+
+  adminTruth, err := isUserAdmin(r)
+  if err == nil && adminTruth {
+    userRoles = append(userRoles, "Administrator")
+  }
+
+  userid, err := GetCurrentUser(r)
+  if err != nil {
+    return userRoles, err
+  }
+
+  var roles sql.NullString
+  err = SQLDB.QueryRow("select group_concat(roleid separator ',') from qf_user_roles where userid = ?", userid).Scan(&roles)
+  if err != nil {
+    return userRoles, err
+  }
+  if ! roles.Valid {
+    return userRoles, nil
+  }
+  rids := strings.Split(roles.String, ",")
+
+  for _, rid := range rids {
+    var roleName string
+    ridInt, _ := strconv.Atoi(rid)
+    err = SQLDB.QueryRow("select role from qf_roles where id = ?", ridInt).Scan(&roleName)
+    if err != nil {
+      return userRoles, err
+    }
+    userRoles = append(userRoles, roleName)
+  }
+  return userRoles, nil
+}
+
+
+func getApprovers(documentStructure string) ([]string, error) {
+  approversList := make([]string, 0)
+
+  var approvers sql.NullString
+  err := SQLDB.QueryRow("select approval_steps from qf_document_structures where name = ?", documentStructure).Scan(&approvers)
+  if err != nil {
+    return approversList, err
+  }
+
+  if ! approvers.Valid {
+    return approversList, nil
+  }
+
+  return strings.Split(approvers.String, ","), nil
 }
