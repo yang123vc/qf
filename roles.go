@@ -12,28 +12,6 @@ import (
 )
 
 
-func GetRoles() ([]string, error) {
-  strSlice := make([]string, 0)
-  var str string
-  rows, err := SQLDB.Query("select role from qf_roles order by role asc")
-  if err != nil {
-    return strSlice, err
-  }
-  defer rows.Close()
-  for rows.Next() {
-    err := rows.Scan(&str)
-    if err != nil {
-      return strSlice, err
-    }
-    strSlice = append(strSlice, str)
-  }
-  if err = rows.Err(); err != nil {
-    return strSlice, err
-  }
-  return strSlice, nil
-}
-
-
 func RolesView(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {

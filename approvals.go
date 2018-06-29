@@ -7,6 +7,8 @@ import (
   "path/filepath"
   "strconv"
   "strings"
+  "github.com/gorilla/mux"
+  "database/sql"
 )
 
 
@@ -45,6 +47,20 @@ func AddApprovals(w http.ResponseWriter, r *http.Request) {
 
   } else if r.Method == http.MethodPost {
 
+    ds := r.FormValue("ds")
+
+    // verify if this document structure already has the approval framework.
+    var stepsStr sql.NullString
+    err = SQLDB.QueryRow("select approval_steps from qf_document_structures where name = ?", ds).Scan(&stepsStr)
+    if err != nil {
+      fmt.Fprintf(w, "Error occured when getting approval steps of this document structure. Exact Error: " + err.Error())
+      return
+    }
+    if stepsStr.Valid {
+      fmt.Fprintf(w, "This document structure already has approval steps.")
+      return
+    }
+    
     steps := make([]string, 0)
     for i := 1; i < 100 ; i++ {
       iStr := strconv.Itoa(i)
@@ -54,7 +70,6 @@ func AddApprovals(w http.ResponseWriter, r *http.Request) {
         steps = append(steps, r.FormValue("step-" + iStr))
       }
     }
-    ds := r.FormValue("ds")
 
     var dsid int
     err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&dsid)
@@ -88,4 +103,58 @@ func AddApprovals(w http.ResponseWriter, r *http.Request) {
 
     fmt.Fprintf(w, "Adding approval steps to document structure \"%s\" successful.", ds)
   }
+}
+
+
+func RemoveApprovals(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    return
+  }
+  if ! truthValue {
+    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  detv, err := docExists(ds)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    return
+  }
+  if detv == false {
+    fmt.Fprintf(w, "The document structure %s does not exists.", ds)
+    return
+  }
+
+  var stepsStr sql.NullString
+  err = SQLDB.QueryRow("select approval_steps from qf_document_structures where name = ?", ds).Scan(&stepsStr)
+  if err != nil {
+    fmt.Fprintf(w, "Error occured when getting approval steps of this document structure. Exact Error: " + err.Error())
+    return
+  }
+  if ! stepsStr.Valid {
+    fmt.Fprintf(w, "This document structure has no approval steps.")
+    return
+  }
+  stepsList := strings.Split(stepsStr.String, ",")
+
+  for _, step := range stepsList {
+    _, err = SQLDB.Exec(fmt.Sprintf("drop table `%s`", getApprovalTable(ds, step)) )
+    if err != nil {
+      fmt.Fprintf(w, "An error occured while deleting an approvals table. Exact Error: " + err.Error())
+      return
+    }
+  }
+
+  _, err = SQLDB.Exec("update qf_document_structures set approval_steps = null where name = ?", ds)
+  if err != nil {
+    fmt.Fprintf(w, "An error occured while clearing approval steps. Exact Error: " + err.Error())
+    return
+  }
+
+  fmt.Fprintf(w, "Successfully removed approval steps from this document structure.")
 }
