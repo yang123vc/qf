@@ -9,6 +9,7 @@
     <h4>Approval Data for Role {{.Role}}</h4>
     {{if .CurrentUserHasThisRole}}
       <form method="post" action="">
+        <input type="hidden" name="role" value="{{.Role}}" />
         <div>
           <label>Status</label><br>
           <select name="status">
@@ -16,7 +17,7 @@
               <option>{{.Status}}</option>
             {{end}}
             <option>Amend</option>
-            <option>Reject</option>
+            <option>Rejected</option>
             <option>Approved</option>
           </select>
         </div>

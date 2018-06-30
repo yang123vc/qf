@@ -89,7 +89,7 @@ func AddApprovals(w http.ResponseWriter, r *http.Request) {
       sqlStmt += "modified datetime not null,"
       sqlStmt += "created_by bigint unsigned not null,"
       sqlStmt += "docid bigint unsigned not null,"
-      sqlStmt += "status varchar(2) not null,"
+      sqlStmt += "status varchar(20) not null,"
       sqlStmt += "message text, primary key (id), unique(docid),"
       sqlStmt += fmt.Sprintf("foreign key (created_by) references `%s`(id),", UsersTable)
       sqlStmt += fmt.Sprintf("foreign key (docid) references `%s`(id) )", tableName(ds))
@@ -234,7 +234,7 @@ func ViewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "Error occured when getting current user roles. Exact Error: " + err.Error())
     return
   }
-  
+
   if r.Method == http.MethodGet {
     type ApprovalData struct {
       Role string
@@ -248,10 +248,11 @@ func ViewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
       for _, r := range userRoles {
         if r == role {
           cuhtr = true
+          break
         }
       }
       var approvalDataCount uint64
-      sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = ?", getApprovalTable(ds, role))
+      sqlStmt = fmt.Sprintf("select count(*) from `%s` where docid = ?", getApprovalTable(ds, role))
       err = SQLDB.QueryRow(sqlStmt, docid).Scan(&approvalDataCount)
       if err != nil {
         fmt.Fprintf(w, "Error occurred while checking for approval data. Exact Error: " + err.Error())
@@ -261,7 +262,7 @@ func ViewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
         ads = append(ads, ApprovalData{role, "", "", cuhtr})
       } else if approvalDataCount == 1 {
         var status, message sql.NullString
-        sqlStmt = fmt.Sprintf("select status, message from `%s` where id = ?", getApprovalTable(ds, role))
+        sqlStmt = fmt.Sprintf("select status, message from `%s` where docid = ?", getApprovalTable(ds, role))
         err = SQLDB.QueryRow(sqlStmt, docid).Scan(&status, &message)
         if err != nil {
           fmt.Fprintf(w, "Error occurred while checking for approval data. Exact Error: " + err.Error())
@@ -280,25 +281,46 @@ func ViewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
     type Context struct {
       ApprovalDatas []ApprovalData
       DocumentStructure string
-      Approver bool
       DocID string
-      UserRoles []string
     }
 
-    var approver bool
-    outerLoop:
-      for _, apr := range approvers {
-        for _, role := range userRoles {
-          if role == apr {
-            approver = true
-            break outerLoop
-          }
-        }
-      }
 
-    ctx := Context{ads, ds, approver, docid, userRoles}
+    ctx := Context{ads, ds, docid}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/view-update-approvals.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
+
+  } else if r.Method == http.MethodPost {
+
+    role := r.FormValue("role")
+    status := r.FormValue("status")
+    message := r.FormValue("message")
+
+    var approvalDataCount uint64
+    sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = ?", getApprovalTable(ds, role))
+    err = SQLDB.QueryRow(sqlStmt, docid).Scan(&approvalDataCount)
+    if err != nil {
+      fmt.Fprintf(w, "Error occurred while checking for approval data. Exact Error: " + err.Error())
+      return
+    }
+    if approvalDataCount == 0 {
+      sqlStmt = fmt.Sprintf("insert into `%s` (created, modified, created_by, status, message, docid)", getApprovalTable(ds, role) )
+      sqlStmt += " values(now(), now(), ?, ?, ?, ?)"
+      _, err = SQLDB.Exec(sqlStmt, useridUint64, status, message, docid)
+      if err != nil {
+        fmt.Fprintf(w, "Error occurred while saving approval data. Exact Error: " + err.Error())
+        return
+      }
+    } else if approvalDataCount == 1 {
+      sqlStmt = fmt.Sprintf("update `%s` set modified = now(), status = ?, message = ? where docid = ?", getApprovalTable(ds, role))
+      _, err = SQLDB.Exec(sqlStmt, status, message, docid)
+      if err != nil {
+        fmt.Fprintf(w, "Error occurred while updating approval data. Exact Error: " + err.Error())
+        return
+      }
+    }
+
+    redirectURL := fmt.Sprintf("/doc/%s/list/", ds)
+    http.Redirect(w, r, redirectURL, 307)
   }
 }
