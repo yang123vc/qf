@@ -1,0 +1,37 @@
+{{define "title"}} Approval Data for {{$.DocumentStructure}} with ID {{$.DocID}} {{end}}
+
+
+{{define "main"}}
+
+  <h3>Approval Data for {{$.DocumentStructure}} with ID {{$.DocID}}</h3>
+
+  {{range .ApprovalDatas}}
+    <h4>Approval Data for Role {{.Role}}</h4>
+    {{if .CurrentUserHasThisRole}}
+      <form method="post" action="">
+        <div>
+          <label>Status</label><br>
+          <select name="status">
+            {{if ne .Status ""}}
+              <option>{{.Status}}</option>
+            {{end}}
+            <option>Amend</option>
+            <option>Reject</option>
+            <option>Approved</option>
+          </select>
+        </div>
+        <div>
+          <label>Message</label><br>
+          <textarea name="message">{{.Message}}</textarea>
+        </div>
+        <div>
+          <input type="submit" value="Update" />
+        </div>
+      </form>
+    {{else}}
+      <div>Status: <b>{{.Status}}</b></div>
+      <div>Message: <b>{{.Message}}</b></div>
+    {{end}}
+
+  {{end}}
+{{end}}

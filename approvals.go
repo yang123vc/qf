@@ -60,7 +60,7 @@ func AddApprovals(w http.ResponseWriter, r *http.Request) {
       fmt.Fprintf(w, "This document structure already has approval steps.")
       return
     }
-    
+
     steps := make([]string, 0)
     for i := 1; i < 100 ; i++ {
       iStr := strconv.Itoa(i)
@@ -90,7 +90,7 @@ func AddApprovals(w http.ResponseWriter, r *http.Request) {
       sqlStmt += "created_by bigint unsigned not null,"
       sqlStmt += "docid bigint unsigned not null,"
       sqlStmt += "status varchar(2) not null,"
-      sqlStmt += "message text, primary key (id),"
+      sqlStmt += "message text, primary key (id), unique(docid),"
       sqlStmt += fmt.Sprintf("foreign key (created_by) references `%s`(id),", UsersTable)
       sqlStmt += fmt.Sprintf("foreign key (docid) references `%s`(id) )", tableName(ds))
 
@@ -157,4 +157,148 @@ func RemoveApprovals(w http.ResponseWriter, r *http.Request) {
   }
 
   fmt.Fprintf(w, "Successfully removed approval steps from this document structure.")
+}
+
+
+func ViewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+  docid := vars["id"]
+
+  detv, err := docExists(ds)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    return
+  }
+  if detv == false {
+    fmt.Fprintf(w, "The document structure %s does not exists.", ds)
+    return
+  }
+
+  readPerm, err := doesCurrentUserHavePerm(r, ds, "read")
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while determining if the user have read permission for this document structure. Exact Error: " + err.Error())
+    return
+  }
+  rocPerm, err := doesCurrentUserHavePerm(r, ds, "read-only-created")
+  if err != nil {
+    fmt.Fprintf(w, "Error occured while determining if the user have read-only-created permission for this document. Exact Error: " + err.Error())
+    return
+  }
+
+  var createdBy uint64
+  sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %s", tableName(ds), docid)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
+  if err != nil {
+    fmt.Fprintf(w, "An internal error occured. Exact Error: " + err.Error())
+    return
+  }
+
+  if ! readPerm {
+    if rocPerm {
+      if createdBy != useridUint64 {
+        fmt.Fprintf(w, "You are not the owner of this document so can't read it.")
+        return
+      }
+    } else {
+      fmt.Fprintf(w, "You don't have the read permission for this document structure.")
+      return
+    }
+  }
+
+  approvers, err := getApprovers(ds)
+  if err != nil {
+    fmt.Fprintf(w, "Error getting approvers for this document structure. Exact Error: " + err.Error())
+    return
+  }
+  if len(approvers) == 0 {
+    fmt.Fprintf(w, "This document structure doesn't have the approval framework on it.")
+  }
+
+  var count uint64
+  sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(ds), docid)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+  if count == 0 {
+    fmt.Fprintf(w, "The document with id %s do not exists", docid)
+    return
+  }
+
+  userRoles, err := GetCurrentUserRoles(r)
+  if err != nil {
+    fmt.Fprintf(w, "Error occured when getting current user roles. Exact Error: " + err.Error())
+    return
+  }
+  
+  if r.Method == http.MethodGet {
+    type ApprovalData struct {
+      Role string
+      Status string
+      Message string
+      CurrentUserHasThisRole bool
+    }
+    ads := make([]ApprovalData, 0)
+    for _, role := range approvers {
+      var cuhtr bool
+      for _, r := range userRoles {
+        if r == role {
+          cuhtr = true
+        }
+      }
+      var approvalDataCount uint64
+      sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = ?", getApprovalTable(ds, role))
+      err = SQLDB.QueryRow(sqlStmt, docid).Scan(&approvalDataCount)
+      if err != nil {
+        fmt.Fprintf(w, "Error occurred while checking for approval data. Exact Error: " + err.Error())
+        return
+      }
+      if approvalDataCount == 0 {
+        ads = append(ads, ApprovalData{role, "", "", cuhtr})
+      } else if approvalDataCount == 1 {
+        var status, message sql.NullString
+        sqlStmt = fmt.Sprintf("select status, message from `%s` where id = ?", getApprovalTable(ds, role))
+        err = SQLDB.QueryRow(sqlStmt, docid).Scan(&status, &message)
+        if err != nil {
+          fmt.Fprintf(w, "Error occurred while checking for approval data. Exact Error: " + err.Error())
+          return
+        }
+        var actualMessage string
+        if ! message.Valid {
+          actualMessage = ""
+        } else {
+          actualMessage = message.String
+        }
+        ads = append(ads, ApprovalData{role, status.String, actualMessage, cuhtr})
+      }
+    }
+
+    type Context struct {
+      ApprovalDatas []ApprovalData
+      DocumentStructure string
+      Approver bool
+      DocID string
+      UserRoles []string
+    }
+
+    var approver bool
+    outerLoop:
+      for _, apr := range approvers {
+        for _, role := range userRoles {
+          if role == apr {
+            approver = true
+            break outerLoop
+          }
+        }
+      }
+
+    ctx := Context{ads, ds, approver, docid, userRoles}
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/view-update-approvals.html")
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl.Execute(w, ctx)
+  }
 }

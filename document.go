@@ -191,7 +191,7 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
         return
       }
     } else {
-      fmt.Fprintf(w, "You don't have the update permission for this document structure.")
+      fmt.Fprintf(w, "You don't have the read permission for this document structure.")
       return
     }
   }
@@ -571,7 +571,7 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 
   userRoles, err := GetCurrentUserRoles(r)
   if err != nil {
-    fmt.Fprintf(w, "Error occured when getting user roles. Exact Error: " + err.Error())
+    fmt.Fprintf(w, "Error occured when getting current user roles. Exact Error: " + err.Error())
     return
   }
   approvers, err := getApprovers(doc)
