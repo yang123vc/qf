@@ -21,11 +21,11 @@ Get the framework through the following command
 
 There is a sample application which details how to complete the setup. Take a look at it [here](https://github.com/bankole7782/qf_example)
 
-Make sure you look at `main.go` in the sample app and edit it to your own preferences.
+Make sure you look at `main.go` in the sample app, copy and edit it to your own preferences.
 
-After copying the paths in the sample, go to `/qf-setup/` to create some tables that
-the project would need.
+Go to `/qf-setup/` to create some tables that the project would need.
 
+The links used in the project can be found in the function `AddQFHandlers` in the utils.go of this project.
 
 
 ## Theming Your Project
@@ -56,6 +56,7 @@ Steps:
   - For after update `qfec3 u {id}` where id is the primary key of the updated document.
 
 - Create the command and add it to path.
+
 
 
 ## Listing of Document Structure Links in your Web App
