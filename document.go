@@ -441,18 +441,21 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
   var colName string
   rows, err := SQLDB.Query("select name from qf_fields where dsid = ? and type != \"Section Break\" order by id asc limit 3", id)
   if err != nil {
-    panic(err)
+    fmt.Fprintf(w, "Error reading column names. Exact Error: " + err.Error())
+    return
   }
   defer rows.Close()
   for rows.Next() {
     err := rows.Scan(&colName)
     if err != nil {
-      panic(err)
+      fmt.Fprintf(w, "Error reading a column name. Exact Error: " + err.Error())
+      return
     }
     colNames = append(colNames, colName)
   }
   if err = rows.Err(); err != nil {
-    panic(err)
+    fmt.Fprintf(w, "Extra Error reading column names. Exact Error: " + err.Error())
+    return
   }
   colNames = append(colNames, "created", "created_by")
 
@@ -472,30 +475,21 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
   }
   rows, err = SQLDB.Query(sqlStmt, startIndex, itemsPerPage)
   if err != nil {
-    panic(err)
+    fmt.Fprintf(w, "Error reading this document structure data. Exact Error: " + err.Error())
+    return
   }
   defer rows.Close()
   for rows.Next() {
     err := rows.Scan(&idd)
     if err != nil {
-      panic(err)
+      fmt.Fprintf(w, "Error reading a row of data for this document structure. Exact Error: " + err.Error())
+      return
     }
     ids = append(ids, idd)
   }
   if err = rows.Err(); err != nil {
-    panic(err)
-  }
-
-  type ColAndData struct {
-    ColName string
-    Data string
-  }
-
-  type Row struct {
-    Id uint64
-    ColAndDatas []ColAndData
-    RowUpdatePerm bool
-    RowDeletePerm bool
+    fmt.Fprintf(w, "Extra error occurred while reading this document structure data. Exact Error: " + err.Error())
+    return
   }
 
   uocPerm, err1 := DoesCurrentUserHavePerm(r, doc, "update-only-created")

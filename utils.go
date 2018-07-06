@@ -279,3 +279,17 @@ func getApprovers(documentStructure string) ([]string, error) {
 
   return strings.Split(approvers.String, ","), nil
 }
+
+
+type ColAndData struct {
+  ColName string
+  Data string
+}
+
+
+type Row struct {
+  Id uint64
+  ColAndDatas []ColAndData
+  RowUpdatePerm bool
+  RowDeletePerm bool
+}

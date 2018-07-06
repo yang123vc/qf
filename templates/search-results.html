@@ -1,0 +1,59 @@
+{{define "title"}} Search Results on {{.DocumentStructure}} Documents {{end}}
+
+
+{{define "styles"}}
+  <style>
+  thead {
+    font-weight: bold;
+  }
+  td {
+    border-right: 1px solid gray;
+    padding: 5px;
+  }
+  td:last-child {
+    border-right: none;
+  }
+  .button-look {
+    text-decoration: none;
+    background-color: gray;
+    color: white;
+    border: 1px solid #999;
+    border-radius: 3px;
+    padding: 3px;
+  }
+  .button-look:hover {
+    background-color: #ccc;
+  }
+  </style>
+{{end}}
+
+
+{{define "main"}}
+  <h3>Search Results on {{.DocumentStructure}} Documents</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <td>id</td>
+        {{range .ColNames}}
+          <td>{{.}}</td>
+        {{end}}
+        <td>Actions</td>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .MyRows}}
+        <tr>
+          <td>{{.Id}}</td>
+          {{range .ColAndDatas}}
+            <td>{{.Data }}</td>
+          {{end}}
+          <td>
+            <a class='button-look' href='/doc/{{$.DocumentStructure}}/update/{{.Id}}/'>View</a>
+          </td>
+        </tr>
+      {{end}}
+    </tbody>
+  </table>
+
+{{end}}
