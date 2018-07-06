@@ -97,7 +97,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
         if r.FormValue(dd.Name) == "" {
           data = "null"
         } else {
-          data = fmt.Sprintf("\"%s\"", r.FormValue(dd.Name))
+          data = fmt.Sprintf("\"%s\"", template.HTMLEscapeString(r.FormValue(dd.Name)))
         }
         formData = append(formData, data)
       case "Check":
@@ -113,7 +113,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
         if r.FormValue(dd.Name) == "" {
           data = "null"
         } else {
-          data = r.FormValue(dd.Name)
+          data = template.HTMLEscapeString(r.FormValue(dd.Name))
         }
         formData = append(formData, data)
       }
@@ -337,7 +337,7 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
         colNames = append(colNames, docAndStructure.DocData.Name)
         switch docAndStructure.DocData.Type {
         case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
-          data := fmt.Sprintf("\"%s\"", r.FormValue(docAndStructure.DocData.Name))
+          data := fmt.Sprintf("\"%s\"", template.HTMLEscapeString(r.FormValue(docAndStructure.DocData.Name)))
           formData = append(formData, data)
         case "Check":
           var data string
@@ -348,7 +348,7 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
           }
           formData = append(formData, data)
         default:
-          formData = append(formData, r.FormValue(docAndStructure.DocData.Name))
+          formData = append(formData, template.HTMLEscapeString(r.FormValue(docAndStructure.DocData.Name)))
         }
       }
     }
