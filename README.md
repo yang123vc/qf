@@ -58,6 +58,23 @@ Steps:
 - Create the command and add it to path.
 
 
+## Listing of Document Structure Links in your Web App
+
+There is a list of document structures which are accessible to the admininstrator only. It lists
+all the document structures on your installation.
+
+To list document structures to the users you would need to write a custom page. This is because
+you might want to mix complicated forms and other pages.
+
+You would need to call `qf.DoesCurrentUserHavePerm` to check if the current user have read permission
+to the document structure before listing it. This would ensure a clean interface with the user
+seeing only what he uses.
+
+`qf.DoesCurrentUserHavePerm` has the following definition:
+`func(r *http.Request, documentStructure string, permission string) (bool, error)`
+
+The link to display to the user is of the form `doc/{documentStructure}/list/`
+
 
 ## License
 

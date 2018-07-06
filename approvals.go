@@ -181,12 +181,12 @@ func ViewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  readPerm, err := doesCurrentUserHavePerm(r, ds, "read")
+  readPerm, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
     fmt.Fprintf(w, "Error occured while determining if the user have read permission for this document structure. Exact Error: " + err.Error())
     return
   }
-  rocPerm, err := doesCurrentUserHavePerm(r, ds, "read-only-created")
+  rocPerm, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
   if err != nil {
     fmt.Fprintf(w, "Error occured while determining if the user have read-only-created permission for this document. Exact Error: " + err.Error())
     return

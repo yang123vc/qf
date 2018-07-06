@@ -35,7 +35,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  truthValue, err := doesCurrentUserHavePerm(r, doc, "create")
+  truthValue, err := DoesCurrentUserHavePerm(r, doc, "create")
   if err != nil {
     fmt.Fprintf(w, "Error occured while determining if the user have permission for this page. Exact Error: " + err.Error())
     return
@@ -165,12 +165,12 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  readPerm, err := doesCurrentUserHavePerm(r, doc, "read")
+  readPerm, err := DoesCurrentUserHavePerm(r, doc, "read")
   if err != nil {
     fmt.Fprintf(w, "Error occured while determining if the user have read permission for this document structure. Exact Error: " + err.Error())
     return
   }
-  rocPerm, err := doesCurrentUserHavePerm(r, doc, "read-only-created")
+  rocPerm, err := DoesCurrentUserHavePerm(r, doc, "read-only-created")
   if err != nil {
     fmt.Fprintf(w, "Error occured while determining if the user have read-only-created permission for this document. Exact Error: " + err.Error())
     return
@@ -265,17 +265,17 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
       DeletePerm bool
     }
 
-    updatePerm, err := doesCurrentUserHavePerm(r, doc, "update")
+    updatePerm, err := DoesCurrentUserHavePerm(r, doc, "update")
     if err != nil {
       fmt.Fprintf(w, "Error occured while determining if the user have update permission for this document structure. Exact Error: " + err.Error())
       return
     }
-    deletePerm, err := doesCurrentUserHavePerm(r, doc, "delete")
+    deletePerm, err := DoesCurrentUserHavePerm(r, doc, "delete")
     if err != nil {
       fmt.Fprintf(w, "Error occured while determining if the user have delete permission for this document structure. Exact Error: " + err.Error())
       return
     }
-    uocPerm, err := doesCurrentUserHavePerm(r, doc, "update-only-created")
+    uocPerm, err := DoesCurrentUserHavePerm(r, doc, "update-only-created")
     if err != nil {
       fmt.Fprintf(w, "Error occured while determining if the user have update-only-created permission for this document. Exact Error: " + err.Error())
       return
@@ -292,12 +292,12 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
-    tv2, err2 := doesCurrentUserHavePerm(r, doc, "update")
+    tv2, err2 := DoesCurrentUserHavePerm(r, doc, "update")
     if err2 != nil {
       fmt.Fprintf(w, "Error checking for permissions for this page. Exact Error: " + err.Error())
       return
     }
-    uocPerm, err := doesCurrentUserHavePerm(r, doc, "update-only-created")
+    uocPerm, err := DoesCurrentUserHavePerm(r, doc, "update-only-created")
     if err != nil {
       fmt.Fprintf(w, "Error checking for permissions of this page. Exact Error: " + err.Error())
       return
@@ -411,8 +411,8 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  tv1, err1 := doesCurrentUserHavePerm(r, doc, "read")
-  tv2, err2 := doesCurrentUserHavePerm(r, doc, "read-only-created")
+  tv1, err1 := DoesCurrentUserHavePerm(r, doc, "read")
+  tv2, err2 := DoesCurrentUserHavePerm(r, doc, "read-only-created")
   if err1 != nil || err2 != nil {
     fmt.Fprintf(w, "Error occured while determining if the user have read permission for this page.")
     return
@@ -498,8 +498,8 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     RowDeletePerm bool
   }
 
-  uocPerm, err1 := doesCurrentUserHavePerm(r, doc, "update-only-created")
-  docPerm, err2 := doesCurrentUserHavePerm(r, doc, "delete-only-created")
+  uocPerm, err1 := DoesCurrentUserHavePerm(r, doc, "update-only-created")
+  docPerm, err2 := DoesCurrentUserHavePerm(r, doc, "delete-only-created")
   if err1 != nil || err2 != nil {
     fmt.Fprintf(w, "Error occured while determining if the user have read permission for this page.")
     return
@@ -561,9 +561,9 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
     pages = append(pages, i+1)
   }
 
-  tv1, err1 = doesCurrentUserHavePerm(r, doc, "create")
-  tv2, err2 = doesCurrentUserHavePerm(r, doc, "update")
-  tv3, err3 := doesCurrentUserHavePerm(r, doc, "delete")
+  tv1, err1 = DoesCurrentUserHavePerm(r, doc, "create")
+  tv2, err2 = DoesCurrentUserHavePerm(r, doc, "update")
+  tv3, err3 := DoesCurrentUserHavePerm(r, doc, "delete")
   if err1 != nil || err2 != nil || err3 != nil {
     fmt.Fprintf(w, "An error occurred when getting permissions of this object for this user.")
     return
@@ -631,12 +631,12 @@ func DeleteDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  deletePerm, err := doesCurrentUserHavePerm(r, doc, "delete")
+  deletePerm, err := DoesCurrentUserHavePerm(r, doc, "delete")
   if err != nil {
     fmt.Fprintf(w, "Error occured while determining if the user have delete permission. Exact Error: " + err.Error())
     return
   }
-  docPerm, err := doesCurrentUserHavePerm(r, doc, "delete-only-created")
+  docPerm, err := DoesCurrentUserHavePerm(r, doc, "delete-only-created")
   if err != nil {
     fmt.Fprintf(w, "Error occurred while determining if the user have delete-only-created permission. Exact Error: " + err.Error())
   }

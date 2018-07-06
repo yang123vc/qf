@@ -104,7 +104,7 @@ func isUserAdmin(r *http.Request) (bool, error) {
 }
 
 
-func doesCurrentUserHavePerm(r *http.Request, object, permission string) (bool, error) {
+func DoesCurrentUserHavePerm(r *http.Request, object, permission string) (bool, error) {
   adminTruth, err := isUserAdmin(r)
   if err == nil && adminTruth {
     return true, nil
