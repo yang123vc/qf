@@ -5,6 +5,7 @@ import (
   "net/http"
   "database/sql"
   _ "github.com/go-sql-driver/mysql"
+  "github.com/gorilla/mux"
 )
 
 
@@ -165,4 +166,43 @@ func QFSetup(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, "Setup Completed.")
 
   }
+}
+
+
+func AddQFHandlers(r *mux.Router) {
+  // Please don't change the paths.
+
+  // Please call this link first to do your setup.
+  r.HandleFunc("/qf-setup/", QFSetup)
+
+  // r.HandleFunc("/jquery/", qf.JQuery)
+  r.HandleFunc("/serve-js/{library}/", ServeJS)
+
+  // document structure links
+  r.HandleFunc("/new-document-structure/", NewDocumentStructure)
+  r.HandleFunc("/list-document-structures/", ListDocumentStructures)
+  r.HandleFunc("/delete-document-structure/{document-structure}/", DeleteDocumentStructure)
+  r.HandleFunc("/view-document-structure/{document-structure}/", ViewDocumentStructure)
+  r.HandleFunc("/edit-document-structure-permissions/{document-structure}/", EditDocumentStructurePermissions)
+
+  // roles links
+  r.HandleFunc("/roles-view/", RolesView)
+  r.HandleFunc("/delete-role/{role}/", DeleteRole)
+  r.HandleFunc("/users-to-roles-list/", UsersToRolesList)
+  r.HandleFunc("/edit-user-roles/{userid}/", EditUserRoles)
+  r.HandleFunc("/remove-role-from-user/{userid}/{role}/", RemoveRoleFromUser)
+  r.HandleFunc("/delete-role-permissions/{document-structure}/{role}/", DeleteRolePermissions)
+
+  // document links
+  r.HandleFunc("/doc/{document-structure}/create/", CreateDocument)
+  r.HandleFunc("/doc/{document-structure}/update/{id:[0-9]+}/", UpdateDocument)
+  r.HandleFunc("/doc/{document-structure}/list/", ListDocuments)
+  r.HandleFunc("/doc/{document-structure}/list/{page:[0-9]+}/", ListDocuments)
+  r.HandleFunc("/doc/{document-structure}/delete/{id:[0-9]+}/", DeleteDocument)
+  r.HandleFunc("/doc/{document-structure}/search/", SearchDocuments)
+
+  // Approvals
+  r.HandleFunc("/add-approvals-to-document-structure/", AddApprovals)
+  r.HandleFunc("/remove-approvals-from-document-structure/{document-structure}/", RemoveApprovals)
+  r.HandleFunc("/approvals/{document-structure}/{id:[0-9]+}/", ViewOrUpdateApprovals)
 }
