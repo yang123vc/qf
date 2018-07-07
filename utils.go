@@ -8,6 +8,7 @@ import (
   "fmt"
   "database/sql"
   "strconv"
+  "os"
 )
 
 
@@ -16,7 +17,12 @@ func getProjectPath() string {
   if err != nil {
     panic(err)
   }
-  projectPath := filepath.Join(userStruct.HomeDir, "go/src/github.com/bankole7782/qf")
+  gp := os.Getenv("GOPATH")
+  if gp == "" {
+    gp = filepath.Join(userStruct.HomeDir, "go")
+  }
+
+  projectPath := filepath.Join(gp, "src/github.com/bankole7782/qf")
   return projectPath
 }
 
