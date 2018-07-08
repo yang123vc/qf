@@ -51,7 +51,7 @@ func SearchDocuments(w http.ResponseWriter, r *http.Request) {
 
   if r.Method == http.MethodGet {
     type Context struct {
-      DocName string
+      DocumentStructure string
       DDs []DocData
     }
     ctx := Context{ds, dds}
@@ -157,7 +157,7 @@ func SearchDocuments(w http.ResponseWriter, r *http.Request) {
       fmt.Fprintf(w, "Your query returned no results.")
       return
     }
-    
+
     myRows := make([]Row, 0)
     for _, id := range ids {
       colAndDatas := make([]ColAndData, 0)
@@ -201,4 +201,119 @@ func SearchDocuments(w http.ResponseWriter, r *http.Request) {
 
 
   }
+}
+
+
+func DateLists(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  detv, err := docExists(ds)
+  if err != nil {
+    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    return
+  }
+  if detv == false {
+    fmt.Fprintf(w, "The document structure %s does not exists.", ds)
+    return
+  }
+
+  tv1, err1 := DoesCurrentUserHavePerm(r, ds, "read")
+  tv2, err2 := DoesCurrentUserHavePerm(r, ds, "read-only-created")
+  if err1 != nil || err2 != nil {
+    fmt.Fprintf(w, "Error occured while determining if the user have read permission for this page.")
+    return
+  }
+
+  if ! tv1 && ! tv2 {
+    fmt.Fprintf(w, "You don't have the read permission for this document structure.")
+    return
+  }
+
+  var count uint64
+  sqlStmt := fmt.Sprintf("select count(*) from `%s`", tableName(ds))
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+  if count == 0 {
+    fmt.Fprintf(w, "There are no documents to display.")
+    return
+  }
+
+  if tv1 {
+    sqlStmt = fmt.Sprintf("select distinct date(created) as dc from `%s` order by dc desc", tableName(ds))
+  } else if tv2 {
+    sqlStmt = fmt.Sprintf("select distinct date(created) as dc from `%s` where created_by = %d order by dc desc", tableName(ds), useridUint64)
+  }
+
+  dates := make([]string, 0)
+  var date string
+  rows, err := SQLDB.Query(sqlStmt)
+  if err != nil {
+    fmt.Fprintf(w, "Error getting date data for this document structure. Exact Error: " + err.Error())
+    return
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&date)
+    if err != nil {
+      fmt.Fprintf(w, "Error retrieving single date. Exact Error: " + err.Error())
+      return
+    }
+    dates = append(dates, date)
+  }
+  if err = rows.Err(); err != nil {
+    fmt.Fprintf(w, "Error after retrieving date data. Exact Error: " + err.Error())
+    return
+  }
+
+  type DateAndCount struct {
+    Date string
+    Count uint64
+  }
+  dacs := make([]DateAndCount, 0)
+  for _, date := range dates {
+    var count uint64
+    sqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = ?", tableName(ds))
+    err = SQLDB.QueryRow(sqlStmt, date).Scan(&count)
+    if err != nil {
+      fmt.Fprintf(w, "Error reading count of a date list. Exact Error: " + err.Error())
+      return
+    }
+    dacs = append(dacs, DateAndCount{date, count})
+  }
+
+  type Context struct {
+    DACs []DateAndCount
+    DocumentStructure string
+  }
+
+  ctx := Context{dacs, ds}
+  fullTemplatePath := filepath.Join(getProjectPath(), "templates/date-lists.html")
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl.Execute(w, ctx)
+}
+
+
+func DateList(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+  date := vars["date"]
+
+  readSqlStmt := fmt.Sprintf("select id from `%s` where date(created) = '%s' order by created desc limit ?, ?",
+    tableName(ds), template.HTMLEscapeString(date))
+  rocSqlStmt := fmt.Sprintf("select id from `%s` where date(created) = '%s' and created_by = %d order by created desc limit ?, ?",
+    tableName(ds), template.HTMLEscapeString(date), useridUint64)
+  innerListDocuments(w, r, readSqlStmt, rocSqlStmt)
+  return
 }

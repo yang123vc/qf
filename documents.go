@@ -380,7 +380,7 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func ListDocuments(w http.ResponseWriter, r *http.Request) {
+func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, rocSqlStmt string) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
@@ -466,13 +466,14 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 
   ids := make([]uint64, 0)
   var idd uint64
-  if tv2 && tv1 {
-    sqlStmt = fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(doc))
+
+  // variables point
+  if tv1 {
+    sqlStmt = readSqlStmt
   } else if tv2 {
-    sqlStmt = fmt.Sprintf("select id from `%s` where created_by = %d order by created desc limit ?, ?", tableName(doc), useridUint64 )
-  } else {
-    sqlStmt = fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(doc))
+    sqlStmt = rocSqlStmt
   }
+
   rows, err = SQLDB.Query(sqlStmt, startIndex, itemsPerPage)
   if err != nil {
     fmt.Fprintf(w, "Error reading this document structure data. Exact Error: " + err.Error())
@@ -593,6 +594,23 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-documents.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
+}
+
+
+func ListDocuments(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  readSqlStmt := fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(ds))
+  rocSqlStmt := fmt.Sprintf("select id from `%s` where created_by = %d order by created desc limit ?, ?", tableName(ds), useridUint64 )
+  innerListDocuments(w, r, readSqlStmt, rocSqlStmt)
+  return
 }
 
 

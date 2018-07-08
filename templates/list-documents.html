@@ -32,9 +32,11 @@
   <h3>Lists of {{.DocName}} Documents</h3>
 
   {{ if eq $.CreatePerm true}}
-    <a class="button-look" href="/doc/{{.DocName}}/create/">Create {{.DocName}} Document</a>  
+    <a class="button-look" href="/doc/{{.DocName}}/create/">Create {{.DocName}} Document</a>
   {{ end}}
+  <a class="button-look" href="/doc/{{.DocName}}/date-lists/">Date Lists of {{.DocName}} Documents</a>
   <a class="button-look" href="/doc/{{.DocName}}/search/">Search {{.DocName}} Documents</a>
+
   <br><br>
 
   <table>
