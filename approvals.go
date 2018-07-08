@@ -23,10 +23,13 @@ func AddApprovals(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
   if r.Method == http.MethodGet {
     type Context struct {
       Roles []string
-      DocumentStructures []string
+      DocumentStructure string
     }
 
     roles, err := GetRoles()
@@ -34,20 +37,13 @@ func AddApprovals(w http.ResponseWriter, r *http.Request) {
       fmt.Fprintf(w, "Error getting roles. Exact Error: " + err.Error())
       return
     }
-    dsList , err := GetDocumentStructureList()
-    if err != nil {
-      fmt.Fprintf(w, "Error occurred while getting document structure list. Exact Error: " + err.Error())
-      return
-    }
 
-    ctx := Context{roles, dsList}
+    ctx := Context{roles, ds}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/add-approvals.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
-
-    ds := r.FormValue("ds")
 
     // verify if this document structure already has the approval framework.
     var stepsStr sql.NullString
@@ -101,7 +97,8 @@ func AddApprovals(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    fmt.Fprintf(w, "Adding approval steps to document structure \"%s\" successful.", ds)
+    redirectURL := fmt.Sprintf("/view-document-structure/%s/", ds)
+    http.Redirect(w, r, redirectURL, 307)
   }
 }
 
@@ -156,7 +153,8 @@ func RemoveApprovals(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  fmt.Fprintf(w, "Successfully removed approval steps from this document structure.")
+  redirectURL := fmt.Sprintf("/view-document-structure/%s/", ds)
+  http.Redirect(w, r, redirectURL, 307)
 }
 
 

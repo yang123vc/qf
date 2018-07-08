@@ -1,4 +1,4 @@
-{{define "title"}} Update {{.DocName}} Document {{end}}
+{{define "title"}} Update {{.DocumentStructure}} Document {{end}}
 
 
 {{define "styles"}}
@@ -31,13 +31,13 @@
 
 
 {{define "main"}}
-  <h3>Edit {{.DocName}} Document</h3>
+  <h3>Edit {{.DocumentStructure}} Document</h3>
 
   <span> Creation Date : <b>{{.Created}}</b></span><br>
   <span> Last Modification Date : <b>{{.Modified}}</b></span><br>
   <span> Created By : <b>{{.FirstName}} {{.Surname}} with User id {{.CreatedBy}} <b><br><br>
   {{ if $.DeletePerm }}
-    <a class='button-look' href='/doc/{{.DocName}}/delete/{{.Id}}/'>Delete</a><br><br>
+    <a class='button-look' href='/doc/{{.DocumentStructure}}/delete/{{.Id}}/'>Delete</a><br><br>
   {{end}}
 
   <form method="post" action="">

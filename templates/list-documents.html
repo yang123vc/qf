@@ -1,4 +1,4 @@
-{{define "title"}} Lists of {{.DocName}} Documents {{end}}
+{{define "title"}} Lists of {{.DocumentStructure}} Documents {{end}}
 
 
 {{define "styles"}}
@@ -29,13 +29,13 @@
 
 
 {{define "main"}}
-  <h3>Lists of {{.DocName}} Documents</h3>
+  <h3>Lists of {{.DocumentStructure}} Documents</h3>
 
   {{ if eq $.CreatePerm true}}
-    <a class="button-look" href="/doc/{{.DocName}}/create/">Create {{.DocName}} Document</a>
+    <a class="button-look" href="/doc/{{.DocumentStructure}}/create/">Create {{.DocumentStructure}} Document</a>
   {{ end}}
-  <a class="button-look" href="/doc/{{.DocName}}/date-lists/">Date Lists of {{.DocName}} Documents</a>
-  <a class="button-look" href="/doc/{{.DocName}}/search/">Search {{.DocName}} Documents</a>
+  <a class="button-look" href="/doc/{{.DocumentStructure}}/date-lists/">Date Lists of {{.DocumentStructure}} Documents</a>
+  <a class="button-look" href="/doc/{{.DocumentStructure}}/search/">Search {{.DocumentStructure}} Documents</a>
 
   <br><br>
 
@@ -57,16 +57,16 @@
             <td>{{.Data }}</td>
           {{end}}
           <td>
-            <a class='button-look' href='/doc/{{$.DocName}}/update/{{.Id}}/'>
+            <a class='button-look' href='/doc/{{$.DocumentStructure}}/update/{{.Id}}/'>
               {{ if or $.UpdatePerm .RowUpdatePerm}}
                 View/Edit
               {{ else }}
                 View
               {{ end }}
             </a>
-            {{ if or $.DeletePerm .RowDeletePerm }}<a class='button-look' href='/doc/{{$.DocName}}/delete/{{.Id}}/'>Delete</a> {{end}}
+            {{ if or $.DeletePerm .RowDeletePerm }}<a class='button-look' href='/doc/{{$.DocumentStructure}}/delete/{{.Id}}/'>Delete</a> {{end}}
             {{if $.HasApprovals}}
-              <a class="button-look" href="/approvals/{{$.DocName}}/{{.Id}}/">
+              <a class="button-look" href="/approvals/{{$.DocumentStructure}}/{{.Id}}/">
                 {{if $.Approver}}
                   View/Edit
                 {{else}}
@@ -85,7 +85,7 @@
   <div id="pagination">
     Pages:
     {{range .Pages}}
-      <a href='/doc/{{$.DocName}}/list/{{.}}/'>{{.}}</a>
+      <a href='/doc/{{$.DocumentStructure}}/list/{{.}}/'>{{.}}</a>
     {{end}}
   </div>
 

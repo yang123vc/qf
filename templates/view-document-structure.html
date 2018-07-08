@@ -1,4 +1,4 @@
-{{define "title"}}View Document Structure of {{.DocName}}{{end}}
+{{define "title"}}View Document Structure of {{.DocumentStructure}}{{end}}
 
 
 {{define "styles"}}
@@ -29,7 +29,7 @@
 
 
 {{define "main"}}
-  <h2>View Document Structure of {{.DocName}}</h2>
+  <h2>View Document Structure of {{.DocumentStructure}}</h2>
 
   <h3>Field Data</h3>
   <span>ID : <b>{{.Id}}</b></span><br>
@@ -62,10 +62,7 @@
     </tbody>
   </table>
 
-  <h4>Help on Adding Extra Codes (eg. Validation) to this Document Structure</h4>
-  <p>To create the extra code for this object create an executable with name "qfec{{.Id}}".</p>
-
-  <h3>Permissions Data of Roles on Document Structure {{.DocName}}</h3>
+  <h3>Permissions Data of Roles on Document Structure {{.DocumentStructure}}</h3>
   <table>
     <thead>
       <tr>
@@ -82,6 +79,17 @@
       {{end}}
     </tbody>
   </table>
-  <a href="/edit-document-structure-permissions/{{.DocName}}/">Edit Permissions</a>
-  
+  <a href="/edit-document-structure-permissions/{{.DocumentStructure}}/">Edit Permissions</a>
+
+  <h3>Approval Framework</h3>
+  {{ if $.HasApprovers }}
+    <p>Approval Steps: <b>{{.ApproversStr}}</b></p>
+    <a href="/remove-approvals-from-document-structure/{{.DocumentStructure}}/">Remove Approval Framework</a>
+  {{else}}
+    <a href="/add-approvals-to-document-structure/{{.DocumentStructure}}/">Add Approval Framework</a>
+  {{end}}
+
+  <h3>Help on Adding Extra Codes (eg. Validation) to this Document Structure</h3>
+  <p>To create the extra code for this object create an executable with name "qfec{{.Id}}".</p>
+
 {{end}}

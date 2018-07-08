@@ -57,7 +57,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
 
   if r.Method == http.MethodGet {
     type Context struct {
-      DocName string
+      DocumentStructure string
       DDs []DocData
     }
     ctx := Context{doc, dds}
@@ -255,7 +255,7 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
     type Context struct {
       Created string
       Modified string
-      DocName string
+      DocumentStructure string
       DocAndStructures []docAndStructure
       Id string
       FirstName string
@@ -540,7 +540,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
 
 
   type Context struct {
-    DocName string
+    DocumentStructure string
     ColNames []string
     MyRows []Row
     CurrentPage uint64

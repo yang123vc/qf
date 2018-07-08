@@ -1,4 +1,4 @@
-{{define "title"}}Edit Permissions of Document Structure {{.DocName}} {{end}}
+{{define "title"}}Edit Permissions of Document Structure {{.DocumentStructure}} {{end}}
 
 
 {{define "styles"}}
@@ -17,7 +17,7 @@
 
 
 {{define "main"}}
-  <h2>Edit Permissions of Document Structure {{.DocName}}</h2>
+  <h2>Edit Permissions of Document Structure {{.DocumentStructure}}</h2>
 
   {{ if .LenRPS }}
     <h3>Delete Old Permissions Selection </h3>
@@ -36,7 +36,7 @@
             <td>{{.Role}}</td>
             <td>{{.Permissions}}</td>
             <td>
-              <a href='/delete-role-permissions/{{$.DocName}}/{{.Role}}/'>Delete</a>
+              <a href='/delete-role-permissions/{{$.DocumentStructure}}/{{.Role}}/'>Delete</a>
             </td>
           </tr>
         {{end}}

@@ -142,7 +142,7 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   } else {
     type Context struct {
-      DocNames string
+      DocumentStructures string
     }
     dsList, err := GetDocumentStructureList()
     if err != nil {
@@ -182,14 +182,14 @@ func ListDocumentStructures(w http.ResponseWriter, r *http.Request) {
   }
 
   type Context struct {
-    DocNames []string
+    DocumentStructures []string
   }
   dsList, err := GetDocumentStructureList()
   if err != nil {
     fmt.Fprintf(w, "An error occured when trying to get the document structure list. Exact Error " + err.Error())
     return
   }
-  ctx := Context{DocNames: dsList}
+  ctx := Context{DocumentStructures: dsList}
 
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-document-structures.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
@@ -305,20 +305,20 @@ func ViewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   vars := mux.Vars(r)
-  doc := vars["document-structure"]
+  ds := vars["document-structure"]
 
-  detv, err := docExists(doc)
+  detv, err := docExists(ds)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
     return
   }
   if detv == false {
-    fmt.Fprintf(w, "The document structure %s does not exists.", doc)
+    fmt.Fprintf(w, "The document structure %s does not exists.", ds)
     return
   }
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", doc).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
   if err != nil {
     fmt.Fprintf(w, "An error occured when trying to get the document structure id. Exact Error: " + err.Error())
     return
@@ -326,24 +326,38 @@ func ViewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   docDatas := GetDocData(id)
   type Context struct {
-    DocName string
+    DocumentStructure string
     DocDatas []DocData
     Id int
     Add func(x, y int) int
     RPS []RolePermissions
+    ApproversStr string
+    HasApprovers bool
   }
 
   add := func(x, y int) int {
     return x + y
   }
 
-  rps, err := getRolePermissions(doc)
+  rps, err := getRolePermissions(ds)
   if err != nil {
     fmt.Fprintf(w, "An error occured when trying to get the permissions on roles for this document. Exact error: " + err.Error())
     return
   }
 
-  ctx := Context{doc, docDatas, id, add, rps}
+  approvers, err := getApprovers(ds)
+  if err != nil {
+    fmt.Fprintf(w, "Error getting approval framework data. Exact Error: " + err.Error())
+    return
+  }
+  var hasApprovers bool
+  if len(approvers) == 0 {
+    hasApprovers = false
+  } else {
+    hasApprovers = true
+  }
+
+  ctx := Context{ds, docDatas, id, add, rps, strings.Join(approvers, ", "), hasApprovers}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/view-document-structure.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
@@ -378,7 +392,7 @@ func EditDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
   if r.Method == http.MethodGet {
 
     type Context struct {
-      DocName string
+      DocumentStructure string
       RPS []RolePermissions
       LenRPS int
       Roles []string
