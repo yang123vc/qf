@@ -62,10 +62,9 @@ Steps:
 ## Listing of Document Structure Links in your Web App
 
 There is a list of document structures which are accessible to the admininstrator only. It lists
-all the document structures on your installation.
-
-To list document structures to the users you would need to write a custom page. This is because
-you might want to mix complicated forms and other pages.
+all the document structures on your installation. To list document structures to the users
+you would need to write a custom page. This is because you might have a category page which mixes
+complicated forms, and forms created with this project.
 
 You would need to call `qf.DoesCurrentUserHavePerm` to check if the current user have read permission
 to the document structure before listing it. This would ensure a clean interface with the user

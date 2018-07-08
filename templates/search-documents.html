@@ -23,6 +23,11 @@
   <h3>Search {{.DocName}} Documents</h3>
 
   <form method="post" action="">
+    <div>
+      <label>Created By (User ID)</label>
+      <input type="number" name="created_by" />
+    </div>
+
     {{range .DDs}}
       <div>
         {{ if eq .Type "Section Break"}}

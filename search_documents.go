@@ -123,7 +123,17 @@ func SearchDocuments(w http.ResponseWriter, r *http.Request) {
 
     ids := make([]uint64, 0)
     var idd uint64
-    sqlStmt = sqlStmt + strings.Join(endSqlStmt, ", ")
+    if r.FormValue("created_by") != "" && len(endSqlStmt) != 0 {
+      sqlStmt += "created_by = " + template.HTMLEscapeString(r.FormValue("created_by"))
+      sqlStmt += strings.Join(endSqlStmt, ", ")
+    } else if r.FormValue("created_by") != "" {
+      sqlStmt += "created_by = " + template.HTMLEscapeString(r.FormValue("created_by"))
+    } else if r.FormValue("created_by") == "" && len(endSqlStmt) != 0 {
+      sqlStmt += strings.Join(endSqlStmt, ", ")
+    } else if len(endSqlStmt) == 0 && r.FormValue("created_by") == "" {
+      fmt.Fprintf(w, "Your query is empty.")
+      return
+    }
     rows, err = SQLDB.Query(sqlStmt)
     if err != nil {
       fmt.Fprintf(w, "Error reading this document structure data. Exact Error: " + err.Error())
@@ -143,6 +153,11 @@ func SearchDocuments(w http.ResponseWriter, r *http.Request) {
       return
     }
 
+    if len(ids) == 0 {
+      fmt.Fprintf(w, "Your query returned no results.")
+      return
+    }
+    
     myRows := make([]Row, 0)
     for _, id := range ids {
       colAndDatas := make([]ColAndData, 0)
