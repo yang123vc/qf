@@ -127,19 +127,13 @@ func removeApprovals(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var stepsStr sql.NullString
-  err = SQLDB.QueryRow("select approval_steps from qf_document_structures where name = ?", ds).Scan(&stepsStr)
+  approvers, err := getApprovers(ds)
   if err != nil {
-    fmt.Fprintf(w, "Error occured when getting approval steps of this document structure. Exact Error: " + err.Error())
+    fmt.Fprintf(w, "Error occurred getting approvers. Exact Error: " + err.Error())
     return
   }
-  if ! stepsStr.Valid {
-    fmt.Fprintf(w, "This document structure has no approval steps.")
-    return
-  }
-  stepsList := strings.Split(stepsStr.String, ",")
 
-  for _, step := range stepsList {
+  for _, step := range approvers {
     _, err = SQLDB.Exec(fmt.Sprintf("drop table `%s`", getApprovalTable(ds, step)) )
     if err != nil {
       fmt.Fprintf(w, "An error occured while deleting an approvals table. Exact Error: " + err.Error())
