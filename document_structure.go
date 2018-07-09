@@ -8,6 +8,7 @@ import (
   "strings"
   "html/template"
   "github.com/gorilla/mux"
+  "database/sql"
 )
 
 
@@ -209,21 +210,41 @@ func DeleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   vars := mux.Vars(r)
-  doc := vars["document-structure"]
+  ds := vars["document-structure"]
 
-  detv, err := docExists(doc)
+  detv, err := docExists(ds)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
     return
   }
   if detv == false {
-    fmt.Fprintf(w, "The document structure %s does not exists.", doc)
+    fmt.Fprintf(w, "The document structure %s does not exists.", ds)
     return
+  }
+
+  var stepsStr sql.NullString
+  err = SQLDB.QueryRow("select approval_steps from qf_document_structures where name = ?", ds).Scan(&stepsStr)
+  if err != nil {
+    fmt.Fprintf(w, "Error occured when getting approval steps of this document structure. Exact Error: " + err.Error())
+    return
+  }
+  if ! stepsStr.Valid {
+    fmt.Fprintf(w, "This document structure has no approval steps.")
+    return
+  }
+  stepsList := strings.Split(stepsStr.String, ",")
+
+  for _, step := range stepsList {
+    _, err = SQLDB.Exec(fmt.Sprintf("drop table `%s`", getApprovalTable(ds, step)) )
+    if err != nil {
+      fmt.Fprintf(w, "An error occured while deleting an approvals table. Exact Error: " + err.Error())
+      return
+    }
   }
 
   tx, _ := SQLDB.Begin()
   var id int
-  err = tx.QueryRow("select id from qf_document_structures where name = ?", doc).Scan(&id)
+  err = tx.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
   if err != nil {
     tx.Rollback()
     fmt.Fprintf(w, "Error occurred when trying to get document structure id. Exact Error: " + err.Error())
@@ -237,21 +258,21 @@ func DeleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  _, err = tx.Exec("delete from qf_document_structures where name = ?", doc)
+  _, err = tx.Exec("delete from qf_document_structures where name = ?", ds)
   if err != nil {
     tx.Rollback()
     fmt.Fprintf(w, "Error occurred when deleting document structure. Exact Error: " + err.Error())
     return
   }
 
-  _, err = tx.Exec("delete from qf_permissions where object = ?", doc)
+  _, err = tx.Exec("delete from qf_permissions where object = ?", ds)
   if err != nil {
     tx.Rollback()
     fmt.Fprintf(w, "Error occurred when deleting document permissions. Exact Error: " + err.Error())
     return
   }
 
-  sql := fmt.Sprintf("drop table `%s`", tableName(doc))
+  sql := fmt.Sprintf("drop table `%s`", tableName(ds))
   _, err = tx.Exec(sql)
   if err != nil {
     tx.Rollback()
