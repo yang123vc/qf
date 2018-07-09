@@ -12,7 +12,7 @@ import (
 )
 
 
-func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
+func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
@@ -159,7 +159,7 @@ func NewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func ServeJS(w http.ResponseWriter, r *http.Request) {
+func serveJS(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   lib := vars["library"]
 
@@ -171,7 +171,7 @@ func ServeJS(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func ListDocumentStructures(w http.ResponseWriter, r *http.Request) {
+func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
@@ -198,7 +198,7 @@ func ListDocumentStructures(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func DeleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
+func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
@@ -314,7 +314,7 @@ func getRolePermissions(documentStructure string) ([]RolePermissions, error) {
 }
 
 
-func ViewDocumentStructure(w http.ResponseWriter, r *http.Request) {
+func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
@@ -385,7 +385,7 @@ func ViewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func EditDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
+func editDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
 
   truthValue, err := isUserAdmin(r)
   if err != nil {

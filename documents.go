@@ -15,7 +15,7 @@ import (
 )
 
 
-func CreateDocument(w http.ResponseWriter, r *http.Request) {
+func createDocument(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
@@ -144,7 +144,7 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func UpdateDocument(w http.ResponseWriter, r *http.Request) {
+func updateDocument(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
@@ -608,7 +608,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
 }
 
 
-func ListDocuments(w http.ResponseWriter, r *http.Request) {
+func listDocuments(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
@@ -625,7 +625,7 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func DeleteDocument(w http.ResponseWriter, r *http.Request) {
+func deleteDocument(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())

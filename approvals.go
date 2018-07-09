@@ -12,7 +12,7 @@ import (
 )
 
 
-func AddApprovals(w http.ResponseWriter, r *http.Request) {
+func addApprovals(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
@@ -103,7 +103,7 @@ func AddApprovals(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func RemoveApprovals(w http.ResponseWriter, r *http.Request) {
+func removeApprovals(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
@@ -158,7 +158,7 @@ func RemoveApprovals(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func ViewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
+func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())

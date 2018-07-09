@@ -11,7 +11,7 @@ import (
 )
 
 
-func SearchDocuments(w http.ResponseWriter, r *http.Request) {
+func searchDocuments(w http.ResponseWriter, r *http.Request) {
   _, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
@@ -204,7 +204,7 @@ func SearchDocuments(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func DateLists(w http.ResponseWriter, r *http.Request) {
+func dateLists(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
@@ -299,7 +299,7 @@ func DateLists(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func DateList(w http.ResponseWriter, r *http.Request) {
+func dateList(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())

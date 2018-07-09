@@ -12,7 +12,7 @@ import (
 )
 
 
-func RolesView(w http.ResponseWriter, r *http.Request) {
+func rolesView(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
@@ -62,7 +62,7 @@ func RolesView(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func DeleteRole(w http.ResponseWriter, r *http.Request) {
+func deleteRole(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
@@ -103,7 +103,7 @@ func DeleteRole(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func UsersToRolesList(w http.ResponseWriter, r *http.Request) {
+func usersToRolesList(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
@@ -192,7 +192,7 @@ func UsersToRolesList(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func EditUserRoles(w http.ResponseWriter, r *http.Request) {
+func editUserRoles(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
@@ -296,7 +296,7 @@ func EditUserRoles(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func RemoveRoleFromUser(w http.ResponseWriter, r *http.Request) {
+func removeRoleFromUser(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
@@ -345,7 +345,7 @@ func RemoveRoleFromUser(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func DeleteRolePermissions(w http.ResponseWriter, r *http.Request) {
+func deleteRolePermissions(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())

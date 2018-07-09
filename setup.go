@@ -17,7 +17,7 @@ var GetCurrentUser func(r *http.Request) (uint64, error)
 var BaseTemplate string
 
 
-func QFSetup(w http.ResponseWriter, r *http.Request) {
+func qfSetup(w http.ResponseWriter, r *http.Request) {
   if SQLDB == nil {
     fmt.Fprintf(w, "You have not set the \"qf.SQLDB\". Initialize a connection to the database and set the result to this value.")
     return
@@ -173,39 +173,39 @@ func AddQFHandlers(r *mux.Router) {
   // Please don't change the paths.
 
   // Please call this link first to do your setup.
-  r.HandleFunc("/qf-setup/", QFSetup)
+  r.HandleFunc("/qf-setup/", qfSetup)
 
   // r.HandleFunc("/jquery/", qf.JQuery)
-  r.HandleFunc("/serve-js/{library}/", ServeJS)
+  r.HandleFunc("/serve-js/{library}/", serveJS)
 
   // document structure links
-  r.HandleFunc("/new-document-structure/", NewDocumentStructure)
-  r.HandleFunc("/list-document-structures/", ListDocumentStructures)
-  r.HandleFunc("/delete-document-structure/{document-structure}/", DeleteDocumentStructure)
-  r.HandleFunc("/view-document-structure/{document-structure}/", ViewDocumentStructure)
-  r.HandleFunc("/edit-document-structure-permissions/{document-structure}/", EditDocumentStructurePermissions)
+  r.HandleFunc("/new-document-structure/", newDocumentStructure)
+  r.HandleFunc("/list-document-structures/", listDocumentStructures)
+  r.HandleFunc("/delete-document-structure/{document-structure}/", deleteDocumentStructure)
+  r.HandleFunc("/view-document-structure/{document-structure}/", viewDocumentStructure)
+  r.HandleFunc("/edit-document-structure-permissions/{document-structure}/", editDocumentStructurePermissions)
 
   // roles links
-  r.HandleFunc("/roles-view/", RolesView)
-  r.HandleFunc("/delete-role/{role}/", DeleteRole)
-  r.HandleFunc("/users-to-roles-list/", UsersToRolesList)
-  r.HandleFunc("/edit-user-roles/{userid}/", EditUserRoles)
-  r.HandleFunc("/remove-role-from-user/{userid}/{role}/", RemoveRoleFromUser)
-  r.HandleFunc("/delete-role-permissions/{document-structure}/{role}/", DeleteRolePermissions)
+  r.HandleFunc("/roles-view/", rolesView)
+  r.HandleFunc("/delete-role/{role}/", deleteRole)
+  r.HandleFunc("/users-to-roles-list/", usersToRolesList)
+  r.HandleFunc("/edit-user-roles/{userid}/", editUserRoles)
+  r.HandleFunc("/remove-role-from-user/{userid}/{role}/", removeRoleFromUser)
+  r.HandleFunc("/delete-role-permissions/{document-structure}/{role}/", deleteRolePermissions)
 
   // document links
-  r.HandleFunc("/doc/{document-structure}/create/", CreateDocument)
-  r.HandleFunc("/doc/{document-structure}/update/{id:[0-9]+}/", UpdateDocument)
-  r.HandleFunc("/doc/{document-structure}/list/", ListDocuments)
-  r.HandleFunc("/doc/{document-structure}/list/{page:[0-9]+}/", ListDocuments)
-  r.HandleFunc("/doc/{document-structure}/delete/{id:[0-9]+}/", DeleteDocument)
-  r.HandleFunc("/doc/{document-structure}/search/", SearchDocuments)
-  r.HandleFunc("/doc/{document-structure}/date-lists/", DateLists)
-  r.HandleFunc("/doc/{document-structure}/date-list/{date}/", DateList)
-  r.HandleFunc("/doc/{document-structure}/date-list/{date}/{page:[0-9]+}/", DateList)
+  r.HandleFunc("/doc/{document-structure}/create/", createDocument)
+  r.HandleFunc("/doc/{document-structure}/update/{id:[0-9]+}/", updateDocument)
+  r.HandleFunc("/doc/{document-structure}/list/", listDocuments)
+  r.HandleFunc("/doc/{document-structure}/list/{page:[0-9]+}/", listDocuments)
+  r.HandleFunc("/doc/{document-structure}/delete/{id:[0-9]+}/", deleteDocument)
+  r.HandleFunc("/doc/{document-structure}/search/", searchDocuments)
+  r.HandleFunc("/doc/{document-structure}/date-lists/", dateLists)
+  r.HandleFunc("/doc/{document-structure}/date-list/{date}/", dateList)
+  r.HandleFunc("/doc/{document-structure}/date-list/{date}/{page:[0-9]+}/", dateList)
 
   // Approvals
-  r.HandleFunc("/add-approvals-to-document-structure/{document-structure}/", AddApprovals)
-  r.HandleFunc("/remove-approvals-from-document-structure/{document-structure}/", RemoveApprovals)
-  r.HandleFunc("/approvals/{document-structure}/{id:[0-9]+}/", ViewOrUpdateApprovals)
+  r.HandleFunc("/add-approvals-to-document-structure/{document-structure}/", addApprovals)
+  r.HandleFunc("/remove-approvals-from-document-structure/{document-structure}/", removeApprovals)
+  r.HandleFunc("/approvals/{document-structure}/{id:[0-9]+}/", viewOrUpdateApprovals)
 }
