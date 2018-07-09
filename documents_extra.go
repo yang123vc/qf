@@ -314,6 +314,6 @@ func DateList(w http.ResponseWriter, r *http.Request) {
     tableName(ds), template.HTMLEscapeString(date))
   rocSqlStmt := fmt.Sprintf("select id from `%s` where date(created) = '%s' and created_by = %d order by created desc limit ?, ?",
     tableName(ds), template.HTMLEscapeString(date), useridUint64)
-  innerListDocuments(w, r, readSqlStmt, rocSqlStmt)
+  innerListDocuments(w, r, readSqlStmt, rocSqlStmt, "date-list")
   return
 }

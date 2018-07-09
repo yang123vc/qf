@@ -380,7 +380,7 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, rocSqlStmt string) {
+func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, rocSqlStmt, listType string) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
@@ -550,7 +550,10 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
     DeletePerm bool
     HasApprovals bool
     Approver bool
+    ListType string
+    OptionalDate string
   }
+
   pages := make([]uint64, 0)
   for i := uint64(0); i < uint64(totalPages); i++ {
     pages = append(pages, i+1)
@@ -590,7 +593,15 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
       }
     }
 
-  ctx := Context{doc, colNames, myRows, pageI, pages, tv1, tv2, tv3, hasApprovals, approver}
+  var date string
+  if listType == "date-list" {
+    date = vars["date"]
+  } else {
+    date = ""
+  }
+
+  ctx := Context{doc, colNames, myRows, pageI, pages, tv1, tv2, tv3, hasApprovals,
+    approver, listType, date}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-documents.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
@@ -609,7 +620,7 @@ func ListDocuments(w http.ResponseWriter, r *http.Request) {
 
   readSqlStmt := fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(ds))
   rocSqlStmt := fmt.Sprintf("select id from `%s` where created_by = %d order by created desc limit ?, ?", tableName(ds), useridUint64 )
-  innerListDocuments(w, r, readSqlStmt, rocSqlStmt)
+  innerListDocuments(w, r, readSqlStmt, rocSqlStmt, "true-list")
   return
 }
 

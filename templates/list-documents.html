@@ -1,4 +1,10 @@
-{{define "title"}} Lists of {{.DocumentStructure}} Documents {{end}}
+{{define "title"}}
+  {{if eq .ListType "true-list"}}
+    Lists of {{.DocumentStructure}} Documents
+  {{else if eq .ListType "date-list"}}
+    List of {{.DocumentStructure}} Documents created on {{.OptionalDate}}
+  {{end}}
+{{end}}
 
 
 {{define "styles"}}
@@ -29,7 +35,13 @@
 
 
 {{define "main"}}
-  <h3>Lists of {{.DocumentStructure}} Documents</h3>
+  <h3>
+    {{if eq .ListType "true-list"}}
+      Lists of {{.DocumentStructure}} Documents
+    {{else if eq .ListType "date-list"}}
+      List of {{.DocumentStructure}} Documents created on {{.OptionalDate}}
+    {{end}}
+  </h3>
 
   {{ if eq $.CreatePerm true}}
     <a class="button-look" href="/doc/{{.DocumentStructure}}/create/">Create {{.DocumentStructure}} Document</a>
@@ -85,7 +97,11 @@
   <div id="pagination">
     Pages:
     {{range .Pages}}
-      <a href='/doc/{{$.DocumentStructure}}/list/{{.}}/'>{{.}}</a>
+      {{if eq $.ListType "true-list"}}
+        <a href='/doc/{{$.DocumentStructure}}/list/{{.}}/'>{{.}}</a>
+      {{else if eq $.ListType "date-list"}}
+        <a href='/doc/{{$.DocumentStructure}}/date-list/{{$.OptionalDate}}/{{.}}/'>{{.}}</a>
+      {{end}}
     {{end}}
   </div>
 
