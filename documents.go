@@ -380,7 +380,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, rocSqlStmt, listType string) {
+func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, rocSqlStmt, readTotalSql, rocTotalSql, listType string) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
     fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
@@ -423,8 +423,14 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
     return
   }
 
+  var sqlStmt string
+  if tv1 {
+    sqlStmt = readTotalSql
+  } else if tv2 {
+    sqlStmt = rocTotalSql
+  }
+
   var count uint64
-  sqlStmt := fmt.Sprintf("select count(*) from `%s`", tableName(doc))
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     fmt.Fprintf(w, "There are no documents to display.")
@@ -459,7 +465,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
   }
   colNames = append(colNames, "created", "created_by")
 
-  var itemsPerPage uint64 = 50
+  var itemsPerPage uint64 = 2
   startIndex := (pageI - 1) * itemsPerPage
   totalItems := count
   totalPages := math.Ceil( float64(totalItems) / float64(itemsPerPage) )
@@ -620,7 +626,9 @@ func listDocuments(w http.ResponseWriter, r *http.Request) {
 
   readSqlStmt := fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(ds))
   rocSqlStmt := fmt.Sprintf("select id from `%s` where created_by = %d order by created desc limit ?, ?", tableName(ds), useridUint64 )
-  innerListDocuments(w, r, readSqlStmt, rocSqlStmt, "true-list")
+  readTotalSql := fmt.Sprintf("select count(*) from `%s`", tableName(ds))
+  rocTotalSql := fmt.Sprintf("select count(*) from `%s` where created_by = %d", tableName(ds), useridUint64)
+  innerListDocuments(w, r, readSqlStmt, rocSqlStmt, readTotalSql, rocTotalSql, "true-list")
   return
 }
 
