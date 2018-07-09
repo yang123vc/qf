@@ -1,5 +1,6 @@
 # How it Works.
 
+
 ## Interactions with the Database
 
 This project does not make use of any orm, or wrapper around the mysql database. It uses
@@ -10,6 +11,15 @@ For some lists they are comma seperated and saved as a varchar(255) in the datab
 
 Boolean fields are saved as char(1) with truth values saved as 't' and false values
 saved as 'f'.
+
+
+## Viewing Documents and Listing Documents
+
+The SQL statements backing viewing documents and listing documents is a bit different. This
+is because we can't tell the fields before hand and create variables for the fields.
+
+It works by getting the column names from `qf_fields` and then looping through the columns and getting
+the data for each column. It also makes use of the theory that every data can be saved as string.
 
 
 ## UI
