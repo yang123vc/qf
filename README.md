@@ -44,19 +44,33 @@ Steps:
 - Go to `/view-document-structure/{document-structure}/` where document-structure is changed to
   the name of a document structure that you created.
 
-- You would see some instructions on the name of the command to create. e.g. qfec3.
+- You would see the number of the document structure.
 
-- The command is expected to receive arguments in the following format:
+- qf.ExtraCode has the following definitions:
+  ```go
+  type ExtraCode struct {
+    DSNo int
+    ValidationFn func(jsonData string) string
+    AfterCreateFn func(id uint64)
+    AfterUpdateFn func(id uint64)
+    AfterDeleteFn func(jsonData string)
+  }
+  ```
 
-  - For validation `qfec3 v {jsonstring}` where jsonString is a json representation of the input.
-    If you print from this command, it would be returned as an error to the page.
+- Create a type qf.ExtraCode and add it to the qf.ExtraCodeList in your main function. Example is :
 
-  - For after new save `qfec3 n {id}` where id is the primary key of the newly created document.
+  ```go
+  validateProfile := func(jsonData string) string{
+    return "not valid."
+  }
 
-  - For after update `qfec3 u {id}` where id is the primary key of the updated document.
+  qf.ExtraCodeList = make([]qf.ExtraCode, 0)
+  qf.ExtraCodeList = append(qf.ExtraCodeList, qf.ExtraCode{DSNo: 1, ValidationFn: validateProfile})
+  ```
+ - For ValidationFn whenever it prints it would be taken as an error and printed to the user. If it doesn't then
+ there is no error.
 
-- Create the command and add it to path.
-
+ - Other functions under ExtraCode do not print to screen.
 
 
 ## Listing of Document Structure Links in your Web App

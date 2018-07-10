@@ -8,7 +8,6 @@ import (
   "html/template"
   "github.com/gorilla/mux"
   "encoding/json"
-  "os/exec"
   "strconv"
   "database/sql"
   "math"
@@ -52,7 +51,6 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     errorPage(w, r, "An internal error occured.", err)
     return
   }
-  cmdString := fmt.Sprintf("qfec%d", id)
 
   dds := GetDocData(id)
 
@@ -74,13 +72,13 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     for k := range r.PostForm {
       fData[k] = r.FormValue(k)
     }
-    jsonString, err := json.Marshal(fData)
+    jsonString, _ := json.Marshal(fData)
 
-    _, err = exec.LookPath(cmdString)
-    if err == nil {
-      out, err := exec.Command(cmdString, "v", string(jsonString)).Output()
-      if err == nil && string(out) != "" {
-        fmt.Fprintf(w, "Extra Code Validation Error: %s", string(out))
+    ec, ectv := getEC(ds)
+    if ectv && ec.ValidationFn != nil {
+      outString := ec.ValidationFn(string(jsonString))
+      if outString != "" {
+        fmt.Fprintf(w, "Exra Code Validation Error: " + outString)
         return
       }
     }
@@ -134,9 +132,9 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
       errorPage(w, r, "An error occured while trying to run extra code: " , err)
       return
     }
-    _, err = exec.LookPath(cmdString)
-    if err == nil {
-      exec.Command(cmdString, "n", strconv.FormatInt(lastid, 10)).Run()
+
+    if ectv && ec.AfterCreateFn != nil {
+      ec.AfterCreateFn(uint64(lastid))
     }
 
     redirectURL := fmt.Sprintf("/doc/%s/list/", ds)
@@ -212,7 +210,6 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     errorPage(w, r, "An error occurred when reading document structure. Exact Error" , err)
     return
   }
-  cmdString := fmt.Sprintf("qfec%d", id)
 
   docDatas := GetDocData(id)
 
@@ -324,11 +321,11 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     }
     jsonString, err := json.Marshal(fData)
 
-    _, err = exec.LookPath(cmdString)
-    if err == nil {
-      out, err := exec.Command(cmdString, "v", string(jsonString)).Output()
-      if err == nil && string(out) != "" {
-        fmt.Fprintf(w, "Extra Code Validation Error: %s", string(out))
+    ec, ectv := getEC(ds)
+    if ectv && ec.ValidationFn != nil {
+      outString := ec.ValidationFn(string(jsonString))
+      if outString != "" {
+        fmt.Fprintf(w, "Exra Code Validation Error: " + outString)
         return
       }
     }
@@ -371,9 +368,9 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     }
 
     // post save extra code
-    _, err = exec.LookPath(cmdString)
-    if err == nil {
-      exec.Command(cmdString, "u", docid).Run()
+    if ectv && ec.AfterUpdateFn != nil {
+      docidUint64, _ := strconv.ParseUint(docid, 10, 64)
+      ec.AfterUpdateFn(docidUint64)
     }
 
     redirectURL := fmt.Sprintf("/doc/%s/list/", ds)
@@ -446,27 +443,11 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
     errorPage(w, r, "An internal error occured.  " , err)
   }
 
-  colNames := make([]string, 0)
-  var colName string
-  rows, err := SQLDB.Query("select name from qf_fields where dsid = ? and type != \"Section Break\" order by id asc limit 3", id)
+  colNames, err := getColumnNames(ds)
   if err != nil {
-    errorPage(w, r, "Error reading column names.  " , err)
+    errorPage(w, r, "Error getting column names.", err)
     return
   }
-  defer rows.Close()
-  for rows.Next() {
-    err := rows.Scan(&colName)
-    if err != nil {
-      errorPage(w, r, "Error reading a column name.  " , err)
-      return
-    }
-    colNames = append(colNames, colName)
-  }
-  if err = rows.Err(); err != nil {
-    errorPage(w, r, "Extra Error reading column names.  " , err)
-    return
-  }
-  colNames = append(colNames, "created", "created_by")
 
   var itemsPerPage uint64 = 50
   startIndex := (pageI - 1) * itemsPerPage
@@ -483,7 +464,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
     sqlStmt = rocSqlStmt
   }
 
-  rows, err = SQLDB.Query(sqlStmt, startIndex, itemsPerPage)
+  rows, err := SQLDB.Query(sqlStmt, startIndex, itemsPerPage)
   if err != nil {
     errorPage(w, r, "Error reading this document structure data.  " , err)
     return
@@ -691,6 +672,36 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     errorPage(w, r, "Error occurred while determining if the user have delete-only-created permission.  " , err)
   }
 
+  colNames, err := getColumnNames(ds)
+  if err != nil {
+    errorPage(w, r, "Error getting column names.", err)
+    return
+  }
+
+  fData := make(map[string]string)
+  for _, colName := range colNames {
+    var data string
+    var dataFromDB sql.NullString
+    sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", colName, tableName(ds), docid)
+    err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
+    if err != nil {
+      errorPage(w, r, "An internal error occured.  " , err)
+      return
+    }
+    if dataFromDB.Valid {
+      data = dataFromDB.String
+    } else {
+      data = ""
+    }
+    fData[colName] = data
+  }
+  jsonString, _ := json.Marshal(fData)
+
+  ec, ectv := getEC(ds)
+  if ectv && ec.AfterDeleteFn != nil {
+    ec.AfterDeleteFn(string(jsonString))
+  }
+
   if deletePerm {
     err = deleteApproversData(ds, docid)
     if err != nil {
@@ -704,8 +715,6 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
       errorPage(w, r, "An error occured while deleting this document: " , err)
       return
     }
-
-
 
   } else if docPerm {
 

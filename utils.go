@@ -318,3 +318,49 @@ func errorPage(w http.ResponseWriter, r *http.Request, msg string, err error) {
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
 }
+
+
+func getEC(documentStructure string) (ExtraCode, bool) {
+  var dsid int
+  err := SQLDB.QueryRow("select id from qf_document_structures where name = ?", documentStructure).Scan(&dsid)
+  if err != nil {
+    return ExtraCode{}, false
+  }
+
+  for _, ec := range ExtraCodeList {
+    if dsid == ec.DSNo {
+      return ec, true
+    }
+  }
+  return ExtraCode{}, false
+}
+
+
+func getColumnNames(ds string) ([]string, error){
+  colNames := make([]string, 0)
+
+  var dsid int
+  err := SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&dsid)
+  if err != nil {
+    return colNames, err
+  }
+
+  var colName string
+  rows, err := SQLDB.Query("select name from qf_fields where dsid = ? and type != \"Section Break\" order by id asc limit 3", dsid)
+  if err != nil {
+    return colNames, err
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&colName)
+    if err != nil {
+      return colNames, err
+    }
+    colNames = append(colNames, colName)
+  }
+  if err = rows.Err(); err != nil {
+    return colNames, err
+  }
+  colNames = append(colNames, "created", "created_by")
+  return colNames, nil
+}

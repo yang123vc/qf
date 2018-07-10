@@ -16,6 +16,15 @@ var Admins []uint64
 var GetCurrentUser func(r *http.Request) (uint64, error)
 var BaseTemplate string
 
+type ExtraCode struct {
+  DSNo int
+  ValidationFn func(jsonData string) string
+  AfterCreateFn func(id uint64)
+  AfterUpdateFn func(id uint64)
+  AfterDeleteFn func(jsonData string)
+}
+
+var ExtraCodeList []ExtraCode
 
 func qfSetup(w http.ResponseWriter, r *http.Request) {
   if SQLDB == nil {
