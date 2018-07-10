@@ -1,0 +1,13 @@
+{{define "title"}} An Error occurred {{end}}
+
+{{define "main"}}
+  <h3>An Error Occurred</h3>
+  <h4>Message</h4>
+  <p>{{.Message}}</p>
+
+  {{if ne .ExactError ""}}
+    <h4>Exact Error</h4>
+    <p>{{.ExactError}}</p>
+  {{end}}
+
+{{end}}

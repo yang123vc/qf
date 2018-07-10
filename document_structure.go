@@ -8,18 +8,17 @@ import (
   "strings"
   "html/template"
   "github.com/gorilla/mux"
-  "database/sql"
 )
 
 
 func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred while trying to ascertain if the user is admin.", err)
     return
   }
   if ! truthValue {
-    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    errorPage(w, r, "You are not an admin here. You don't have permissions to view this page.", nil)
     return
   }
 
@@ -55,7 +54,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     res, err := tx.Exec(`insert into qf_document_structures(name) values(?)`, r.FormValue("ds-name"))
     if err != nil {
       tx.Rollback()
-      fmt.Fprintf(w, "An error ocurred while saving this document structure. Exact Error: " + err.Error())
+      errorPage(w, r, "An error ocurred while saving this document structure.", err)
       return
     }
 
@@ -64,13 +63,13 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       values(?, ?, ?, ?, ?, ?)`)
     if err != nil {
       tx.Rollback()
-      fmt.Fprintf(w, "An internal error occured. Exact Error: " + err.Error())
+      errorPage(w, r, "An internal error occurred.", err)
     }
     for _, o := range(qffs) {
       _, err := stmt.Exec(formId, o.label, o.name, o.type_, o.options, o.other_options)
       if err != nil {
         tx.Rollback()
-        fmt.Fprintf(w, "An error occured while saving fields data. Exact Error: " + err.Error())
+        errorPage(w, r, "An error occured while saving fields data.", err)
         return
       }
     }
@@ -122,7 +121,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     _, err1 := tx.Exec(sql)
     if err1 != nil {
       tx.Rollback()
-      fmt.Fprintf(w, "Error occured when creating document structure mysql table. Exact Error: " + err1.Error())
+      errorPage(w, r, "Error occured when creating document structure mysql table.", err1)
       return
     }
 
@@ -132,7 +131,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
         _, err := tx.Exec(indexSql)
         if err != nil {
           tx.Rollback()
-          fmt.Fprintf(w, "An error occured while creating indexes on the document structure table. Exact Error: " + err.Error())
+          errorPage(w, r, "An error occured while creating indexes on the document structure table.", err)
           return
         }
       }
@@ -147,7 +146,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     }
     dsList, err := GetDocumentStructureList()
     if err != nil {
-      fmt.Fprintf(w, "An error occured when trying to get the document structure list. Exact Error " + err.Error())
+      errorPage(w, r, "An error occured when trying to get the document structure list.", err)
       return
     }
     ctx := Context{strings.Join(dsList, ",")}
@@ -174,11 +173,11 @@ func serveJS(w http.ResponseWriter, r *http.Request) {
 func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred while trying to ascertain if the user is admin.", err)
     return
   }
   if ! truthValue {
-    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    errorPage(w, r, "You are not an admin here. You don't have permissions to view this page.", nil)
     return
   }
 
@@ -187,7 +186,7 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
   }
   dsList, err := GetDocumentStructureList()
   if err != nil {
-    fmt.Fprintf(w, "An error occured when trying to get the document structure list. Exact Error " + err.Error())
+    errorPage(w, r, "An error occured when trying to get the document structure list.", err)
     return
   }
   ctx := Context{DocumentStructures: dsList}
@@ -201,11 +200,11 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
 func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred while trying to ascertain if the user is admin.", err)
     return
   }
   if ! truthValue {
-    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    errorPage(w, r, "You are not an admin here. You don't have permissions to view this page.", nil)
     return
   }
 
@@ -214,30 +213,23 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred while determining if this document exists.", err)
     return
   }
   if detv == false {
-    fmt.Fprintf(w, "The document structure %s does not exists.", ds)
+    errorPage(w, r, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
     return
   }
 
-  var stepsStr sql.NullString
-  err = SQLDB.QueryRow("select approval_steps from qf_document_structures where name = ?", ds).Scan(&stepsStr)
+  approvers, err := getApprovers(ds)
   if err != nil {
-    fmt.Fprintf(w, "Error occured when getting approval steps of this document structure. Exact Error: " + err.Error())
+    errorPage(w, r, "Error getting approvers.", err)
     return
   }
-  if ! stepsStr.Valid {
-    fmt.Fprintf(w, "This document structure has no approval steps.")
-    return
-  }
-  stepsList := strings.Split(stepsStr.String, ",")
-
-  for _, step := range stepsList {
+  for _, step := range approvers {
     _, err = SQLDB.Exec(fmt.Sprintf("drop table `%s`", getApprovalTable(ds, step)) )
     if err != nil {
-      fmt.Fprintf(w, "An error occured while deleting an approvals table. Exact Error: " + err.Error())
+      errorPage(w, r, "An error occured while deleting an approvals table.", err)
       return
     }
   }
@@ -247,28 +239,28 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
   err = tx.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
   if err != nil {
     tx.Rollback()
-    fmt.Fprintf(w, "Error occurred when trying to get document structure id. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred when trying to get document structure id.", err)
     return
   }
 
   _, err = tx.Exec("delete from qf_fields where dsid = ?", id)
   if err != nil {
     tx.Rollback()
-    fmt.Fprintf(w, "Error occurred when deleting document structure fields. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred when deleting document structure fields.", err)
     return
   }
 
   _, err = tx.Exec("delete from qf_document_structures where name = ?", ds)
   if err != nil {
     tx.Rollback()
-    fmt.Fprintf(w, "Error occurred when deleting document structure. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred when deleting document structure.", err)
     return
   }
 
   _, err = tx.Exec("delete from qf_permissions where object = ?", ds)
   if err != nil {
     tx.Rollback()
-    fmt.Fprintf(w, "Error occurred when deleting document permissions. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred when deleting document permissions.", err)
     return
   }
 
@@ -276,7 +268,7 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
   _, err = tx.Exec(sql)
   if err != nil {
     tx.Rollback()
-    fmt.Fprintf(w, "Error occurred when dropping document structure table. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred when dropping document structure table.", err)
     return
   }
 
@@ -317,11 +309,11 @@ func getRolePermissions(documentStructure string) ([]RolePermissions, error) {
 func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred while trying to ascertain if the user is admin.", err)
     return
   }
   if ! truthValue {
-    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    errorPage(w, r, "You are not an admin here. You don't have permissions to view this page.", nil)
     return
   }
 
@@ -330,18 +322,18 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred while determining if this document exists.", err)
     return
   }
   if detv == false {
-    fmt.Fprintf(w, "The document structure %s does not exists.", ds)
+    errorPage(w, r, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
     return
   }
 
   var id int
   err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
   if err != nil {
-    fmt.Fprintf(w, "An error occured when trying to get the document structure id. Exact Error: " + err.Error())
+    errorPage(w, r, "An error occured when trying to get the document structure id.  ", err)
     return
   }
 
@@ -362,13 +354,13 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   rps, err := getRolePermissions(ds)
   if err != nil {
-    fmt.Fprintf(w, "An error occured when trying to get the permissions on roles for this document. Exact error: " + err.Error())
+    errorPage(w, r, "An error occured when trying to get the permissions on roles for this document.", err)
     return
   }
 
   approvers, err := getApprovers(ds)
   if err != nil {
-    fmt.Fprintf(w, "Error getting approval framework data. Exact Error: " + err.Error())
+    errorPage(w, r, "Error getting approval framework data.", err)
     return
   }
   var hasApprovers bool
@@ -389,24 +381,24 @@ func editDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
 
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    fmt.Fprintf(w, "Error occurred while trying to ascertain if the user is admin. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred while trying to ascertain if the user is admin.", err)
     return
   }
   if ! truthValue {
-    fmt.Fprintf(w, "You are not an admin here. You don't have permissions to view this page.")
+    errorPage(w, r, "You are not an admin here. You don't have permissions to view this page.", nil)
     return
   }
 
   vars := mux.Vars(r)
-  doc := vars["document-structure"]
+  ds := vars["document-structure"]
 
-  detv, err := docExists(doc)
+  detv, err := docExists(ds)
   if err != nil {
-    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred while determining if this document exists.", err)
     return
   }
   if detv == false {
-    fmt.Fprintf(w, "The document structure %s does not exists.", doc)
+    errorPage(w, r, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
     return
   }
 
@@ -421,17 +413,17 @@ func editDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
 
     roles, err := GetRoles()
     if err != nil {
-      fmt.Fprintf(w, "Error getting roles. Exact Error: " + err.Error())
+      errorPage(w, r, "Error getting roles.", err)
       return
     }
 
-    rps, err := getRolePermissions(doc)
+    rps, err := getRolePermissions(ds)
     if err != nil {
-      fmt.Fprintf(w, "An error occured when trying to get the permissions on roles for this document. Exact error: " + err.Error())
+      errorPage(w, r, "An error occured when trying to get the permissions on roles for this document.", err)
       return
     }
 
-    ctx := Context{doc, rps, len(rps), roles}
+    ctx := Context{ds, rps, len(rps), roles}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-document-structure-permissions.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
@@ -455,17 +447,17 @@ func editDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
     for _, rp := range nrps {
       roleid, err := getRoleId(rp.Role)
       if err != nil {
-        fmt.Fprintf(w, "Error occured while getting role id. Exact Error: " + err.Error())
+        errorPage(w, r, "Error occured while getting role id.", err)
         return
       }
-      _, err = SQLDB.Exec("insert into qf_permissions(roleid, object, permissions) values(?,?,?)", roleid, doc, rp.Permissions)
+      _, err = SQLDB.Exec("insert into qf_permissions(roleid, object, permissions) values(?,?,?)", roleid, ds, rp.Permissions)
       if err != nil {
-        fmt.Fprintf(w, "Error storing role permissions. Exact error: " + err.Error())
+        errorPage(w, r, "Error storing role permissions.", err)
         return
       }
     }
 
-    redirectURL := fmt.Sprintf("/view-document-structure/%s/", doc)
+    redirectURL := fmt.Sprintf("/view-document-structure/%s/", ds)
     http.Redirect(w, r, redirectURL, 307)
   }
 

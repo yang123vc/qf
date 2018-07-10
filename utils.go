@@ -9,6 +9,7 @@ import (
   "database/sql"
   "strconv"
   "os"
+  "html/template"
 )
 
 
@@ -298,4 +299,22 @@ type Row struct {
   ColAndDatas []ColAndData
   RowUpdatePerm bool
   RowDeletePerm bool
+}
+
+
+func errorPage(w http.ResponseWriter, r *http.Request, msg string, err error) {
+  type Context struct {
+    Message string
+    ExactError string
+  }
+  var exactError string
+  if err != nil {
+    exactError = err.Error()
+  } else {
+    exactError = ""
+  }
+  ctx := Context{msg, exactError}
+  fullTemplatePath := filepath.Join(getProjectPath(), "templates/error-page.html")
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl.Execute(w, ctx)
 }

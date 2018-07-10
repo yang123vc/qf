@@ -14,7 +14,7 @@ import (
 func searchDocuments(w http.ResponseWriter, r *http.Request) {
   _, err := GetCurrentUser(r)
   if err != nil {
-    fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
+    errorPage(w, r, "You need to be logged in to continue.", err)
     return
   }
 
@@ -23,28 +23,28 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred while determining if this document exists.", err)
     return
   }
   if detv == false {
-    fmt.Fprintf(w, "The document structure %s does not exists.", ds)
+    errorPage(w, r, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
     return
   }
 
   tv1, err1 := DoesCurrentUserHavePerm(r, ds, "read")
   if err1 != nil {
-    fmt.Fprintf(w, "Error occured while determining if the user have read permission for this page. Exact Error: " + err1.Error())
+    errorPage(w, r, "Error occured while determining if the user have read permission for this page.", err1)
     return
   }
   if ! tv1 {
-    fmt.Fprintf(w, "You don't have the read permission for this document structure.")
+    errorPage(w, r, "You don't have the read permission for this document structure.", nil)
     return
   }
 
   var id int
   err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
   if err != nil {
-    panic(err)
+    errorPage(w, r, "An internal error occurred.", err)
   }
 
   dds := GetDocData(id)
@@ -65,20 +65,20 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
     var colName string
     rows, err := SQLDB.Query("select name from qf_fields where dsid = ? and type != \"Section Break\" order by id asc limit 3", id)
     if err != nil {
-      fmt.Fprintf(w, "Error reading column names. Exact Error: " + err.Error())
+      errorPage(w, r, "Error reading column names.", err)
       return
     }
     defer rows.Close()
     for rows.Next() {
       err := rows.Scan(&colName)
       if err != nil {
-        fmt.Fprintf(w, "Error reading a column name. Exact Error: " + err.Error())
+        errorPage(w, r, "Error reading a column name.  ", err)
         return
       }
       colNames = append(colNames, colName)
     }
     if err = rows.Err(); err != nil {
-      fmt.Fprintf(w, "Extra Error reading column names. Exact Error: " + err.Error())
+      errorPage(w, r, "Extra Error reading column names.", err)
       return
     }
     colNames = append(colNames, "created", "created_by")
@@ -131,30 +131,30 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
     } else if r.FormValue("created_by") == "" && len(endSqlStmt) != 0 {
       sqlStmt += strings.Join(endSqlStmt, ", ")
     } else if len(endSqlStmt) == 0 && r.FormValue("created_by") == "" {
-      fmt.Fprintf(w, "Your query is empty.")
+      errorPage(w, r, "Your query is empty.", nil)
       return
     }
     rows, err = SQLDB.Query(sqlStmt)
     if err != nil {
-      fmt.Fprintf(w, "Error reading this document structure data. Exact Error: " + err.Error())
+      errorPage(w, r, "Error reading this document structure data.  " , err)
       return
     }
     defer rows.Close()
     for rows.Next() {
       err := rows.Scan(&idd)
       if err != nil {
-        fmt.Fprintf(w, "Error reading a row of data for this document structure. Exact Error: " + err.Error())
+        errorPage(w, r, "Error reading a row of data for this document structure.  " , err)
         return
       }
       ids = append(ids, idd)
     }
     if err = rows.Err(); err != nil {
-      fmt.Fprintf(w, "Extra error occurred while reading this document structure data. Exact Error: " + err.Error())
+      errorPage(w, r, "Extra error occurred while reading this document structure data.  " , err)
       return
     }
 
     if len(ids) == 0 {
-      fmt.Fprintf(w, "Your query returned no results.")
+      errorPage(w, r, "Your query returned no results.", nil)
       return
     }
 
@@ -167,7 +167,7 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
         sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", col, tableName(ds), id)
         err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
         if err != nil {
-          fmt.Fprintf(w, "An internal error occured. Exact Error: " + err.Error())
+          errorPage(w, r, "An internal error occured.  " , err)
           return
         }
         if dataFromDB.Valid {
@@ -182,7 +182,7 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
       sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %d", tableName(ds), id)
       err := SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
       if err != nil {
-        fmt.Fprintf(w, "An internal error occured. Exact Error: " + err.Error())
+        errorPage(w, r, "An internal error occured.  " , err)
         return
       }
       myRows = append(myRows, Row{id, colAndDatas, false, false})
@@ -207,7 +207,7 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
 func dateLists(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
+    errorPage(w, r, "You need to be logged in to continue.", err)
     return
   }
 
@@ -216,23 +216,23 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    fmt.Fprintf(w, "Error occurred while determining if this document exists. Exact Error: " + err.Error())
+    errorPage(w, r, "Error occurred while determining if this document exists.", err)
     return
   }
   if detv == false {
-    fmt.Fprintf(w, "The document structure %s does not exists.", ds)
+    errorPage(w, r, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
     return
   }
 
   tv1, err1 := DoesCurrentUserHavePerm(r, ds, "read")
   tv2, err2 := DoesCurrentUserHavePerm(r, ds, "read-only-created")
   if err1 != nil || err2 != nil {
-    fmt.Fprintf(w, "Error occured while determining if the user have read permission for this page.")
+    errorPage(w, r, "Error occured while determining if the user have read permission for this page.", nil)
     return
   }
 
   if ! tv1 && ! tv2 {
-    fmt.Fprintf(w, "You don't have the read permission for this document structure.")
+    errorPage(w, r, "You don't have the read permission for this document structure.", nil)
     return
   }
 
@@ -240,7 +240,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
   sqlStmt := fmt.Sprintf("select count(*) from `%s`", tableName(ds))
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
-    fmt.Fprintf(w, "There are no documents to display.")
+    errorPage(w, r, "There are no documents to display.", nil)
     return
   }
 
@@ -254,20 +254,20 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
   var date string
   rows, err := SQLDB.Query(sqlStmt)
   if err != nil {
-    fmt.Fprintf(w, "Error getting date data for this document structure. Exact Error: " + err.Error())
+    errorPage(w, r, "Error getting date data for this document structure.  " , err)
     return
   }
   defer rows.Close()
   for rows.Next() {
     err := rows.Scan(&date)
     if err != nil {
-      fmt.Fprintf(w, "Error retrieving single date. Exact Error: " + err.Error())
+      errorPage(w, r, "Error retrieving single date.  " , err)
       return
     }
     dates = append(dates, date)
   }
   if err = rows.Err(); err != nil {
-    fmt.Fprintf(w, "Error after retrieving date data. Exact Error: " + err.Error())
+    errorPage(w, r, "Error after retrieving date data.  " , err)
     return
   }
 
@@ -281,7 +281,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
     sqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = ?", tableName(ds))
     err = SQLDB.QueryRow(sqlStmt, date).Scan(&count)
     if err != nil {
-      fmt.Fprintf(w, "Error reading count of a date list. Exact Error: " + err.Error())
+      errorPage(w, r, "Error reading count of a date list.  " , err)
       return
     }
     dacs = append(dacs, DateAndCount{date, count})
@@ -302,7 +302,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
 func dateList(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    fmt.Fprintf(w, "You need to be logged in to continue. Exact Error: " + err.Error())
+    errorPage(w, r, "You need to be logged in to continue.", err)
     return
   }
 
