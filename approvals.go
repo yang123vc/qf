@@ -172,6 +172,10 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   ds := vars["document-structure"]
   docid := vars["id"]
+  docidUint64, err := strconv.ParseUint(docid, 10, 64)
+  if err != nil {
+    errorPage(w, r, "Document ID is invalid.", err)
+  }
 
   detv, err := docExists(ds)
   if err != nil {
@@ -320,6 +324,10 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
         errorPage(w, r, "Error occurred while updating approval data. " , err)
         return
       }
+    }
+
+    if ApprovalFrameworkMailsFn != nil {
+      ApprovalFrameworkMailsFn(docidUint64, role, status, message)
     }
 
     redirectURL := fmt.Sprintf("/doc/%s/list/", ds)

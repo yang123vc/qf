@@ -26,6 +26,9 @@ type ExtraCode struct {
 
 var ExtraCodeList []ExtraCode
 
+var ApprovalFrameworkMailsFn func(docid uint64, role, status, message string)
+
+
 func qfSetup(w http.ResponseWriter, r *http.Request) {
   if SQLDB == nil {
     errorPage(w, r, "You have not set the \"qf.SQLDB\". Initialize a connection to the database and set the result to this value.", nil)

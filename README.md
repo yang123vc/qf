@@ -74,6 +74,20 @@ Steps:
  - Other functions under ExtraCode do not print to screen.
 
 
+
+## Setup of Approval Framework Mails
+
+Mail support before and after approvals was not fully done so as to give room for any designs you might
+want to use in your mail.
+
+To send mails notifying the approver of mails, set an ExtraCode for the document structure. Make sure you
+set the AfterCreateFn and the AfterDeleteFn.
+
+To send mails after approvals set the `qf.ApprovalFrameworkMailsFn`. It's definition is
+`func(docid uint64, role, status, message string)`
+
+
+
 ## Listing of Document Structure Links in your Web App
 
 There is a list of document structures which are accessible to the admininstrator only. It lists

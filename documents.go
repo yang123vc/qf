@@ -154,6 +154,10 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   ds := vars["document-structure"]
   docid := vars["id"]
+  _, err = strconv.ParseUint(docid, 10, 64)
+  if err != nil {
+    errorPage(w, r, "Document ID is invalid.", err)
+  }
 
   detv, err := docExists(ds)
   if err != nil {
@@ -643,6 +647,10 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   ds := vars["document-structure"]
   docid := vars["id"]
+  _, err = strconv.ParseUint(docid, 10, 64)
+  if err != nil {
+    errorPage(w, r, "Document ID is invalid.", err)
+  }
 
   detv, err := docExists(ds)
   if err != nil {
