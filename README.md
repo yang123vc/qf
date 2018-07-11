@@ -61,14 +61,15 @@ Steps:
 
   ```go
   validateProfile := func(jsonData string) string{
+    fmt.Println(jsonData)
     return "not valid."
   }
 
   qf.ExtraCodeList = make([]qf.ExtraCode, 0)
   qf.ExtraCodeList = append(qf.ExtraCodeList, qf.ExtraCode{DSNo: 1, ValidationFn: validateProfile})
   ```
- - For ValidationFn whenever it prints it would be taken as an error and printed to the user. If it doesn't then
- there is no error.
+ - For ValidationFn whenever it returns a string it would be taken as an error and printed to the user.
+  If it doesn't then there is no error.
 
  - Other functions under ExtraCode do not print to screen.
 

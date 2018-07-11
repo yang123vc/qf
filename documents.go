@@ -682,7 +682,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
   for _, colName := range colNames {
     var data string
     var dataFromDB sql.NullString
-    sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", colName, tableName(ds), docid)
+    sqlStmt := fmt.Sprintf("select %s from `%s` where id = %s", colName, tableName(ds), docid)
     err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
     if err != nil {
       errorPage(w, r, "An internal error occured.  " , err)
@@ -696,11 +696,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     fData[colName] = data
   }
   jsonString, _ := json.Marshal(fData)
-
   ec, ectv := getEC(ds)
-  if ectv && ec.AfterDeleteFn != nil {
-    ec.AfterDeleteFn(string(jsonString))
-  }
 
   if deletePerm {
     err = deleteApproversData(ds, docid)
@@ -714,6 +710,10 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     if err != nil {
       errorPage(w, r, "An error occured while deleting this document: " , err)
       return
+    }
+
+    if ectv && ec.AfterDeleteFn != nil {
+      ec.AfterDeleteFn(string(jsonString))
     }
 
   } else if docPerm {
@@ -739,6 +739,11 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
         errorPage(w, r, "An error occured while deleting this document: " , err)
         return
       }
+
+      if ectv && ec.AfterDeleteFn != nil {
+        ec.AfterDeleteFn(string(jsonString))
+      }
+
     } else {
       errorPage(w, r, "You don't have permissions to delete this document.", nil)
       return
