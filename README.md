@@ -73,6 +73,7 @@ Steps:
 
  - Other functions under ExtraCode do not print to screen.
 
+ - For AfterCreateFn and AfterUpdateFn you would need to do an SQL query to get the document data.
 
 
 ## Setup of Approval Framework Mails

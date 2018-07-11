@@ -11,6 +11,7 @@ import (
   "strconv"
   "database/sql"
   "math"
+  "html"
 )
 
 
@@ -96,7 +97,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
         if r.FormValue(dd.Name) == "" {
           data = "null"
         } else {
-          data = fmt.Sprintf("\"%s\"", template.HTMLEscapeString(r.FormValue(dd.Name)))
+          data = fmt.Sprintf("\"%s\"", html.EscapeString(r.FormValue(dd.Name)))
         }
         formData = append(formData, data)
       case "Check":
@@ -112,7 +113,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
         if r.FormValue(dd.Name) == "" {
           data = "null"
         } else {
-          data = template.HTMLEscapeString(r.FormValue(dd.Name))
+          data = html.EscapeString(r.FormValue(dd.Name))
         }
         formData = append(formData, data)
       }
@@ -236,7 +237,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         return
       }
       if dataFromDB.Valid {
-        data = dataFromDB.String
+        data = html.UnescapeString(dataFromDB.String)
         } else {
           data = ""
         }
@@ -341,7 +342,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         colNames = append(colNames, docAndStructure.DocData.Name)
         switch docAndStructure.DocData.Type {
         case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
-          data := fmt.Sprintf("\"%s\"", template.HTMLEscapeString(r.FormValue(docAndStructure.DocData.Name)))
+          data := fmt.Sprintf("\"%s\"", html.EscapeString(r.FormValue(docAndStructure.DocData.Name)))
           formData = append(formData, data)
         case "Check":
           var data string
@@ -352,7 +353,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
           }
           formData = append(formData, data)
         default:
-          formData = append(formData, template.HTMLEscapeString(r.FormValue(docAndStructure.DocData.Name)))
+          formData = append(formData, html.EscapeString(r.FormValue(docAndStructure.DocData.Name)))
         }
       }
     }
@@ -507,7 +508,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
         return
       }
       if dataFromDB.Valid {
-        data = dataFromDB.String
+        data = html.UnescapeString(dataFromDB.String)
       } else {
         data = ""
       }

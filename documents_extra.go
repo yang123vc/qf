@@ -8,6 +8,7 @@ import (
   "html/template"
   "strings"
   "database/sql"
+  "html"
 )
 
 
@@ -99,7 +100,7 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
         if r.FormValue(dd.Name) == "" {
           data = "null"
         } else {
-          data = fmt.Sprintf("\"%s\"", template.HTMLEscapeString(r.FormValue(dd.Name)))
+          data = fmt.Sprintf("\"%s\"", html.EscapeString(r.FormValue(dd.Name)))
         }
         endSqlStmt = append(endSqlStmt, dd.Name + " = " + data)
       case "Check":
@@ -115,7 +116,7 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
         if r.FormValue(dd.Name) == "" {
           data = "null"
         } else {
-          data = template.HTMLEscapeString(r.FormValue(dd.Name))
+          data = html.EscapeString(r.FormValue(dd.Name))
         }
         endSqlStmt = append(endSqlStmt, dd.Name + " = " + data)
       }
@@ -124,10 +125,10 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
     ids := make([]uint64, 0)
     var idd uint64
     if r.FormValue("created_by") != "" && len(endSqlStmt) != 0 {
-      sqlStmt += "created_by = " + template.HTMLEscapeString(r.FormValue("created_by"))
+      sqlStmt += "created_by = " + html.EscapeString(r.FormValue("created_by"))
       sqlStmt += strings.Join(endSqlStmt, ", ")
     } else if r.FormValue("created_by") != "" {
-      sqlStmt += "created_by = " + template.HTMLEscapeString(r.FormValue("created_by"))
+      sqlStmt += "created_by = " + html.EscapeString(r.FormValue("created_by"))
     } else if r.FormValue("created_by") == "" && len(endSqlStmt) != 0 {
       sqlStmt += strings.Join(endSqlStmt, ", ")
     } else if len(endSqlStmt) == 0 && r.FormValue("created_by") == "" {
@@ -171,7 +172,7 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
           return
         }
         if dataFromDB.Valid {
-          data = dataFromDB.String
+          data = html.UnescapeString(dataFromDB.String)
         } else {
           data = ""
         }
@@ -311,13 +312,13 @@ func dateList(w http.ResponseWriter, r *http.Request) {
   date := vars["date"]
 
   readSqlStmt := fmt.Sprintf("select id from `%s` where date(created) = '%s' order by created desc limit ?, ?",
-    tableName(ds), template.HTMLEscapeString(date))
+    tableName(ds), html.EscapeString(date))
   rocSqlStmt := fmt.Sprintf("select id from `%s` where date(created) = '%s' and created_by = %d order by created desc limit ?, ?",
-    tableName(ds), template.HTMLEscapeString(date), useridUint64)
+    tableName(ds), html.EscapeString(date), useridUint64)
   readTotalSql := fmt.Sprintf("select count(*) from `%s` where date(created) = '%s'",
-    tableName(ds), template.HTMLEscapeString(date))
+    tableName(ds), html.EscapeString(date))
   rocTotalSql := fmt.Sprintf("select count(*) from `%s` where date(created) = '%s' and created_by = %d",
-    tableName(ds), template.HTMLEscapeString(date))
+    tableName(ds), html.EscapeString(date))
   innerListDocuments(w, r, readSqlStmt, rocSqlStmt, readTotalSql, rocTotalSql, "date-list")
   return
 }
