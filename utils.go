@@ -14,12 +14,12 @@ import (
 
 
 func getProjectPath() string {
-  userStruct, err := user.Current()
-  if err != nil {
-    panic(err)
-  }
   gp := os.Getenv("GOPATH")
   if gp == "" {
+    userStruct, err := user.Current()
+    if err != nil && gp == "" {
+      panic(err)
+    }
     gp = filepath.Join(userStruct.HomeDir, "go")
   }
 
