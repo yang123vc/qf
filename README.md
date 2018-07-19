@@ -16,6 +16,8 @@ one authentication system to log on to the system (comfort).
 
 ## Setup
 
+### Begin
+
 Get the framework through the following command
 `go get github.com/bankole7782/qf`
 
@@ -28,14 +30,14 @@ Go to `/qf-setup/` to create some tables that the project would need.
 The links used in the project can be found in the function `AddQFHandlers` in the utils.go of this project.
 
 
-## Theming Your Project
+### Theming Your Project
 
 The sample project has no design. To add yours copy the template `templates/bad-base.html` to your project.
 Edit it and then point your version to `qf.BaseTemplate` before registering any handlers.
 
 
 
-## Adding Extra Code to Your Project
+### Adding Extra Code to Your Project
 
 Extra code does things like document validation, after save actions like sending emails, updating read only values.
 
@@ -66,15 +68,15 @@ Steps:
 
   qf.ExtraCodeMap[1] = qf.ExtraCode{ValidationFn: validateProfile}
   ```
- - For ValidationFn whenever it returns a string it would be taken as an error and printed to the user.
-  If it doesn't then there is no error.
+- For ValidationFn whenever it returns a string it would be taken as an error and printed to the user.
+If it doesn't then there is no error.
 
- - Other functions under ExtraCode do not print to screen.
+- Other functions under ExtraCode do not print to screen.
 
- - For AfterCreateFn and AfterUpdateFn you would need to do an SQL query to get the document data.
+- For AfterCreateFn and AfterUpdateFn you would need to do an SQL query to get the document data.
 
 
-## Setup of Approval Framework Mails
+### Setup of Approval Framework Mails
 
 Mail support before and after approvals was not fully done so as to give room for any designs you might
 want to use in your mail.
@@ -86,8 +88,7 @@ To send mails after approvals set the `qf.ApprovalFrameworkMailsFn`. It's defini
 `func(docid uint64, role, status, message string)`
 
 
-
-## Listing of Document Structure Links in your Web App
+### Listing of Document Structure Links in your Web App
 
 There is a list of document structures which are accessible to the admininstrator only. It lists
 all the document structures on your installation. To list document structures to the users
