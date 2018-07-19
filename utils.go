@@ -327,10 +327,9 @@ func getEC(documentStructure string) (ExtraCode, bool) {
     return ExtraCode{}, false
   }
 
-  for _, ec := range ExtraCodeList {
-    if dsid == ec.DSNo {
-      return ec, true
-    }
+  ec, ok := ExtraCodeMap[dsid]
+  if ok {
+    return ec, true
   }
   return ExtraCode{}, false
 }

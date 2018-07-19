@@ -49,7 +49,6 @@ Steps:
 - qf.ExtraCode has the following definitions:
   ```go
   type ExtraCode struct {
-    DSNo int
     ValidationFn func(jsonData string) string
     AfterCreateFn func(id uint64)
     AfterUpdateFn func(id uint64)
@@ -57,7 +56,7 @@ Steps:
   }
   ```
 
-- Create a type qf.ExtraCode and add it to the qf.ExtraCodeList in your main function. Example is :
+- Create a type qf.ExtraCode and add it to the qf.ExtraCodeMap in your main function. Example is :
 
   ```go
   validateProfile := func(jsonData string) string{
@@ -65,8 +64,7 @@ Steps:
     return "not valid."
   }
 
-  qf.ExtraCodeList = make([]qf.ExtraCode, 0)
-  qf.ExtraCodeList = append(qf.ExtraCodeList, qf.ExtraCode{DSNo: 1, ValidationFn: validateProfile})
+  qf.ExtraCodeMap[1] = qf.ExtraCode{ValidationFn: validateProfile}
   ```
  - For ValidationFn whenever it returns a string it would be taken as an error and printed to the user.
   If it doesn't then there is no error.

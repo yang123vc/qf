@@ -17,14 +17,13 @@ var GetCurrentUser func(r *http.Request) (uint64, error)
 var BaseTemplate string
 
 type ExtraCode struct {
-  DSNo int
   ValidationFn func(jsonData string) string
   AfterCreateFn func(id uint64)
   AfterUpdateFn func(id uint64)
   AfterDeleteFn func(jsonData string)
 }
 
-var ExtraCodeList []ExtraCode
+var ExtraCodeMap = make(map[int]ExtraCode)
 
 var ApprovalFrameworkMailsFn func(docid uint64, role, status, message string)
 
