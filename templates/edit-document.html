@@ -26,6 +26,13 @@
   .button-look:hover {
     background-color: #ccc;
   }
+  #help-text-box {
+    margin-bottom: 10px;
+  }
+  h4 {
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
   </style>
 {{end}}
 
@@ -35,9 +42,16 @@
 
   <span> Creation Date : <b>{{.Created}}</b></span><br>
   <span> Last Modification Date : <b>{{.Modified}}</b></span><br>
-  <span> Created By : <b>{{.FirstName}} {{.Surname}} with User id {{.CreatedBy}} <b><br><br>
+  <span> Created By : <b>{{.FirstName}} {{.Surname}} with User id {{.CreatedBy}} </b><br><br>
   {{ if $.DeletePerm }}
     <a class='button-look' href='/doc/{{.DocumentStructure}}/delete/{{.Id}}/'>Delete</a><br><br>
+  {{end}}
+
+  {{if ne .HelpText ""}}
+    <h4>Help Text</h4>
+    <div id="help-text-box">
+      {{call .UndoEscape .HelpText}}
+    </div>
   {{end}}
 
   <form method="post" action="">

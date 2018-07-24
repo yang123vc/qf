@@ -47,10 +47,22 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
+  var helpText sql.NullString
+  err = SQLDB.QueryRow("select id, help_text from qf_document_structures where name = ?", ds).Scan(&id, &helpText)
   if err != nil {
     errorPage(w, r, "An internal error occured.", err)
     return
+  }
+
+  var htStr string
+  if helpText.Valid {
+    htStr = strings.Replace(helpText.String, "\n", "<br>", -1)
+  } else {
+    htStr = ""
+  }
+
+  ue := func(s string) template.HTML {
+    return template.HTML(s)
   }
 
   dds := GetDocData(id)
@@ -59,8 +71,11 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     type Context struct {
       DocumentStructure string
       DDs []DocData
+      HelpText string
+      UndoEscape func(s string) template.HTML
     }
-    ctx := Context{ds, dds}
+
+    ctx := Context{ds, dds, htStr, ue}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/create-document.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
@@ -210,10 +225,22 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
+  var helpText sql.NullString
+  err = SQLDB.QueryRow("select id, help_text from qf_document_structures where name = ?", ds).Scan(&id, &helpText)
   if err != nil {
     errorPage(w, r, "An error occurred when reading document structure. Exact Error" , err)
     return
+  }
+
+  var htStr string
+  if helpText.Valid {
+    htStr = strings.Replace(helpText.String, "\n", "<br>", -1)
+  } else {
+    htStr = ""
+  }
+
+  ue := func(s string) template.HTML {
+    return template.HTML(s)
   }
 
   docDatas := GetDocData(id)
@@ -268,6 +295,8 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       CreatedBy uint64
       UpdatePerm bool
       DeletePerm bool
+      HelpText string
+      UndoEscape func(s string) template.HTML
     }
 
     updatePerm, err := DoesCurrentUserHavePerm(r, ds, "update")
@@ -291,7 +320,8 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         updatePerm = true
       }
     }
-    ctx := Context{created, modified, ds, docAndStructureSlice, docid, firstname, surname, created_by, updatePerm, deletePerm}
+    ctx := Context{created, modified, ds, docAndStructureSlice, docid, firstname, surname,
+      created_by, updatePerm, deletePerm, htStr, ue}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-document.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)

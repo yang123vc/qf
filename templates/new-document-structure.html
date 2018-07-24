@@ -14,12 +14,15 @@
     padding-top: 5px;
     padding-right: 5px;
   }
-  .field-label, #id-ds-name {
+  .field-label, #id-ds-name, #id-help-text {
     width: 300px;
   }
   #error-box {
     display: none;
     color: red;
+  }
+  form div {
+    margin-bottom: 10px;
   }
   </style>
 {{end}}
@@ -33,11 +36,15 @@
       <label for="id-ds-name">Document Name</label>
       <input type="text" name="ds-name" id="id-ds-name" />
     </div>
+    <div>
+      <label for="id-help-text" style="vertical-align:top;">Help Text </label>
+      <textarea name="help-text" id="id-help-text"></textarea>
+    </div>
 
     <h3>Fields</h3>
     <span>Help</span><br>
     <ol>
-      <li>Please note that you can't use the following names for your fields: id, created, owner,
+      <li>Please note that you can't use the following names for your fields: id, created, created_by,
       modified</li>
       <li>You can't use any SQL keyword</li>
       <li>Please not that the first three fields would be in the list view of the documents.</li>

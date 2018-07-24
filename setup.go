@@ -105,6 +105,7 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       id int not null auto_increment,
       name varchar(100) not null,
       approval_steps varchar(255),
+      help_text text,
       primary key (id),
       unique (name)
       )`)

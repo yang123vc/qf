@@ -51,7 +51,8 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
     tx, _ := SQLDB.Begin()
 
-    res, err := tx.Exec(`insert into qf_document_structures(name) values(?)`, r.FormValue("ds-name"))
+    res, err := tx.Exec(`insert into qf_document_structures(name, help_text) values(?, ?)`,
+      r.FormValue("ds-name"), r.FormValue("help-text"))
     if err != nil {
       tx.Rollback()
       errorPage(w, r, "An error ocurred while saving this document structure.", err)
@@ -89,7 +90,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       }
       sql += qff.name + " "
       if qff.type_ == "Check" {
-        sql += "char(1)"
+        sql += "char(1) default 'f'"
       } else if qff.type_ == "Date" {
         sql += "date"
       } else if qff.type_ == "Date and Time" {
