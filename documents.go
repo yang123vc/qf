@@ -67,15 +67,31 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 
   dds := GetDocData(id)
 
+  tableFields := make(map[string][]DocData)
+  for _, dd := range dds {
+    if dd.Type != "Table" {
+      continue
+    }
+    ct := dd.OtherOptions[0]
+    var ctid int
+    err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ct).Scan(&ctid)
+    if err != nil {
+      errorPage(w, r, "An error occurred while getting child table form structure.", err)
+      return
+    }
+    tableFields[ct] = GetDocData(ctid)
+  }
+
   if r.Method == http.MethodGet {
     type Context struct {
       DocumentStructure string
       DDs []DocData
       HelpText string
       UndoEscape func(s string) template.HTML
+      TableFields map[string][]DocData
     }
 
-    ctx := Context{ds, dds, htStr, ue}
+    ctx := Context{ds, dds, htStr, ue, tableFields}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/create-document.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
@@ -123,6 +139,63 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
           data = "\"f\""
         }
         formData = append(formData, data)
+      case "Table":
+        childTableName := dd.OtherOptions[0]
+        ddsCT := tableFields[childTableName]
+        rowCount := r.FormValue("rows-count-for-" + dd.Name)
+        rowCountInt, _ := strconv.Atoi(rowCount)
+        rowIds := make([]string, 0)
+        for j := 1; j < rowCountInt + 1; j++ {
+          colNamesCT := make([]string, 0)
+          formDataCT := make([]string, 0)
+          jStr := strconv.Itoa(j)
+          for _, ddCT := range ddsCT {
+            colNamesCT = append(colNamesCT, ddCT.Name)
+            tempData := r.FormValue(ddCT.Name + "-" + jStr)
+            switch ddCT.Type {
+            case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
+              var data string
+              if tempData == "" {
+                data = "null"
+              } else {
+                data = fmt.Sprintf("\"%s\"", html.EscapeString(tempData))
+              }
+              formDataCT = append(formDataCT, data)
+            case "Check":
+              var data string
+              if tempData == "on" {
+                data = "\"t\""
+              } else {
+                data = "\"f\""
+              }
+              formDataCT = append(formDataCT, data)
+            default:
+              var data string
+              if tempData == "" {
+                data = "null"
+              } else {
+                data = html.EscapeString(tempData)
+              }
+              formDataCT = append(formDataCT, data)
+            }
+          }
+
+          sqlStmt := fmt.Sprintf("insert into `%s`(%s) values (%s)", tableName(childTableName),
+            strings.Join(colNamesCT, ", "), strings.Join(formDataCT, ", "))
+          res, err := SQLDB.Exec(sqlStmt)
+          if err != nil {
+            errorPage(w, r, "An error occured while saving a child table row." , err)
+            return
+          }
+          lastid, err := res.LastInsertId()
+          if err != nil {
+            errorPage(w, r, "An error occured while trying to run extra code: " , err)
+            return
+          }
+
+          rowIds = append(rowIds, strconv.FormatInt(lastid, 10))
+        }
+        formData = append(formData, fmt.Sprintf("\"%s\"", strings.Join(rowIds, ",")))
       default:
         var data string
         if r.FormValue(dd.Name) == "" {
@@ -138,7 +211,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     sqlStmt := fmt.Sprintf("insert into `%s`(created, modified, created_by, %s) values(now(), now(), %d, %s)", tableName(ds), colNamesStr, useridUint64, formDataStr)
     res, err := SQLDB.Exec(sqlStmt)
     if err != nil {
-      errorPage(w, r, "An error occured while saving: " , err)
+      errorPage(w, r, "An error occured while saving." , err)
       return
     }
 

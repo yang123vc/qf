@@ -46,7 +46,7 @@ Steps:
 - Go to `/view-document-structure/{document-structure}/` where document-structure is changed to
   the name of a document structure that you created.
 
-- You would see the number of the document structure.
+- You would see the ID of the document structure.
 
 - qf.ExtraCode has the following definitions:
   ```go
@@ -58,7 +58,8 @@ Steps:
   }
   ```
 
-- Create a type qf.ExtraCode and add it to the qf.ExtraCodeMap in your main function. Example is :
+- Create a type qf.ExtraCode and add it to the qf.ExtraCodeMap in your main function with
+the ID of the document structure as the key. Example is :
 
   ```go
   validateProfile := func(jsonData string) string{

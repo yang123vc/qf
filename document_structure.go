@@ -8,6 +8,7 @@ import (
   "strings"
   "html/template"
   "github.com/gorilla/mux"
+  "database/sql"
 )
 
 
@@ -59,7 +60,17 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    formId, _:= res.LastInsertId()
+    dsid, _:= res.LastInsertId()
+
+    if r.FormValue("child-table") == "on" {
+      _, err = tx.Exec("update qf_document_structures set child_table = 't' where id = ?", dsid)
+      if err != nil {
+        tx.Rollback()
+        errorPage(w, r, "An error ocurred while saving child table status.", err)
+        return
+      }
+    }
+
     stmt, err := tx.Prepare(`insert into qf_fields(dsid, label, name, type, options, other_options)
       values(?, ?, ?, ?, ?, ?)`)
     if err != nil {
@@ -67,7 +78,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       errorPage(w, r, "An internal error occurred.", err)
     }
     for _, o := range(qffs) {
-      _, err := stmt.Exec(formId, o.label, o.name, o.type_, o.options, o.other_options)
+      _, err := stmt.Exec(dsid, o.label, o.name, o.type_, o.options, o.other_options)
       if err != nil {
         tx.Rollback()
         errorPage(w, r, "An error occured while saving fields data.", err)
@@ -79,9 +90,11 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     tbl := tableName(r.FormValue("ds-name"))
     sql := fmt.Sprintf("create table `%s` (", tbl)
     sql += "id bigint unsigned not null auto_increment,"
-    sql += "created datetime not null,"
-    sql += "modified datetime not null,"
-    sql += "created_by bigint unsigned not null,"
+    if r.FormValue("child-table") != "on" {
+      sql += "created datetime not null,"
+      sql += "modified datetime not null,"
+      sql += "created_by bigint unsigned not null,"
+    }
 
     sqlEnding := ""
     for _, qff := range qffs {
@@ -103,7 +116,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
         sql += "bigint unsigned"
       } else if qff.type_ == "Data" || qff.type_ == "Email" || qff.type_ == "URL" || qff.type_ == "Select" || qff.type_ == "Read Only" {
         sql += "varchar(255)"
-      } else if qff.type_ == "Text" {
+      } else if qff.type_ == "Text" || qff.type_ == "Table" {
         sql += "text"
       }
       if optionSearch(qff.options, "required") {
@@ -144,13 +157,21 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
   } else {
     type Context struct {
       DocumentStructures string
+      ChildTableDocumentStructures string
     }
     dsList, err := GetDocumentStructureList()
     if err != nil {
       errorPage(w, r, "An error occured when trying to get the document structure list.", err)
       return
     }
-    ctx := Context{strings.Join(dsList, ",")}
+
+    var ctdsl sql.NullString
+    err = SQLDB.QueryRow("select group_concat(name separator ',') from qf_document_structures where child_table = 't'").Scan(&ctdsl)
+    if err != nil {
+      errorPage(w, r, "Error reading child table document structure list.", err)
+      return
+    }
+    ctx := Context{strings.Join(dsList, ","), ctdsl.String }
 
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/new-document-structure.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
@@ -182,15 +203,47 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  type Context struct {
-    DocumentStructures []string
+
+  type DS struct{
+    DSName string
+    ChildTable bool
   }
-  dsList, err := GetDocumentStructureList()
+
+  structDSList := make([]DS, 0)
+  var str string
+  var ct string
+  rows, err := SQLDB.Query("select name, child_table from qf_document_structures")
   if err != nil {
-    errorPage(w, r, "An error occured when trying to get the document structure list.", err)
+    errorPage(w, r, "Error getting document structures data.", err)
     return
   }
-  ctx := Context{DocumentStructures: dsList}
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&str, &ct)
+    if err != nil {
+      errorPage(w, r, "Error occurred reading a row of document structures data.", err)
+      return
+    }
+
+    var b bool
+    if ct == "t" {
+      b = true
+    } else {
+      b = false
+    }
+    structDSList = append(structDSList, DS{str,b})
+  }
+  err = rows.Err()
+  if err != nil {
+    errorPage(w, r, "Error after reading document structures data.", err)
+    return
+  }
+
+  type Context struct {
+    DocumentStructures []DS
+  }
+
+  ctx := Context{DocumentStructures: structDSList}
 
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-document-structures.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
@@ -332,10 +385,17 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
+  var childTableStr string
+  err = SQLDB.QueryRow("select id, child_table from qf_document_structures where name = ?", ds).Scan(&id, &childTableStr)
   if err != nil {
     errorPage(w, r, "An error occured when trying to get the document structure id.  ", err)
     return
+  }
+  var childTableBool bool
+  if childTableStr == "t" {
+    childTableBool = true
+  } else {
+    childTableBool = false
   }
 
   docDatas := GetDocData(id)
@@ -347,6 +407,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     RPS []RolePermissions
     ApproversStr string
     HasApprovers bool
+    ChildTable bool
   }
 
   add := func(x, y int) int {
@@ -371,7 +432,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     hasApprovers = true
   }
 
-  ctx := Context{ds, docDatas, id, add, rps, strings.Join(approvers, ", "), hasApprovers}
+  ctx := Context{ds, docDatas, id, add, rps, strings.Join(approvers, ", "), hasApprovers, childTableBool}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/view-document-structure.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)

@@ -104,6 +104,7 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
     _, err = tx.Exec(`create table qf_document_structures (
       id int not null auto_increment,
       name varchar(100) not null,
+      child_table varchar(1) default 'f',
       approval_steps varchar(255),
       help_text text,
       primary key (id),

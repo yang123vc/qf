@@ -31,8 +31,10 @@
 {{define "main"}}
   <h2>View Document Structure of {{.DocumentStructure}}</h2>
 
-  <h3>Field Data</h3>
   <span>ID : <b>{{.Id}}</b></span><br>
+  <span>Is Child Table: <b>{{.ChildTable}}</b><br>
+
+  <h3>Field Data</h3>
 
   <table>
     <thead>
@@ -89,7 +91,5 @@
     <a href="/add-approvals-to-document-structure/{{.DocumentStructure}}/">Add Approval Framework</a>
   {{end}}
 
-  <h3>Help on Adding Extra Codes (eg. Validation) to this Document Structure</h3>
-  <p>The number for this document structure is <b>{{.Id}}</b>.</p>
 
 {{end}}

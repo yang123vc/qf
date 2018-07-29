@@ -37,6 +37,10 @@
       <input type="text" name="ds-name" id="id-ds-name" />
     </div>
     <div>
+      <label for="id-child-table">Is Child Table?</label>
+      <input type="checkbox" name="child-table" id="id-child-table" />
+    </div>
+    <div>
       <label for="id-help-text" style="vertical-align:top;">Help Text </label>
       <textarea name="help-text" id="id-help-text"></textarea>
     </div>
@@ -77,6 +81,7 @@
               <option>Read Only </option>
               <option>Section Break </option>
               <option>Select</option>
+              <option>Table</option>
               <option>Text</option>
               <option>URL</option>
             </select>
@@ -100,6 +105,7 @@
 {{define "scripts"}}
   <script>
   var docNames = "{{.DocumentStructures}}";
+  var childTableDocumentStructures = "{{.ChildTableDocumentStructures}}";
 
   function deleteFieldHandler(e) {
     e.preventDefault();
@@ -147,7 +153,7 @@
 
     $('form button[type=submit]').click(function(e) {
       e.preventDefault();
-
+      $('#error-box').hide();
       // validation
 
       if ( $('#id-ds-name').val() == "") {
@@ -158,6 +164,7 @@
       }
 
       docNamesList = docNames.split(',');
+      ctdsl = childTableDocumentStructures.split(',');
 
       if ( docNamesList.indexOf( $('#id-ds-name').val() ) != -1 ) {
         $('#error-box').text('The document name is already taken.');
@@ -203,13 +210,13 @@
         if ( $(el).val() == "Link") {
           var ot = $(el).parents('tr').find(".other-options");
           if ( $(ot).val() == "" ) {
-            $('#error-box').text("If you have a link field, also submit an existing document schema in the other options.")
+            $('#error-box').text("If you have a link field, also submit an existing document structure in the other options field.")
             $('#error-box').show();
             $(ot).css('border', '1px solid red');
             passedValidations = false;
           }
           else if ( docNamesList.indexOf( $(ot).val()) == -1) {
-            $('#error-box').text("The other options value is not a created document schema.")
+            $('#error-box').text("The other options value is not a created document structure.")
             $('#error-box').show();
             $(ot).css('border', '1px solid red');
             passedValidations = false;
@@ -230,6 +237,37 @@
             $('#error-box').hide();
             $(ot).css('border', '1px solid gray');
           }
+
+        }
+
+        if ( $(el).val() == "Table") {
+          if ( $('#id-child-table').is(":checked")) {
+            $('#error-box').text("A child table document cannot have a table has field.");
+            $('#error-box').show();
+            $(el).css('border', '1px solid red');
+            passedValidations = false;
+          } else {
+            $('#error-box').hide();
+            $(el).css('border', '1px solid gray');
+          }
+
+          var ot = $(el).parents('tr').find('.other-options');
+          if ( $(ot).val() == "" ) {
+            $('#error-box').text("If you have a table field, also submit an existing document structure in the other options field.")
+            $('#error-box').show();
+            $(ot).css('border', '1px solid red');
+            passedValidations = false;
+          }
+          else if ( ctdsl.indexOf( $(ot).val()) == -1) {
+            $('#error-box').text("The other options value is not a created document structure with child table option selected.")
+            $('#error-box').show();
+            $(ot).css('border', '1px solid red');
+            passedValidations = false;
+          } else {
+            $('#error-box').hide();
+            $(ot).css('border', '1px solid gray');
+          }
+
 
         }
       });
