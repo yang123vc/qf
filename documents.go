@@ -810,11 +810,36 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
   jsonString, _ := json.Marshal(fData)
   ec, ectv := getEC(ds)
 
+  var id int
+  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
+  if err != nil {
+    errorPage(w, r, "An internal error occured.", err)
+    return
+  }
+
+  dds := GetDocData(id)
+
   if deletePerm {
     err = deleteApproversData(ds, docid)
     if err != nil {
       errorPage(w, r, "Error deleting approval data for this document.  " , err)
       return
+    }
+
+    for _, dd := range dds {
+      if dd.Type != "Table" {
+        continue
+      }
+
+      parts := strings.Split(fData[dd.Name], ",")
+      for _, part := range parts {
+        sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", tableName(dd.OtherOptions[0]))
+        _, err = SQLDB.Exec(sqlStmt, part)
+        if err != nil {
+          errorPage(w, r, "An error occurred deleting child table data.", err)
+          return
+        }
+      }
     }
 
     sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tableName(ds), docid)
@@ -843,6 +868,22 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
       if err != nil {
         errorPage(w, r, "Error deleting approval data for this document.  " , err)
         return
+      }
+
+      for _, dd := range dds {
+        if dd.Type != "Table" {
+          continue
+        }
+
+        parts := strings.Split(fData[dd.Name], ",")
+        for _, part := range parts {
+          sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", tableName(dd.OtherOptions[0]))
+          _, err = SQLDB.Exec(sqlStmt, part)
+          if err != nil {
+            errorPage(w, r, "An error occurred deleting child table data.", err)
+            return
+          }
+        }
       }
 
       sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tableName(ds), docid)
