@@ -323,6 +323,8 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   docAndStructureSlice := make([]docAndStructure, 0)
+  tableData := make(map[string][][]docAndStructure)
+
   for _, docData := range docDatas {
     if docData.Type == "Section Break" {
       docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, ""})
@@ -337,10 +339,44 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       }
       if dataFromDB.Valid {
         data = html.UnescapeString(dataFromDB.String)
-        } else {
-          data = ""
+      } else {
+        data = ""
+      }
+      docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, data})
+      if docData.Type == "Table" {
+        childTable := docData.OtherOptions[0]
+        var ctid int
+        err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", childTable).Scan(&ctid)
+        if err != nil {
+          errorPage(w, r, "An error occurred while getting child table form structure.", err)
+          return
         }
-        docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, data})
+        ctdds := GetDocData(ctid)
+        dASSuper := make([][]docAndStructure, 0)
+
+        parts := strings.Split(data, ",")
+        for _, part := range parts {
+          docAndStructureSliceCT := make([]docAndStructure, 0)
+          for _, ctdd := range ctdds {
+            var data string
+            var dataFromDB sql.NullString
+            sqlStmt := fmt.Sprintf("select %s from `%s` where id = ?", ctdd.Name, tableName(childTable))
+            err := SQLDB.QueryRow(sqlStmt, part).Scan(&dataFromDB)
+            if err != nil {
+              errorPage(w, r, "Error occurred when getting edit child table data." , err)
+              return
+            }
+            if dataFromDB.Valid {
+              data = html.UnescapeString(dataFromDB.String)
+            } else {
+              data = ""
+            }
+            docAndStructureSliceCT = append(docAndStructureSliceCT, docAndStructure{ctdd, data})
+          }
+          dASSuper = append(dASSuper, docAndStructureSliceCT)
+        }
+        tableData[docData.Name] = dASSuper
+      }
     }
   }
 
@@ -369,6 +405,12 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       DeletePerm bool
       HelpText string
       UndoEscape func(s string) template.HTML
+      TableData map[string][][]docAndStructure
+      Add func(x,y int) int
+    }
+
+    add := func(x, y int) int {
+      return x + y
     }
 
     updatePerm, err := DoesCurrentUserHavePerm(r, ds, "update")
@@ -393,8 +435,8 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       }
     }
     ctx := Context{created, modified, ds, docAndStructureSlice, docid, firstname, surname,
-      created_by, updatePerm, deletePerm, htStr, ue}
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-document.html")
+      created_by, updatePerm, deletePerm, htStr, ue, tableData, add}
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/update-document.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
 

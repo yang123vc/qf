@@ -33,6 +33,12 @@
     margin-top: 5px;
     margin-bottom: 5px;
   }
+  table input, table select, table textarea {
+    width: 200px;
+  }
+  table thead {
+    font-weight: bold;
+  }
   </style>
 {{end}}
 
@@ -122,6 +128,106 @@
               <option>{{.}}</option>
             {{end}}
           </select>
+
+        {{else if eq .Type "Table"}}
+        <table>
+          <thead>
+            <tr>
+              <td>No</td>
+              {{$childTableData := index $.TableData .Name}}
+              {{$oneRow := index $childTableData 0}}
+              {{range $oneRow}}
+                <td>{{.DocData.Name}}</td>
+              {{end}}
+            </tr>
+          </thead>
+          <tbody>
+            {{range $index, $element := $childTableData}}
+              <tr>
+                <td>{{call $.Add $index 1}}</td>
+                {{range $element}}
+                  <td>
+                    {{ if eq .Type "Check"}}
+                      {{ if eq .Data "t"}}
+                        <input type="checkbox" name="{{.Name}}" checked>
+                      {{else}}
+                        <input type="checkbox" name="{{.Name}}">
+                      {{end}}
+
+                    {{else if eq .Type "Data"}}
+                      {{ if .Required}}
+                        <input type="text" name="{{.Name}}" value="{{.Data}}" required>
+                      {{ else }}
+                        <input type="text" name="{{.Name}}" value="{{.Data}}">
+                      {{ end }}
+
+                    {{else if eq .Type "Date"}}
+                      {{ if .Required }}
+                        <input type="date" name="{{.Name}}" value="{{.Data}}" required>
+                      {{ else }}
+                        <input type="date" name="{{.Name}}" value="{{.Data}}">
+                      {{end}}
+
+                    {{ else if eq .Type "Datetime"}}
+                      {{ if .Required }}
+                        <input type="datetime-local" name={{.Name}} value="{{.Data}}" required>
+                      {{else}}
+                        <input type="datetime-local" name="{{.Name}}" value="{{.Data}}">
+                      {{end}}
+
+                    {{else if eq .Type "Email"}}
+                      {{if .Required}}
+                        <input type="email" name="{{.Name}}" value="{{.Data}}" required>
+                      {{else}}
+                        <input type="email" name="{{.Name}}" value="{{.Data}}">
+                      {{end}}
+
+                    {{else if eq .Type "Float"}}
+                      {{if .Required}}
+                        <input type="number" step="0.0000001" name="{{.Name}}" value="{{.Data}}" required>
+                      {{else}}
+                        <input type="number" step="0.0000001" name="{{.Name}}" value="{{.Data}}">
+                      {{end}}
+
+                    {{else if or (eq .Type "Int") (eq .Type "Link")}}
+                      {{if .Required}}
+                        <input type="number" name="{{.Name}}" value="{{.Data}}" required>
+                      {{else}}
+                        <input type="number" name="{{.Name}}" value="{{.Data}}">
+                      {{end}}
+
+                    {{else if eq .Type "Read Only" }}
+                      <input type="text" name="{{.Name}}" value="{{.Data}}" disabled/>
+
+                    {{ else if eq .Type "Select"}}
+                      <select name="{{.Name}}">
+                        <option selected>{{.Data}}</option>
+                        {{range .OtherOptions}}
+                          <option>{{.}}</option>
+                        {{end}}
+                      </select>
+
+                    {{else if eq .Type "Text"}}
+                      {{if .Required}}
+                        <textarea name="{{.Name}}" required>{{.Data}}</textarea>
+                      {{else}}
+                        <textarea name="{{.Name}}">{{.Data}}</textarea>
+                      {{end}}
+
+                    {{else if eq .Type "URL"}}
+                      {{if .Required}}
+                        <input type="url" name="{{.Name}}" value="{{.Data}}" required>
+                      {{else}}
+                        <input type="url" name="{{.Name}}" value="{{.Data}}">
+                      {{end}}
+
+                    {{end}}
+                  </td>
+                {{end}}
+              </tr>
+            {{end}}
+          </tbody>
+        </table>
 
         {{else if eq .Type "Text"}}
           {{if .Required}}
