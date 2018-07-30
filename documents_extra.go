@@ -9,7 +9,246 @@ import (
   "strings"
   "database/sql"
   "html"
+  "math"
+  "strconv"
 )
+
+
+func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, rocSqlStmt, readTotalSql, rocTotalSql, listType string) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    errorPage(w, r, "You need to be logged in to continue.", err)
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+  page := vars["page"]
+  var pageI uint64
+  if page != "" {
+    pageI, err = strconv.ParseUint(page, 10, 64)
+    if err != nil {
+      errorPage(w, r, "The page number is invalid.  " , err)
+      return
+    }
+  } else {
+    pageI = 1
+  }
+
+  detv, err := docExists(ds)
+  if err != nil {
+    errorPage(w, r, "Error occurred while determining if this document exists.", err)
+    return
+  }
+  if detv == false {
+    errorPage(w, r, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    return
+  }
+
+  tv1, err1 := DoesCurrentUserHavePerm(r, ds, "read")
+  tv2, err2 := DoesCurrentUserHavePerm(r, ds, "read-only-created")
+  if err1 != nil || err2 != nil {
+    errorPage(w, r, "Error occured while determining if the user have read permission for this page.", nil)
+    return
+  }
+
+  if ! tv1 && ! tv2 {
+    errorPage(w, r, "You don't have the read permission for this document structure.", nil)
+    return
+  }
+
+  var sqlStmt string
+  if tv1 {
+    sqlStmt = readTotalSql
+  } else if tv2 {
+    sqlStmt = rocTotalSql
+  }
+
+  var count uint64
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+  if count == 0 {
+    errorPage(w, r, "There are no documents to display.", nil)
+    return
+  }
+
+  var id int
+  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
+  if err != nil {
+    errorPage(w, r, "An internal error occured.  " , err)
+  }
+
+  colNames, err := getColumnNames(ds)
+  if err != nil {
+    errorPage(w, r, "Error getting column names.", err)
+    return
+  }
+
+  var itemsPerPage uint64 = 50
+  startIndex := (pageI - 1) * itemsPerPage
+  totalItems := count
+  totalPages := math.Ceil( float64(totalItems) / float64(itemsPerPage) )
+
+  ids := make([]uint64, 0)
+  var idd uint64
+
+  // variables point
+  if tv1 {
+    sqlStmt = readSqlStmt
+  } else if tv2 {
+    sqlStmt = rocSqlStmt
+  }
+
+  rows, err := SQLDB.Query(sqlStmt, startIndex, itemsPerPage)
+  if err != nil {
+    errorPage(w, r, "Error reading this document structure data.  " , err)
+    return
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&idd)
+    if err != nil {
+      errorPage(w, r, "Error reading a row of data for this document structure.  " , err)
+      return
+    }
+    ids = append(ids, idd)
+  }
+  if err = rows.Err(); err != nil {
+    errorPage(w, r, "Extra error occurred while reading this document structure data.  " , err)
+    return
+  }
+
+  uocPerm, err1 := DoesCurrentUserHavePerm(r, ds, "update-only-created")
+  docPerm, err2 := DoesCurrentUserHavePerm(r, ds, "delete-only-created")
+  if err1 != nil || err2 != nil {
+    errorPage(w, r, "Error occured while determining if the user have read permission for this page.", nil)
+    return
+  }
+
+  myRows := make([]Row, 0)
+  for _, id := range ids {
+    colAndDatas := make([]ColAndData, 0)
+    for _, col := range colNames {
+      var data string
+      var dataFromDB sql.NullString
+      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", col, tableName(ds), id)
+      err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
+      if err != nil {
+        errorPage(w, r, "An internal error occured.  " , err)
+        return
+      }
+      if dataFromDB.Valid {
+        data = html.UnescapeString(dataFromDB.String)
+      } else {
+        data = ""
+      }
+      colAndDatas = append(colAndDatas, ColAndData{col, data})
+    }
+
+    var createdBy uint64
+    sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %d", tableName(ds), id)
+    err := SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
+    if err != nil {
+      errorPage(w, r, "An internal error occured.  " , err)
+      return
+    }
+    rup := false
+    rdp := false
+    if createdBy == useridUint64 && uocPerm {
+      rup = true
+    }
+    if createdBy == useridUint64 && docPerm {
+      rdp = true
+    }
+    myRows = append(myRows, Row{id, colAndDatas, rup, rdp})
+  }
+
+
+  type Context struct {
+    DocumentStructure string
+    ColNames []string
+    MyRows []Row
+    CurrentPage uint64
+    Pages []uint64
+    CreatePerm bool
+    UpdatePerm bool
+    DeletePerm bool
+    HasApprovals bool
+    Approver bool
+    ListType string
+    OptionalDate string
+  }
+
+  pages := make([]uint64, 0)
+  for i := uint64(0); i < uint64(totalPages); i++ {
+    pages = append(pages, i+1)
+  }
+
+  tv1, err1 = DoesCurrentUserHavePerm(r, ds, "create")
+  tv2, err2 = DoesCurrentUserHavePerm(r, ds, "update")
+  tv3, err3 := DoesCurrentUserHavePerm(r, ds, "delete")
+  if err1 != nil || err2 != nil || err3 != nil {
+    errorPage(w, r, "An error occurred when getting permissions of this object for this user.", nil)
+    return
+  }
+
+  userRoles, err := GetCurrentUserRoles(r)
+  if err != nil {
+    errorPage(w, r, "Error occured when getting current user roles.  " , err)
+    return
+  }
+  approvers, err := getApprovers(ds)
+  if err != nil {
+    errorPage(w, r, "Error occurred when getting approval list of this document stucture.  " , err)
+    return
+  }
+  var hasApprovals, approver bool
+  if len(approvers) == 0 {
+    hasApprovals = false
+  } else {
+    hasApprovals = true
+  }
+  outerLoop:
+    for _, apr := range approvers {
+      for _, role := range userRoles {
+        if role == apr {
+          approver = true
+          break outerLoop
+        }
+      }
+    }
+
+  var date string
+  if listType == "date-list" {
+    date = vars["date"]
+  } else {
+    date = ""
+  }
+
+  ctx := Context{ds, colNames, myRows, pageI, pages, tv1, tv2, tv3, hasApprovals,
+    approver, listType, date}
+  fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-documents.html")
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl.Execute(w, ctx)
+}
+
+
+func listDocuments(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    errorPage(w, r, "You need to be logged in to continue.", err)
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  readSqlStmt := fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(ds))
+  rocSqlStmt := fmt.Sprintf("select id from `%s` where created_by = %d order by created desc limit ?, ?", tableName(ds), useridUint64 )
+  readTotalSql := fmt.Sprintf("select count(*) from `%s`", tableName(ds))
+  rocTotalSql := fmt.Sprintf("select count(*) from `%s` where created_by = %d", tableName(ds), useridUint64)
+  innerListDocuments(w, r, readSqlStmt, rocSqlStmt, readTotalSql, rocTotalSql, "true-list")
+  return
+}
 
 
 func searchDocuments(w http.ResponseWriter, r *http.Request) {
