@@ -131,7 +131,13 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
         sqlEnding += fmt.Sprintf(", foreign key (%s) references `%s`(id)", qff.name, tableName(qff.other_options))
       }
     }
-    sql += "primary key (id), " + fmt.Sprintf("foreign key (created_by) references `%s`(id)", UsersTable) + sqlEnding + ")"
+    sql += "primary key (id) "
+    if r.FormValue("child-table") == "on" {
+      sql += ")"
+    } else {
+      sql += "," + fmt.Sprintf("foreign key (created_by) references `%s`(id)", UsersTable) + sqlEnding + ")"
+    }
+
     _, err1 := tx.Exec(sql)
     if err1 != nil {
       tx.Rollback()
