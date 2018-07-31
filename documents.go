@@ -109,7 +109,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     if ectv && ec.ValidationFn != nil {
       outString := ec.ValidationFn(string(jsonString))
       if outString != "" {
-        fmt.Fprintf(w, "Exra Code Validation Error: " + outString)
+        errorPage(w, r, "Exra Code Validation Error: " + outString, nil)
         return
       }
     }
@@ -462,8 +462,9 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    // first check if it passes the extra code validation for this document.
     r.ParseForm()
+
+    // first check if it passes the extra code validation for this document.
     fData := make(map[string]string)
     for k := range r.PostForm {
       fData[k] = r.FormValue(k)
@@ -474,7 +475,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     if ectv && ec.ValidationFn != nil {
       outString := ec.ValidationFn(string(jsonString))
       if outString != "" {
-        fmt.Fprintf(w, "Exra Code Validation Error: " + outString)
+        errorPage(w, r, "Exra Code Validation Error: " + outString, nil)
         return
       }
     }
@@ -482,7 +483,86 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     colNames := make([]string, 0)
     formData := make([]string, 0)
     for _, docAndStructure := range docAndStructureSlice {
-      if docAndStructure.Data != r.FormValue(docAndStructure.DocData.Name) {
+      if docAndStructure.DocData.Type == "Table" {
+        // delete old table data
+        parts := strings.Split(docAndStructure.Data, ",")
+        for _, part := range parts {
+          sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", tableName(docAndStructure.DocData.OtherOptions[0]))
+          _, err = SQLDB.Exec(sqlStmt, part)
+          if err != nil {
+            errorPage(w, r, "An error occurred deleting child table data.", err)
+            return
+          }
+        }
+
+        // add new table data
+        childTableName := docAndStructure.DocData.OtherOptions[0]
+        var ctid int
+        err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", childTableName).Scan(&ctid)
+        if err != nil {
+          errorPage(w, r, "An error occurred while getting child table form structure.", err)
+          return
+        }
+        ddsCT := GetDocData(ctid)
+
+        rowCount := r.FormValue("rows-count-for-" + docAndStructure.DocData.Name)
+        rowCountInt, _ := strconv.Atoi(rowCount)
+        rowIds := make([]string, 0)
+        for j := 1; j < rowCountInt + 1; j++ {
+          colNamesCT := make([]string, 0)
+          formDataCT := make([]string, 0)
+          jStr := strconv.Itoa(j)
+          for _, ddCT := range ddsCT {
+            colNamesCT = append(colNamesCT, ddCT.Name)
+            tempData := r.FormValue(ddCT.Name + "-" + jStr)
+            switch ddCT.Type {
+            case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
+              var data string
+              if tempData == "" {
+                data = "null"
+              } else {
+                data = fmt.Sprintf("\"%s\"", html.EscapeString(tempData))
+              }
+              formDataCT = append(formDataCT, data)
+            case "Check":
+              var data string
+              if tempData == "on" {
+                data = "\"t\""
+              } else {
+                data = "\"f\""
+              }
+              formDataCT = append(formDataCT, data)
+            default:
+              var data string
+              if tempData == "" {
+                data = "null"
+              } else {
+                data = html.EscapeString(tempData)
+              }
+              formDataCT = append(formDataCT, data)
+            }
+          }
+
+          sqlStmt := fmt.Sprintf("insert into `%s`(%s) values (%s)", tableName(childTableName),
+            strings.Join(colNamesCT, ", "), strings.Join(formDataCT, ", "))
+          res, err := SQLDB.Exec(sqlStmt)
+          if err != nil {
+            errorPage(w, r, "An error occured while saving a child table row." , err)
+            return
+          }
+          lastid, err := res.LastInsertId()
+          if err != nil {
+            errorPage(w, r, "An error occured while trying to run extra code: " , err)
+            return
+          }
+
+          rowIds = append(rowIds, strconv.FormatInt(lastid, 10))
+        }
+        colNames = append(colNames, docAndStructure.DocData.Name)
+        formData = append(formData, fmt.Sprintf("\"%s\"", strings.Join(rowIds, ",")))
+
+      } else if docAndStructure.Data != html.EscapeString(r.FormValue(docAndStructure.DocData.Name)) {
+
         colNames = append(colNames, docAndStructure.DocData.Name)
         switch docAndStructure.DocData.Type {
         case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
