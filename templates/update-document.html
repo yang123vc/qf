@@ -131,6 +131,7 @@
 
         {{else if eq .Type "Table"}}
         <input type="hidden" name="rows-count-for-{{.Name}}" value="1" />
+        {{$tableName := .Name}}
         <table id="{{.Name}}">
           <thead>
             <tr>
@@ -225,7 +226,7 @@
                     {{end}}
                   </td>
                 {{end}}
-                <td><button type="button" id="delete-row-{{call $.Add $index 1}}" class="delete-row-btn">Delete</button></td>
+                <td><button type="button" id="delete-row-{{$tableName}}-{{call $.Add $index 1}}" class="delete-row-btn">Delete</button></td>
               </tr>
             {{end}}
           </tbody>
@@ -306,10 +307,13 @@
 
 
   $(document).ready(function() {
-    $('#delete-row-1').hide();
+    $('table').each(function(i, el) {
+      var tableid = $(el).attr('id');
+      $('#delete-row-' + tableid + "-1").hide();
+    })
 
     $('.delete-row-btn').click(deleteRowHandler);
-    
+
     $('.add-row').click(function(e) {
       var table = $(e.target).prev();
       var currentNo = parseInt($('tr:last td:first', table).text());
@@ -321,8 +325,9 @@
       html = "<tr>" + html + "</tr>";
       $('tbody', table).append(html);
       $('tr:last input, tr:last textarea', table).val("");
-      $('#delete-row-' + newNo.toString()).click(deleteRowHandler);
-      $('#delete-row-' + newNo.toString()).show();
+      var newDR = '#delete-row-' + $(table).attr('id') + '-' + newNo.toString()
+      $(newDR).click(deleteRowHandler);
+      $(newDR).show();
 
       $('html, body').scrollTop($(document).height());
       setRowsCount(table);

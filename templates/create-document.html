@@ -195,7 +195,7 @@
                   </td>
                 {{end}}
                 <td>
-                  <button type="button" id="delete-row-1" class="delete-row-btn">Delete</button>
+                  <button type="button" id="delete-row-{{.Name}}-1" class="delete-row-btn">Delete</button>
                 </td>
               </tr>
             </tbody>
@@ -264,7 +264,7 @@
   }
 
   $(document).ready(function() {
-    $('#delete-row-1').hide();
+    $('.delete-row-btn').hide();
 
     $('.add-row').click(function(e) {
       var table = $(e.target).prev();
@@ -277,8 +277,9 @@
       html = "<tr>" + html + "</tr>";
       $('tbody', table).append(html);
 
-      $('#delete-row-' + newNo.toString()).click(deleteRowHandler);
-      $('#delete-row-' + newNo.toString()).show();
+      var newDR = '#delete-row-' + $(table).attr('id') + '-' + newNo.toString()
+      $(newDR).click(deleteRowHandler);
+      $(newDR).show();
 
       $('html, body').scrollTop($(document).height());
       setRowsCount(table);
