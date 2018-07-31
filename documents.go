@@ -668,11 +668,13 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     errorPage(w, r, "Error occurred while determining if the user have delete-only-created permission.  " , err)
   }
 
-  colNames, err := getColumnNames(ds)
+  var columns string
+  err = SQLDB.QueryRow("select group_concat(name separator ',') from qf_fields where dsid=?").Scan(&columns)
   if err != nil {
     errorPage(w, r, "Error getting column names.", err)
     return
   }
+  colNames := strings.Split(columns, ",")
 
   fData := make(map[string]string)
   for _, colName := range colNames {

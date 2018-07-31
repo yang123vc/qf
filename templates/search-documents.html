@@ -32,7 +32,9 @@
       <div>
         {{ if eq .Type "Section Break"}}
           <!-- <h4>{{.Label}}</h4> -->
-        {{ else }}
+        {{ else if eq .Type "Table" }}
+        
+        {{else}}
           <label>{{.Label}}</label>
         {{ end }}
 
