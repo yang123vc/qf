@@ -6,9 +6,9 @@ import (
   "fmt"
   "path/filepath"
   "html/template"
-  "sort"
   "database/sql"
   "strconv"
+  "html"
 )
 
 
@@ -29,25 +29,33 @@ func rolesView(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  if r.Method == http.MethodGet {
-    type Context struct {
-      Roles []string
-      NumberOfRoles int
-    }
-    ctx := Context{roles, len(roles)}
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/roles-view.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
-    tmpl.Execute(w, ctx)
+  type Context struct {
+    Roles []string
+    NumberOfRoles int
+  }
+  ctx := Context{roles, len(roles)}
+  fullTemplatePath := filepath.Join(getProjectPath(), "templates/roles-view.html")
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl.Execute(w, ctx)
+}
 
-  } else if r.Method == http.MethodPost {
 
-    role := r.FormValue("role")
-    if len(roles) == 0 {
-      sort.Strings(roles)
-      i := sort.SearchStrings(roles, role)
-      if i != len(roles) {
-        errorPage(w, r, fmt.Sprintf("The role \"%s\" already exists.", role), nil)
-        return
+func newRole(w http.ResponseWriter, r *http.Request) {
+  roles, err := GetRoles()
+  if err != nil {
+    errorPage(w, r, "Error getting roles.  " , err)
+    return
+  }
+
+  if r.Method == http.MethodPost {
+
+    role := html.EscapeString(r.FormValue("role"))
+    if len(roles) != 0 {
+      for _, rl := range roles {
+        if role == rl {
+          errorPage(w, r, fmt.Sprintf("The role \"%s\" already exists.", role), nil)
+          return
+        }
       }
     }
 
@@ -57,7 +65,7 @@ func rolesView(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    fmt.Fprintf(w, "Successfully create role.")
+    http.Redirect(w, r, "/roles-view/", 307)
   }
 }
 

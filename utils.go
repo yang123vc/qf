@@ -10,6 +10,7 @@ import (
   "strconv"
   "os"
   "html/template"
+  "html"
 )
 
 
@@ -226,7 +227,7 @@ func GetRoles() ([]string, error) {
     if err != nil {
       return strSlice, err
     }
-    strSlice = append(strSlice, str)
+    strSlice = append(strSlice, html.UnescapeString(str))
   }
   if err = rows.Err(); err != nil {
     return strSlice, err
