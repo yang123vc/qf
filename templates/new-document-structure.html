@@ -144,6 +144,7 @@
 
       $('#delete-field-' + newNo.toString()).click(deleteFieldHandler);
       $('#delete-field-' + newNo.toString()).show();
+      autosize($('textarea[name=other-options-' + newNo.toString() + ']'));
 
       $('.field-label, .field-name', 'tr:last').each(function(i, el) {
         $(el).css('border', '1px solid gray');

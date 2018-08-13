@@ -342,7 +342,8 @@
       var newDR = '#delete-row-' + $(table).attr('id') + '-' + newNo.toString()
       $(newDR).click(deleteRowHandler);
       $(newDR).show();
-
+      autosize( $("textarea", table));
+      
       $('html, body').scrollTop($(document).height());
       setRowsCount(table);
     });
