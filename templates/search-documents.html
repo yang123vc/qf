@@ -33,12 +33,15 @@
         {{ if eq .Type "Section Break"}}
           <!-- <h4>{{.Label}}</h4> -->
         {{ else if eq .Type "Table" }}
-        
+
         {{else}}
           <label>{{.Label}}</label>
         {{ end }}
 
-        {{ if eq .Type "Check"}}
+        {{ if eq .Type "Big Number"}}
+          <input type="number" name="{{.Name}}">
+
+        {{else if eq .Type "Check"}}
           <input type="checkbox" name="{{.Name}}">
 
         {{else if eq .Type "Data"}}

@@ -69,7 +69,14 @@
           <label>{{.Label}}</label>
         {{ end }}
 
-        {{ if eq .Type "Check"}}
+        {{if eq .Type "Big Number"}}
+          {{if .Required}}
+            <input type="number" name="{{.Name}}" value="{{.Data}}" required>
+          {{else}}
+            <input type="number" name="{{.Name}}" value="{{.Data}}">
+          {{end}}
+
+        {{else if eq .Type "Check"}}
           {{ if eq .Data "t"}}
             <input type="checkbox" name="{{.Name}}" checked>
           {{else}}
@@ -149,7 +156,14 @@
                 <td>{{call $.Add $index 1}}</td>
                 {{range $element}}
                   <td>
-                    {{ if eq .Type "Check"}}
+                    {{if eq .Type "Big Number"}}
+                      {{if .Required}}
+                        <input type="number" name="{{.Name}}" value="{{.Data}}" required>
+                      {{else}}
+                        <input type="number" name="{{.Name}}" value="{{.Data}}">
+                      {{end}}
+
+                    {{else if eq .Type "Check"}}
                       {{ if eq .Data "t"}}
                         <input type="checkbox" name="{{.Name}}-{{call $.Add $index 1}}" checked>
                       {{else}}

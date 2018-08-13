@@ -70,6 +70,7 @@
           <td><input type="text" class="field-name" name="name-1" /></td>
           <td>
             <select name="type-1" class="field-type">
+              <option>Big Number</option>
               <option>Check</option>
               <option selected="selected">Data</option>
               <option>Date</option>
@@ -147,6 +148,7 @@
       $('.field-label, .field-name', 'tr:last').each(function(i, el) {
         $(el).css('border', '1px solid gray');
       });
+
 
       $('html, body').scrollTop($(document).height());
     });

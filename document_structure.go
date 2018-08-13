@@ -102,7 +102,9 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
         continue
       }
       sql += qff.name + " "
-      if qff.type_ == "Check" {
+      if qff.type_ == "Big Number" {
+        sql += "bigint unsigned"
+      } else if qff.type_ == "Check" {
         sql += "char(1) default 'f'"
       } else if qff.type_ == "Date" {
         sql += "date"
