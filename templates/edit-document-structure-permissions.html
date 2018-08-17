@@ -51,6 +51,7 @@
     <li>Permissions can be one or more of create, read, update, delete</li>
     <li>Set the permissions field to any/some of the above values seperated by comma eg. create, read, update</li>
     <li>All your permissions must be in lower case.</li>
+    <li>Any role must not have more than one of read, read-only-created or read-only-mentioned. This applies to other permissions too.</li> 
   </ol>
 
   <p id='error-box'></p>
@@ -84,6 +85,8 @@
           <label>Update Only Documents created by this Role <input type="checkbox" class="perms-checkbox" name="perms-1" value="update-only-created" /> </label>
           <br>
           <label>Delete Only Documents created by this Role <input type="checkbox" class="perms-checkbox" name="perms-1" value="delete-only-created" /> </label>
+          <br>
+          <label>Read only Documents this User was Mentioned <input type="checkbox" class="perms-checkbox" name="perms-1" value="read-only-mentioned" /> </label>
           <br><br>
         </td>
         <td><button type="button" class="delete-role" id="delete-role-1">Delete</button></td>

@@ -364,3 +364,14 @@ func getColumnNames(ds string) ([]string, error){
   colNames = append(colNames, "created", "created_by")
   return colNames, nil
 }
+
+
+func getMentionedUserColumn(ds string) (string, error) {
+  var col string
+
+  err := SQLDB.QueryRow("select name from qf_fields where other_options = 'MentionedUser'").Scan(&col)
+  if err != nil {
+    return col, err
+  }
+  return col, nil
+}
