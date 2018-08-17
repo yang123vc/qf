@@ -79,8 +79,8 @@ If it doesn't then there is no error.
 
 ### Setup of Approval Framework Mails
 
-Mail support before and after approvals was not fully done so as to give room for any designs you might
-want to use in your mail.
+Mail support before and after approvals was not fully done so as to give room for any email platform
+and any designs you might want to use in your mail.
 
 To send mails notifying the approver of mails, set an ExtraCode for the document structure. Make sure you
 set the AfterCreateFn and the AfterDeleteFn.
@@ -104,6 +104,34 @@ seeing only what he uses.
 `func(r *http.Request, documentStructure string, permission string) (bool, error)`
 
 The link to display to the user is of the form `doc/{documentStructure}/list/`
+
+
+
+## FAQs
+
+### Groups of Programmers building on QF. How to merge.
+
+Use a shared database.
+
+You could set up one on a cloud platform.
+
+It's better that having a merger program of databases because the primary keys of the document structure
+would need to change. This would invalidate the fields data and would need the document structure IDS to be changed
+in the ExtraCodes.
+
+
+### How do I send mail after saving a document in QF.
+
+Use ExtraCode.
+
+There is no inbuilt mail function so as to give a lot of choices in terms of email provider
+and the design of the email itself.
+
+
+### How to Create a Foreign Key between a QF table and a non QF table
+
+Create a big number field. Then use ExtraCode to validate that the data is in the other table.
+
 
 
 ## License
