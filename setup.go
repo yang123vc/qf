@@ -30,54 +30,54 @@ var ApprovalFrameworkMailsFn func(docid uint64, role, status, message string)
 
 func qfSetup(w http.ResponseWriter, r *http.Request) {
   if SQLDB == nil {
-    errorPage(w, r, "You have not set the \"qf.SQLDB\". Initialize a connection to the database and set the result to this value.", nil)
+    errorPage(w, "You have not set the \"qf.SQLDB\". Initialize a connection to the database and set the result to this value.", nil)
     return
   } else {
     if err := SQLDB.Ping(); err != nil {
-      errorPage(w, r, "DB Ping failed.", err)
+      errorPage(w, "DB Ping failed.", err)
       return
     }
   }
 
   if SiteDB == "" {
-    errorPage(w, r, "You have not set the \"qf.SiteDB\". Create your database for your site and set this to it.", nil)
+    errorPage(w, "You have not set the \"qf.SiteDB\". Create your database for your site and set this to it.", nil)
     return
   } else {
     var dbCount int
     err := SQLDB.QueryRow("select count(*) from information_schema.schemata where schema_name = ?", SiteDB).Scan(&dbCount)
     if err != nil {
-      errorPage(w, r, "Error checking if the database exists. ", err)
+      errorPage(w, "Error checking if the database exists. ", err)
       return
     }
     if dbCount == 0 {
-      errorPage(w, r, fmt.Sprintf("Your SiteDB \"%s\" does not exists.", SiteDB), nil)
+      errorPage(w, fmt.Sprintf("Your SiteDB \"%s\" does not exists.", SiteDB), nil)
       return
     }
   }
 
   if UsersTable == "" {
-    errorPage(w, r, "You have not set the \"qf.UsersTable\". Create your users table and set this variable to it.", nil)
+    errorPage(w, "You have not set the \"qf.UsersTable\". Create your users table and set this variable to it.", nil)
     return
   } else {
     var tblCount int
     err := SQLDB.QueryRow("select count(*) from information_schema.tables where table_schema=? and table_name=?", SiteDB, UsersTable).Scan(&tblCount)
     if err != nil {
-      errorPage(w, r, "Error checking if the table exists. ", err)
+      errorPage(w, "Error checking if the table exists. ", err)
       return
     }
     if tblCount == 0 {
-      errorPage(w, r, fmt.Sprintf("Your UsersTable \"%s\" does not exists.", UsersTable), nil)
+      errorPage(w, fmt.Sprintf("Your UsersTable \"%s\" does not exists.", UsersTable), nil)
       return
     }
   }
 
   if Admins == nil {
-    errorPage(w, r, "You have not set the \"qf.Admins\". Please set this to a list of ids (in uint64) of the Admins of this site.", nil)
+    errorPage(w, "You have not set the \"qf.Admins\". Please set this to a list of ids (in uint64) of the Admins of this site.", nil)
     return
   }
 
   if GetCurrentUser == nil {
-    errorPage(w, r, "You must set the \"qf.GetCurrentUser\". Please set this variable to a function with signature func(r *http.Request) (uint64, err).", nil)
+    errorPage(w, "You must set the \"qf.GetCurrentUser\". Please set this variable to a function with signature func(r *http.Request) (uint64, err).", nil)
     return
   }
 
@@ -85,19 +85,19 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
   err := SQLDB.QueryRow(`select count(*) as count from information_schema.tables
   where table_schema=? and table_name=?`, SiteDB, "qf_document_structures").Scan(&count)
   if err != nil {
-    errorPage(w, r, "An internal error occured.", err)
+    errorPage(w, "An internal error occured.", err)
     return
   }
 
   if count == 1 {
-    errorPage(w, r, "This setup has been executed.", nil)
+    errorPage(w, "This setup has been executed.", nil)
     return
 
   } else {
     // do setup
     tx, err := SQLDB.Begin()
     if err != nil {
-      errorPage(w, r, "An internal error occured", err)
+      errorPage(w, "An internal error occured", err)
       return
     }
     // create forms general table
@@ -112,7 +112,7 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       )`)
     if err != nil {
       tx.Rollback()
-      errorPage(w, r, "An error occured while creating the document structures table.", err)
+      errorPage(w, "An error occured while creating the document structures table.", err)
       return
     }
 
@@ -131,7 +131,7 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       )`)
     if err != nil {
       tx.Rollback()
-      errorPage(w, r, "An error occured while creating the fields table", err)
+      errorPage(w, "An error occured while creating the fields table", err)
       return
     }
 
@@ -143,7 +143,7 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       )`)
     if err != nil {
       tx.Rollback()
-      errorPage(w, r, "An error occured while creating the roles table.", err)
+      errorPage(w, "An error occured while creating the roles table.", err)
       return
     }
 
@@ -158,7 +158,7 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       )`)
     if err != nil {
       tx.Rollback()
-      errorPage(w, r, "An error occured while creating permissions table.", err)
+      errorPage(w, "An error occured while creating permissions table.", err)
       return
     }
 
@@ -171,7 +171,7 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
     _, err = tx.Exec(sqlStmt)
     if err != nil {
       tx.Rollback()
-      errorPage(w, r, "An error occured while creating user to roles table.", err)
+      errorPage(w, "An error occured while creating user to roles table.", err)
       return
     }
 

@@ -14,10 +14,10 @@ import (
 )
 
 
-func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, rocSqlStmt, readTotalSql, rocTotalSql, listType string) {
+func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, totalSqlStmt, listType string) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    errorPage(w, r, "You need to be logged in to continue.", err)
+    errorPage(w, "You need to be logged in to continue.", err)
     return
   }
 
@@ -28,7 +28,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
   if page != "" {
     pageI, err = strconv.ParseUint(page, 10, 64)
     if err != nil {
-      errorPage(w, r, "The page number is invalid.  " , err)
+      errorPage(w, "The page number is invalid.  " , err)
       return
     }
   } else {
@@ -37,49 +37,44 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, r, "Error occurred while determining if this document exists.", err)
+    errorPage(w, "Error occurred while determining if this document exists.", err)
     return
   }
   if detv == false {
-    errorPage(w, r, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
     return
   }
 
-  tv1, err1 := DoesCurrentUserHavePerm(r, ds, "read")
-  tv2, err2 := DoesCurrentUserHavePerm(r, ds, "read-only-created")
-  if err1 != nil || err2 != nil {
-    errorPage(w, r, "Error occured while determining if the user have read permission for this page.", nil)
-    return
+  tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
+  if err != nil {
+    errorPage(w, "Error reading permissions.", err)
+  }
+  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
+  if err != nil {
+    errorPage(w, "Error reading permissions.", err)
   }
 
   if ! tv1 && ! tv2 {
-    errorPage(w, r, "You don't have the read permission for this document structure.", nil)
+    errorPage(w, "You don't have the read permission for this document structure.", nil)
     return
   }
 
-  var sqlStmt string
-  if tv1 {
-    sqlStmt = readTotalSql
-  } else if tv2 {
-    sqlStmt = rocTotalSql
-  }
-
   var count uint64
-  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+  err = SQLDB.QueryRow(totalSqlStmt).Scan(&count)
   if count == 0 {
-    errorPage(w, r, "There are no documents to display.", nil)
+    errorPage(w, "There are no documents to display.", nil)
     return
   }
 
   var id int
   err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
   if err != nil {
-    errorPage(w, r, "An internal error occured.  " , err)
+    errorPage(w, "An internal error occured.  " , err)
   }
 
   colNames, err := getColumnNames(ds)
   if err != nil {
-    errorPage(w, r, "Error getting column names.", err)
+    errorPage(w, "Error getting column names.", err)
     return
   }
 
@@ -91,36 +86,29 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
   ids := make([]uint64, 0)
   var idd uint64
 
-  // variables point
-  if tv1 {
-    sqlStmt = readSqlStmt
-  } else if tv2 {
-    sqlStmt = rocSqlStmt
-  }
-
-  rows, err := SQLDB.Query(sqlStmt, startIndex, itemsPerPage)
+  rows, err := SQLDB.Query(readSqlStmt, startIndex, itemsPerPage)
   if err != nil {
-    errorPage(w, r, "Error reading this document structure data.  " , err)
+    errorPage(w, "Error reading this document structure data.  " , err)
     return
   }
   defer rows.Close()
   for rows.Next() {
     err := rows.Scan(&idd)
     if err != nil {
-      errorPage(w, r, "Error reading a row of data for this document structure.  " , err)
+      errorPage(w, "Error reading a row of data for this document structure.  " , err)
       return
     }
     ids = append(ids, idd)
   }
   if err = rows.Err(); err != nil {
-    errorPage(w, r, "Extra error occurred while reading this document structure data.  " , err)
+    errorPage(w, "Extra error occurred while reading this document structure data.  " , err)
     return
   }
 
   uocPerm, err1 := DoesCurrentUserHavePerm(r, ds, "update-only-created")
   docPerm, err2 := DoesCurrentUserHavePerm(r, ds, "delete-only-created")
   if err1 != nil || err2 != nil {
-    errorPage(w, r, "Error occured while determining if the user have read permission for this page.", nil)
+    errorPage(w, "Error occured while determining if the user have read permission for this page.", nil)
     return
   }
 
@@ -133,7 +121,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
       sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", col, tableName(ds), id)
       err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
       if err != nil {
-        errorPage(w, r, "An internal error occured.  " , err)
+        errorPage(w, "An internal error occured.  " , err)
         return
       }
       if dataFromDB.Valid {
@@ -148,7 +136,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
     sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %d", tableName(ds), id)
     err := SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
     if err != nil {
-      errorPage(w, r, "An internal error occured.  " , err)
+      errorPage(w, "An internal error occured.  " , err)
       return
     }
     rup := false
@@ -187,18 +175,18 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
   tv2, err2 = DoesCurrentUserHavePerm(r, ds, "update")
   tv3, err3 := DoesCurrentUserHavePerm(r, ds, "delete")
   if err1 != nil || err2 != nil || err3 != nil {
-    errorPage(w, r, "An error occurred when getting permissions of this object for this user.", nil)
+    errorPage(w, "An error occurred when getting permissions of this object for this user.", nil)
     return
   }
 
   userRoles, err := GetCurrentUserRoles(r)
   if err != nil {
-    errorPage(w, r, "Error occured when getting current user roles.  " , err)
+    errorPage(w, "Error occured when getting current user roles.  " , err)
     return
   }
   approvers, err := getApprovers(ds)
   if err != nil {
-    errorPage(w, r, "Error occurred when getting approval list of this document stucture.  " , err)
+    errorPage(w, "Error occurred when getting approval list of this document stucture.  " , err)
     return
   }
   var hasApprovals, approver bool
@@ -224,6 +212,8 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
     date = ""
   }
 
+  fmt.Println(listType)
+  
   ctx := Context{ds, colNames, myRows, pageI, pages, tv1, tv2, tv3, hasApprovals,
     approver, listType, date}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-documents.html")
@@ -235,26 +225,41 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, roc
 func listDocuments(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    errorPage(w, r, "You need to be logged in to continue.", err)
+    errorPage(w, "You need to be logged in to continue.", err)
     return
   }
 
   vars := mux.Vars(r)
   ds := vars["document-structure"]
 
-  readSqlStmt := fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(ds))
-  rocSqlStmt := fmt.Sprintf("select id from `%s` where created_by = %d order by created desc limit ?, ?", tableName(ds), useridUint64 )
-  readTotalSql := fmt.Sprintf("select count(*) from `%s`", tableName(ds))
-  rocTotalSql := fmt.Sprintf("select count(*) from `%s` where created_by = %d", tableName(ds), useridUint64)
-  innerListDocuments(w, r, readSqlStmt, rocSqlStmt, readTotalSql, rocTotalSql, "true-list")
+  tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
+  if err != nil {
+    errorPage(w, "Error reading permissions.", err)
+  }
+  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
+  if err != nil {
+    errorPage(w, "Error reading permissions.", err)
+  }
+
+  var readSqlStmt string
+  var totalSqlStmt string
+  if tv2 {
+    readSqlStmt = fmt.Sprintf("select id from `%s` where created_by = %d order by created desc limit ?, ?", tableName(ds), useridUint64 )
+    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where created_by = %d", tableName(ds), useridUint64)
+  } else if tv1 {
+    readSqlStmt = fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(ds))
+    totalSqlStmt = fmt.Sprintf("select count(*) from `%s`", tableName(ds))
+  }
+
+  innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "true-list")
   return
 }
 
 
 func searchDocuments(w http.ResponseWriter, r *http.Request) {
-  _, err := GetCurrentUser(r)
+  useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    errorPage(w, r, "You need to be logged in to continue.", err)
+    errorPage(w, "You need to be logged in to continue.", err)
     return
   }
 
@@ -263,28 +268,34 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, r, "Error occurred while determining if this document exists.", err)
+    errorPage(w, "Error occurred while determining if this document exists.", err)
     return
   }
   if detv == false {
-    errorPage(w, r, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
     return
   }
 
-  tv1, err1 := DoesCurrentUserHavePerm(r, ds, "read")
-  if err1 != nil {
-    errorPage(w, r, "Error occured while determining if the user have read permission for this page.", err1)
+  tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
+  if err != nil {
+    errorPage(w, "Error occured while determining if the user have read permission for this page.", err)
     return
   }
-  if ! tv1 {
-    errorPage(w, r, "You don't have the read permission for this document structure.", nil)
+  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
+  if err != nil {
+    errorPage(w, "Error occured while determining if the user have read-only-created permission for this page.", err)
+    return
+  }
+
+  if ! tv1 && ! tv2 {
+    errorPage(w, "You don't have the read permission for this document structure.", nil)
     return
   }
 
   var id int
   err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
   if err != nil {
-    errorPage(w, r, "An internal error occurred.", err)
+    errorPage(w, "An internal error occurred.", err)
   }
 
   dds := GetDocData(id)
@@ -293,38 +304,16 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
     type Context struct {
       DocumentStructure string
       DDs []DocData
+      UserHasReadOnlyCreatedPermission bool
     }
-    ctx := Context{ds, dds}
+    ctx := Context{ds, dds, tv2}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/search-documents.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
 
-    colNames := make([]string, 0)
-    var colName string
-    rows, err := SQLDB.Query("select name from qf_fields where dsid = ? and type != \"Section Break\" order by id asc limit 3", id)
-    if err != nil {
-      errorPage(w, r, "Error reading column names.", err)
-      return
-    }
-    defer rows.Close()
-    for rows.Next() {
-      err := rows.Scan(&colName)
-      if err != nil {
-        errorPage(w, r, "Error reading a column name.  ", err)
-        return
-      }
-      colNames = append(colNames, colName)
-    }
-    if err = rows.Err(); err != nil {
-      errorPage(w, r, "Extra Error reading column names.", err)
-      return
-    }
-    colNames = append(colNames, "created", "created_by")
-
     endSqlStmt := make([]string, 0)
-    sqlStmt := fmt.Sprintf("select id from `%s` where ", tableName(ds))
     for _, dd := range dds {
       if dd.Type == "Section Break" {
         continue
@@ -361,85 +350,29 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    ids := make([]uint64, 0)
-    var idd uint64
-    if r.FormValue("created_by") != "" && len(endSqlStmt) != 0 {
-      sqlStmt += "created_by = " + html.EscapeString(r.FormValue("created_by"))
-      sqlStmt += strings.Join(endSqlStmt, ", ")
-    } else if r.FormValue("created_by") != "" {
-      sqlStmt += "created_by = " + html.EscapeString(r.FormValue("created_by"))
-    } else if r.FormValue("created_by") == "" && len(endSqlStmt) != 0 {
-      sqlStmt += strings.Join(endSqlStmt, ", ")
-    } else if len(endSqlStmt) == 0 && r.FormValue("created_by") == "" {
-      errorPage(w, r, "Your query is empty.", nil)
-      return
-    }
-    rows, err = SQLDB.Query(sqlStmt)
-    if err != nil {
-      errorPage(w, r, "Error reading this document structure data.  " , err)
-      return
-    }
-    defer rows.Close()
-    for rows.Next() {
-      err := rows.Scan(&idd)
-      if err != nil {
-        errorPage(w, r, "Error reading a row of data for this document structure.  " , err)
+    var readSqlStmt string
+    var totalSqlStmt string
+    if tv2 {
+      endSqlStmt = append(endSqlStmt, fmt.Sprintf("created_by = %d", useridUint64))
+      readSqlStmt = fmt.Sprintf("select id from `%s` where ", tableName(ds)) + strings.Join(endSqlStmt, " and ")
+      readSqlStmt += " order by created desc limit ?, ?"
+      totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tableName(ds)) + strings.Join(endSqlStmt, " and ")
+    } else if tv1 {
+      if r.FormValue("created_by") != "" {
+        endSqlStmt = append(endSqlStmt, "created_by = " + html.EscapeString(r.FormValue("created_by")))
+      }
+      if len(endSqlStmt) == 0 {
+        errorPage(w, "Your query is empty.", nil)
         return
+      } else {
+        readSqlStmt = fmt.Sprintf("select id from `%s` where ", tableName(ds)) + strings.Join(endSqlStmt, " and ")
+        readSqlStmt += " order by created desc limit ?, ?"
+        totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tableName(ds)) + strings.Join(endSqlStmt, " and ")
       }
-      ids = append(ids, idd)
-    }
-    if err = rows.Err(); err != nil {
-      errorPage(w, r, "Extra error occurred while reading this document structure data.  " , err)
-      return
     }
 
-    if len(ids) == 0 {
-      errorPage(w, r, "Your query returned no results.", nil)
-      return
-    }
-
-    myRows := make([]Row, 0)
-    for _, id := range ids {
-      colAndDatas := make([]ColAndData, 0)
-      for _, col := range colNames {
-        var data string
-        var dataFromDB sql.NullString
-        sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", col, tableName(ds), id)
-        err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
-        if err != nil {
-          errorPage(w, r, "An internal error occured.  " , err)
-          return
-        }
-        if dataFromDB.Valid {
-          data = html.UnescapeString(dataFromDB.String)
-        } else {
-          data = ""
-        }
-        colAndDatas = append(colAndDatas, ColAndData{col, data})
-      }
-
-      var createdBy uint64
-      sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %d", tableName(ds), id)
-      err := SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
-      if err != nil {
-        errorPage(w, r, "An internal error occured.  " , err)
-        return
-      }
-      myRows = append(myRows, Row{id, colAndDatas, false, false})
-    }
-
-    type Context struct {
-      DocumentStructure string
-      ColNames []string
-      MyRows []Row
-    }
-
-    ctx := Context{ds, colNames, myRows}
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/search-results.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
-    tmpl.Execute(w, ctx)
-
-
+    innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "search-list")
+    return
   }
 }
 
@@ -447,7 +380,7 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
 func dateLists(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    errorPage(w, r, "You need to be logged in to continue.", err)
+    errorPage(w, "You need to be logged in to continue.", err)
     return
   }
 
@@ -456,23 +389,23 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, r, "Error occurred while determining if this document exists.", err)
+    errorPage(w, "Error occurred while determining if this document exists.", err)
     return
   }
   if detv == false {
-    errorPage(w, r, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
     return
   }
 
   tv1, err1 := DoesCurrentUserHavePerm(r, ds, "read")
   tv2, err2 := DoesCurrentUserHavePerm(r, ds, "read-only-created")
   if err1 != nil || err2 != nil {
-    errorPage(w, r, "Error occured while determining if the user have read permission for this page.", nil)
+    errorPage(w, "Error occured while determining if the user have read permission for this page.", nil)
     return
   }
 
   if ! tv1 && ! tv2 {
-    errorPage(w, r, "You don't have the read permission for this document structure.", nil)
+    errorPage(w, "You don't have the read permission for this document structure.", nil)
     return
   }
 
@@ -480,7 +413,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
   sqlStmt := fmt.Sprintf("select count(*) from `%s`", tableName(ds))
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
-    errorPage(w, r, "There are no documents to display.", nil)
+    errorPage(w, "There are no documents to display.", nil)
     return
   }
 
@@ -494,20 +427,20 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
   var date string
   rows, err := SQLDB.Query(sqlStmt)
   if err != nil {
-    errorPage(w, r, "Error getting date data for this document structure.  " , err)
+    errorPage(w, "Error getting date data for this document structure.  " , err)
     return
   }
   defer rows.Close()
   for rows.Next() {
     err := rows.Scan(&date)
     if err != nil {
-      errorPage(w, r, "Error retrieving single date.  " , err)
+      errorPage(w, "Error retrieving single date.  " , err)
       return
     }
     dates = append(dates, date)
   }
   if err = rows.Err(); err != nil {
-    errorPage(w, r, "Error after retrieving date data.  " , err)
+    errorPage(w, "Error after retrieving date data.  " , err)
     return
   }
 
@@ -521,7 +454,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
     sqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = ?", tableName(ds))
     err = SQLDB.QueryRow(sqlStmt, date).Scan(&count)
     if err != nil {
-      errorPage(w, r, "Error reading count of a date list.  " , err)
+      errorPage(w, "Error reading count of a date list.  " , err)
       return
     }
     dacs = append(dacs, DateAndCount{date, count})
@@ -542,7 +475,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
 func dateList(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    errorPage(w, r, "You need to be logged in to continue.", err)
+    errorPage(w, "You need to be logged in to continue.", err)
     return
   }
 
@@ -550,14 +483,30 @@ func dateList(w http.ResponseWriter, r *http.Request) {
   ds := vars["document-structure"]
   date := vars["date"]
 
-  readSqlStmt := fmt.Sprintf("select id from `%s` where date(created) = '%s' order by created desc limit ?, ?",
-    tableName(ds), html.EscapeString(date))
-  rocSqlStmt := fmt.Sprintf("select id from `%s` where date(created) = '%s' and created_by = %d order by created desc limit ?, ?",
-    tableName(ds), html.EscapeString(date), useridUint64)
-  readTotalSql := fmt.Sprintf("select count(*) from `%s` where date(created) = '%s'",
-    tableName(ds), html.EscapeString(date))
-  rocTotalSql := fmt.Sprintf("select count(*) from `%s` where date(created) = '%s' and created_by = %d",
-    tableName(ds), html.EscapeString(date))
-  innerListDocuments(w, r, readSqlStmt, rocSqlStmt, readTotalSql, rocTotalSql, "date-list")
+
+  tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
+  if err != nil {
+    errorPage(w, "Error reading permissions.", err)
+  }
+  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
+  if err != nil {
+    errorPage(w, "Error reading permissions.", err)
+  }
+
+  var readSqlStmt string
+  var totalSqlStmt string
+  if tv2 {
+    readSqlStmt = fmt.Sprintf("select id from `%s` where date(created) = '%s' order by created desc limit ?, ?",
+      tableName(ds), html.EscapeString(date))
+    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = '%s'",
+      tableName(ds), html.EscapeString(date))
+  } else if tv1 {
+    readSqlStmt = fmt.Sprintf("select id from `%s` where date(created) = '%s' and created_by = %d order by created desc limit ?, ?",
+      tableName(ds), html.EscapeString(date), useridUint64)
+    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = '%s' and created_by = %d",
+      tableName(ds), html.EscapeString(date))
+  }
+
+  innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "date-list")
   return
 }

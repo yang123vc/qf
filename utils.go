@@ -303,7 +303,7 @@ type Row struct {
 }
 
 
-func errorPage(w http.ResponseWriter, r *http.Request, msg string, err error) {
+func errorPage(w http.ResponseWriter, msg string, err error) {
   type Context struct {
     Message string
     ExactError string

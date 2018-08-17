@@ -23,10 +23,12 @@
   <h3>Search {{.DocumentStructure}} Documents</h3>
 
   <form method="post" action="">
-    <div>
-      <label>Created By (User ID)</label>
-      <input type="number" name="created_by" />
-    </div>
+    {{if .UserHasReadOnlyCreatedPermission}}
+      <div>
+        <label>Created By (User ID)</label>
+        <input type="number" name="created_by" />
+      </div>
+    {{end}}
 
     {{range .DDs}}
       <div>

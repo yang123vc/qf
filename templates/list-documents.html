@@ -3,6 +3,8 @@
     Lists of {{.DocumentStructure}} Documents
   {{else if eq .ListType "date-list"}}
     List of {{.DocumentStructure}} Documents created on {{.OptionalDate}}
+  {{else if eq .ListType "search-list"}}
+    A search on {{.DocumentStructure}} Documents
   {{end}}
 {{end}}
 
@@ -40,6 +42,8 @@
       Lists of {{.DocumentStructure}} Documents
     {{else if eq .ListType "date-list"}}
       List of {{.DocumentStructure}} Documents created on {{.OptionalDate}}
+    {{else if eq .ListType "search-list"}}
+      A search on {{.DocumentStructure}} Documents
     {{end}}
   </h3>
 
@@ -95,12 +99,14 @@
 
   <br><br>
   <div id="pagination">
-    Pages:
-    {{range .Pages}}
-      {{if eq $.ListType "true-list"}}
-        <a href='/doc/{{$.DocumentStructure}}/list/{{.}}/'>{{.}}</a>
-      {{else if eq $.ListType "date-list"}}
-        <a href='/doc/{{$.DocumentStructure}}/date-list/{{$.OptionalDate}}/{{.}}/'>{{.}}</a>
+    {{if ne $.ListType "search-list"}}
+      Pages:
+      {{range .Pages}}
+        {{if eq $.ListType "true-list"}}
+          <a href='/doc/{{$.DocumentStructure}}/list/{{.}}/'>{{.}}</a>
+        {{else if eq $.ListType "date-list"}}
+          <a href='/doc/{{$.DocumentStructure}}/date-list/{{$.OptionalDate}}/{{.}}/'>{{.}}</a>
+        {{end}}
       {{end}}
     {{end}}
   </div>
