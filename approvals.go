@@ -187,6 +187,14 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  var count uint64
+  sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(ds), docid)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+  if count == 0 {
+    errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid), nil)
+    return
+  }
+
   readPerm, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
     errorPage(w, "Error occured while determining if the user have read permission for this document structure. " , err)
@@ -195,6 +203,11 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
   rocPerm, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
   if err != nil {
     errorPage(w, "Error occured while determining if the user have read-only-created permission for this document. " , err)
+    return
+  }
+  romPerm, err := DoesCurrentUserHavePerm(r, ds, "read-only-mentioned")
+  if err != nil {
+    errorPage(w, "Error while getting user's permissions.", err)
     return
   }
 
@@ -212,6 +225,25 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
         errorPage(w, "You are not the owner of this document so can't read it.", nil)
         return
       }
+    } else if romPerm {
+      muColumn, err := getMentionedUserColumn(ds)
+      if err != nil {
+        errorPage(w, "Error getting MentionedUser column.", err)
+        return
+      }
+
+      var muColumnData uint64
+      sqlStmt = fmt.Sprintf("select %s from `%s` where id = %s", muColumn, tableName(ds), docid)
+      err = SQLDB.QueryRow(sqlStmt).Scan(&muColumnData)
+      if err != nil {
+        errorPage(w, "An error occurred while reading the mentioned user column.", err)
+        return
+      }
+
+      if muColumnData != useridUint64 {
+        errorPage(w, "You are not mentioned in this document so can't read it.", nil)
+        return
+      }
     } else {
       errorPage(w, "You don't have the read permission for this document structure.", nil)
       return
@@ -227,13 +259,6 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
     errorPage(w, "This document structure doesn't have the approval framework on it.", nil)
   }
 
-  var count uint64
-  sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(ds), docid)
-  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
-  if count == 0 {
-    errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid), nil)
-    return
-  }
 
   userRoles, err := GetCurrentUserRoles(r)
   if err != nil {
