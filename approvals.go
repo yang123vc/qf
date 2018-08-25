@@ -188,7 +188,7 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
   }
 
   var count uint64
-  sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(ds), docid)
+  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(ds), docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid), nil)
@@ -212,7 +212,7 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
   }
 
   var createdBy uint64
-  sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %s", tableName(ds), docid)
+  sqlStmt = fmt.Sprintf("select created_by from `%s` where id = %s", tableName(ds), docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
   if err != nil {
     errorPage(w, "An internal error occured. " , err)
