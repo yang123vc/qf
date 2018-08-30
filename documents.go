@@ -714,8 +714,15 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     errorPage(w, "Error occurred while determining if the user have delete-only-created permission.  " , err)
   }
 
+  var id int
+  err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
+  if err != nil {
+    errorPage(w, "An internal error occured.", err)
+    return
+  }
+
   var columns string
-  err = SQLDB.QueryRow("select group_concat(name separator ',') from qf_fields where dsid=?").Scan(&columns)
+  err = SQLDB.QueryRow("select group_concat(name separator ',') from qf_fields where dsid = ?", id).Scan(&columns)
   if err != nil {
     errorPage(w, "Error getting column names.", err)
     return
@@ -741,13 +748,6 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
   }
   jsonString, _ := json.Marshal(fData)
   ec, ectv := getEC(ds)
-
-  var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
-  if err != nil {
-    errorPage(w, "An internal error occured.", err)
-    return
-  }
 
   dds := GetDocData(id)
 
