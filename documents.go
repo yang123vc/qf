@@ -73,7 +73,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     }
     ct := dd.OtherOptions[0]
     var ctid int
-    err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ct).Scan(&ctid)
+    err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ct).Scan(&ctid)
     if err != nil {
       errorPage(w, "An error occurred while getting child table form structure.", err)
       return
@@ -316,7 +316,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 
   var id int
   var helpText sql.NullString
-  err = SQLDB.QueryRow("select id, help_text from qf_document_structures where name = ?", ds).Scan(&id, &helpText)
+  err = SQLDB.QueryRow("select id, help_text from qf_document_structures where fullname = ?", ds).Scan(&id, &helpText)
   if err != nil {
     errorPage(w, "An error occurred when reading document structure. Exact Error" , err)
     return
@@ -364,7 +364,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       if docData.Type == "Table" {
         childTable := docData.OtherOptions[0]
         var ctid int
-        err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", childTable).Scan(&ctid)
+        err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", childTable).Scan(&ctid)
         if err != nil {
           errorPage(w, "An error occurred while getting child table form structure.", err)
           return
@@ -529,7 +529,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         // add new table data
         childTableName := docAndStructure.DocData.OtherOptions[0]
         var ctid int
-        err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", childTableName).Scan(&ctid)
+        err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", childTableName).Scan(&ctid)
         if err != nil {
           errorPage(w, "An error occurred while getting child table form structure.", err)
           return

@@ -321,7 +321,7 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   tx, _ := SQLDB.Begin()
   var id int
-  err = tx.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
+  err = tx.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
   if err != nil {
     tx.Rollback()
     errorPage(w, "Error occurred when trying to get document structure id.", err)
@@ -335,7 +335,7 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  _, err = tx.Exec("delete from qf_document_structures where name = ?", ds)
+  _, err = tx.Exec("delete from qf_document_structures where fullname = ?", ds)
   if err != nil {
     tx.Rollback()
     errorPage(w, "Error occurred when deleting document structure.", err)
