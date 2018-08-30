@@ -52,8 +52,13 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
     tx, _ := SQLDB.Begin()
 
-    res, err := tx.Exec(`insert into qf_document_structures(name, help_text) values(?, ?)`,
-      r.FormValue("ds-name"), r.FormValue("help-text"))
+    tblName, err := newTableName(r.FormValue("ds-name"))
+    if err != nil {
+      errorPage(w, "Error getting new table name.", err)
+      return
+    }
+    res, err := tx.Exec(`insert into qf_document_structures(fullname, tbl_name, help_text) values(?, ?, ?)`,
+      r.FormValue("ds-name"), tblName, r.FormValue("help-text"))
     if err != nil {
       tx.Rollback()
       errorPage(w, "An error ocurred while saving this document structure.", err)
@@ -87,8 +92,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     }
 
     // create actual form data tables, we've only stored the form structure to the database
-    tbl := tableName(r.FormValue("ds-name"))
-    sql := fmt.Sprintf("create table `%s` (", tbl)
+    sql := fmt.Sprintf("create table `%s` (", tblName)
     sql += "id bigint unsigned not null auto_increment,"
     if r.FormValue("child-table") != "on" {
       sql += "created datetime not null,"
@@ -130,7 +134,12 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
         sqlEnding += fmt.Sprintf(", unique(%s)", qff.name)
       }
       if qff.type_ == "Link" {
-        sqlEnding += fmt.Sprintf(", foreign key (%s) references `%s`(id)", qff.name, tableName(qff.other_options))
+        ottblName, err := tableName(qff.other_options)
+        if err != nil {
+          errorPage(w, "Error getting table name for other options table.", err)
+          return
+        }
+        sqlEnding += fmt.Sprintf(", foreign key (%s) references `%s`(id)", qff.name, ottblName)
       }
     }
     sql += "primary key (id) "
@@ -149,7 +158,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
     for _, qff := range qffs {
       if optionSearch(qff.options, "index") && ! optionSearch(qff.options, "unique") {
-        indexSql := fmt.Sprintf("create index idx_%s on `%s`(%s)", qff.name, tbl, qff.name)
+        indexSql := fmt.Sprintf("create index idx_%s on `%s`(%s)", qff.name, tblName, qff.name)
         _, err := tx.Exec(indexSql)
         if err != nil {
           tx.Rollback()
@@ -174,7 +183,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     }
 
     var ctdsl sql.NullString
-    err = SQLDB.QueryRow("select group_concat(name separator ',') from qf_document_structures where child_table = 't'").Scan(&ctdsl)
+    err = SQLDB.QueryRow("select group_concat(fullname separator ',') from qf_document_structures where child_table = 't'").Scan(&ctdsl)
     if err != nil {
       errorPage(w, "Error reading child table document structure list.", err)
       return
@@ -211,7 +220,6 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-
   type DS struct{
     DSName string
     ChildTable bool
@@ -220,7 +228,7 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
   structDSList := make([]DS, 0)
   var str string
   var ct string
-  rows, err := SQLDB.Query("select name, child_table from qf_document_structures")
+  rows, err := SQLDB.Query("select fullname, child_table from qf_document_structures")
   if err != nil {
     errorPage(w, "Error getting document structures data.", err)
     return
@@ -288,12 +296,27 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     errorPage(w, "Error getting approvers.", err)
     return
   }
+
   for _, step := range approvers {
-    _, err = SQLDB.Exec(fmt.Sprintf("drop table `%s`", getApprovalTable(ds, step)) )
+    atn, err := getApprovalTable(ds, step)
+    if err != nil {
+      errorPage(w, "An error occurred getting approval table name.", nil)
+      return
+    }
+
+    _, err = SQLDB.Exec(fmt.Sprintf("drop table `%s`", atn) )
     if err != nil {
       errorPage(w, "An error occured while deleting an approvals table.", err)
       return
     }
+
+    _, err = SQLDB.Exec("delete from qf_approvals_tables where document_structure = ? and role = ?",
+      ds, step)
+    if err != nil {
+      errorPage(w, "Error occurred removing record of approval table.", nil)
+      return
+    }
+
   }
 
   tx, _ := SQLDB.Begin()
@@ -326,7 +349,12 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  sql := fmt.Sprintf("drop table `%s`", tableName(ds))
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, "Error getting document structure's table name.", err)
+    return
+  }
+  sql := fmt.Sprintf("drop table `%s`", tblName)
   _, err = tx.Exec(sql)
   if err != nil {
     tx.Rollback()
@@ -394,7 +422,8 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   var id int
   var childTableStr string
-  err = SQLDB.QueryRow("select id, child_table from qf_document_structures where name = ?", ds).Scan(&id, &childTableStr)
+  var tblNameStr string
+  err = SQLDB.QueryRow("select id, child_table, tbl_name from qf_document_structures where fullname = ?", ds).Scan(&id, &childTableStr, &tblNameStr)
   if err != nil {
     errorPage(w, "An error occured when trying to get the document structure id.  ", err)
     return
@@ -416,6 +445,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     ApproversStr string
     HasApprovers bool
     ChildTable bool
+    TableName string
   }
 
   add := func(x, y int) int {
@@ -440,7 +470,8 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     hasApprovers = true
   }
 
-  ctx := Context{ds, docDatas, id, add, rps, strings.Join(approvers, ", "), hasApprovers, childTableBool}
+  ctx := Context{ds, docDatas, id, add, rps, strings.Join(approvers, ", "), hasApprovers,
+    childTableBool, tblNameStr}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/view-document-structure.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
@@ -448,7 +479,6 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
 
 func editDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
-
   truthValue, err := isUserAdmin(r)
   if err != nil {
     errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)

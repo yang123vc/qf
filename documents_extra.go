@@ -74,7 +74,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
   }
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
   if err != nil {
     errorPage(w, "An internal error occured.  " , err)
   }
@@ -119,13 +119,19 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     return
   }
 
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, "Error getting document structure's table name.", err)
+    return
+  }
+
   myRows := make([]Row, 0)
   for _, id := range ids {
     colAndDatas := make([]ColAndData, 0)
     for _, col := range colNames {
       var data string
       var dataFromDB sql.NullString
-      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", col, tableName(ds), id)
+      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", col, tblName, id)
       err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
       if err != nil {
         errorPage(w, "An internal error occured.  " , err)
@@ -140,7 +146,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     }
 
     var createdBy uint64
-    sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %d", tableName(ds), id)
+    sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %d", tblName, id)
     err := SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
     if err != nil {
       errorPage(w, "An internal error occured.  " , err)
@@ -250,16 +256,21 @@ func listDocuments(w http.ResponseWriter, r *http.Request) {
     errorPage(w, "Error reading permissions.", err)
   }
 
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, "Error getting document structure's table name.", err)
+    return
+  }
 
   var readSqlStmt string
   var totalSqlStmt string
 
   if tv1 {
-    readSqlStmt = fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tableName(ds))
-    totalSqlStmt = fmt.Sprintf("select count(*) from `%s`", tableName(ds))
+    readSqlStmt = fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tblName)
+    totalSqlStmt = fmt.Sprintf("select count(*) from `%s`", tblName)
   } else if tv2 {
-    readSqlStmt = fmt.Sprintf("select id from `%s` where created_by = %d order by created desc limit ?, ?", tableName(ds), useridUint64 )
-    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where created_by = %d", tableName(ds), useridUint64)
+    readSqlStmt = fmt.Sprintf("select id from `%s` where created_by = %d order by created desc limit ?, ?", tblName, useridUint64 )
+    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where created_by = %d", tblName, useridUint64)
   } else if tv3 {
     muColumn, err := getMentionedUserColumn(ds)
     if err != nil {
@@ -267,8 +278,8 @@ func listDocuments(w http.ResponseWriter, r *http.Request) {
       return
     }
     readSqlStmt = fmt.Sprintf("select id from `%s` where %s = %d order by created desc limit ?, ?",
-      tableName(ds), muColumn, useridUint64 )
-    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where %s = %d", tableName(ds), muColumn, useridUint64)
+      tblName, muColumn, useridUint64 )
+    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where %s = %d", tblName, muColumn, useridUint64)
   }
 
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "true-list")
@@ -317,7 +328,7 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
   }
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
   if err != nil {
     errorPage(w, "An internal error occurred.", err)
   }
@@ -374,6 +385,12 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
       }
     }
 
+    tblName, err := tableName(ds)
+    if err != nil {
+      errorPage(w, "Error getting document structure's table name.", err)
+      return
+    }
+
     var readSqlStmt string
     var totalSqlStmt string
 
@@ -385,15 +402,15 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
         errorPage(w, "Your query is empty.", nil)
         return
       } else {
-        readSqlStmt = fmt.Sprintf("select id from `%s` where ", tableName(ds)) + strings.Join(endSqlStmt, " and ")
+        readSqlStmt = fmt.Sprintf("select id from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
         readSqlStmt += " order by created desc limit ?, ?"
-        totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tableName(ds)) + strings.Join(endSqlStmt, " and ")
+        totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
       }
     } else if tv2 {
       endSqlStmt = append(endSqlStmt, fmt.Sprintf("created_by = %d", useridUint64))
-      readSqlStmt = fmt.Sprintf("select id from `%s` where ", tableName(ds)) + strings.Join(endSqlStmt, " and ")
+      readSqlStmt = fmt.Sprintf("select id from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
       readSqlStmt += " order by created desc limit ?, ?"
-      totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tableName(ds)) + strings.Join(endSqlStmt, " and ")
+      totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
     } else if tv3 {
       muColumn, err := getMentionedUserColumn(ds)
       if err != nil {
@@ -401,9 +418,9 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
         return
       }
       endSqlStmt = append(endSqlStmt, fmt.Sprintf("%s = %d", muColumn, useridUint64))
-      readSqlStmt = fmt.Sprintf("select id from `%s` where ", tableName(ds)) + strings.Join(endSqlStmt, " and ")
+      readSqlStmt = fmt.Sprintf("select id from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
       readSqlStmt += " order by created desc limit ?, ?"
-      totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tableName(ds)) + strings.Join(endSqlStmt, " and ")
+      totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
     }
 
     innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "search-list")
@@ -453,8 +470,14 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, "Error getting document structure's table name.", err)
+    return
+  }
+
   var count uint64
-  sqlStmt := fmt.Sprintf("select count(*) from `%s`", tableName(ds))
+  sqlStmt := fmt.Sprintf("select count(*) from `%s`", tblName)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     errorPage(w, "There are no documents to display.", nil)
@@ -462,10 +485,10 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
   }
 
   if tv1 {
-    sqlStmt = fmt.Sprintf("select distinct date(created) as dc from `%s` order by dc desc", tableName(ds))
+    sqlStmt = fmt.Sprintf("select distinct date(created) as dc from `%s` order by dc desc", tblName)
   } else if tv2 {
     sqlStmt = fmt.Sprintf("select distinct date(created) as dc from `%s` where created_by = %d order by dc desc",
-      tableName(ds), useridUint64)
+      tblName, useridUint64)
   } else if tv3 {
     muColumn, err := getMentionedUserColumn(ds)
     if err != nil {
@@ -473,7 +496,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
       return
     }
     sqlStmt = fmt.Sprintf("select distinct date(created) as dc from `%s` where %s = %d order by dc desc",
-      tableName(ds), muColumn, useridUint64)
+      tblName, muColumn, useridUint64)
 
   }
 
@@ -506,10 +529,10 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
   for _, date := range dates {
     var count uint64
     if tv1 {
-      sqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = ?", tableName(ds))
+      sqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = ?", tblName)
     } else if tv2 {
       sqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = ? and created_by = %d",
-        tableName(ds), useridUint64)
+        tblName, useridUint64)
     } else if tv3 {
       muColumn, err := getMentionedUserColumn(ds)
       if err != nil {
@@ -517,7 +540,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
         return
       }
       sqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = ? and %s = %d",
-        tableName(ds), muColumn, useridUint64)
+        tblName, muColumn, useridUint64)
     }
     err = SQLDB.QueryRow(sqlStmt, date).Scan(&count)
     if err != nil {
@@ -565,18 +588,25 @@ func dateList(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, "Error getting document structure's table name.", err)
+    return
+  }
+
   var readSqlStmt string
   var totalSqlStmt string
+
   if tv1 {
     readSqlStmt = fmt.Sprintf("select id from `%s` where date(created) = '%s' order by created desc limit ?, ?",
-      tableName(ds), html.EscapeString(date))
+      tblName, html.EscapeString(date))
     totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = '%s'",
-      tableName(ds), html.EscapeString(date))
+      tblName, html.EscapeString(date))
   } else if tv2 {
     readSqlStmt = fmt.Sprintf("select id from `%s` where date(created) = '%s' and created_by = %d order by created desc limit ?, ?",
-      tableName(ds), html.EscapeString(date), useridUint64)
+      tblName, html.EscapeString(date), useridUint64)
     totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = '%s' and created_by = %d",
-      tableName(ds), html.EscapeString(date), useridUint64)
+      tblName, html.EscapeString(date), useridUint64)
   } else if tv3 {
     muColumn, err := getMentionedUserColumn(ds)
     if err != nil {
@@ -585,9 +615,9 @@ func dateList(w http.ResponseWriter, r *http.Request) {
     }
 
     readSqlStmt = fmt.Sprintf("select id from `%s` where date(created) = '%s' and %s = %d order by created desc limit ?, ?",
-      tableName(ds), html.EscapeString(date), muColumn, useridUint64)
+      tblName, html.EscapeString(date), muColumn, useridUint64)
     totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = '%s' and %s = %d",
-      tableName(ds), html.EscapeString(date), muColumn, useridUint64)
+      tblName, html.EscapeString(date), muColumn, useridUint64)
   }
 
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "date-list")

@@ -11,6 +11,7 @@ import (
   "os"
   "html/template"
   "html"
+  "errors"
 )
 
 
@@ -48,11 +49,6 @@ func optionSearch(commaSeperatedOptions, option string) bool {
 }
 
 
-func tableName(documentStructure string) string {
-  return fmt.Sprintf("qf%s", documentStructure)
-}
-
-
 func docExists(documentName string) (bool, error) {
   dsList, err := GetDocumentStructureList()
   if err != nil {
@@ -71,7 +67,7 @@ func docExists(documentName string) (bool, error) {
 func GetDocumentStructureList() ([]string, error) {
   tempSlice := make([]string, 0)
   var str string
-  rows, err := SQLDB.Query("select name from qf_document_structures")
+  rows, err := SQLDB.Query("select fullname from qf_document_structures")
   if err != nil {
     return tempSlice, err
   }
@@ -209,11 +205,6 @@ func GetDocData(dsid int) []DocData{
 }
 
 
-func getApprovalTable(documentStructure, role string) string {
-  return fmt.Sprintf("qf%s %s Approvals", documentStructure, role)
-}
-
-
 func GetRoles() ([]string, error) {
   strSlice := make([]string, 0)
   var str string
@@ -276,7 +267,7 @@ func getApprovers(documentStructure string) ([]string, error) {
   approversList := make([]string, 0)
 
   var approvers sql.NullString
-  err := SQLDB.QueryRow("select approval_steps from qf_document_structures where name = ?", documentStructure).Scan(&approvers)
+  err := SQLDB.QueryRow("select approval_steps from qf_document_structures where fullname = ?", documentStructure).Scan(&approvers)
   if err != nil {
     return approversList, err
   }
@@ -323,7 +314,7 @@ func errorPage(w http.ResponseWriter, msg string, err error) {
 
 func getEC(documentStructure string) (ExtraCode, bool) {
   var dsid int
-  err := SQLDB.QueryRow("select id from qf_document_structures where name = ?", documentStructure).Scan(&dsid)
+  err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", documentStructure).Scan(&dsid)
   if err != nil {
     return ExtraCode{}, false
   }
@@ -340,7 +331,7 @@ func getColumnNames(ds string) ([]string, error){
   colNames := make([]string, 0)
 
   var dsid int
-  err := SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&dsid)
+  err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&dsid)
   if err != nil {
     return colNames, err
   }
@@ -374,4 +365,90 @@ func getMentionedUserColumn(ds string) (string, error) {
     return col, err
   }
   return col, nil
+}
+
+
+func abbreviateName(name string) string {
+  parts := strings.Split(name, " ")
+  var abbreviatedName string
+  for _, part := range parts {
+    abbreviatedName += string(part[0])
+  }
+  return abbreviatedName
+}
+
+
+func newTableName(documentStructure string) (string, error) {
+  iter := 0
+  for {
+    newName := "qf" + abbreviateName(documentStructure)
+    if iter != 0 {
+      newName += strconv.Itoa(iter)
+    }
+    var count int
+    err := SQLDB.QueryRow("select count(*) from qf_document_structures where tbl_name = ?", newName).Scan(&count)
+    if err != nil {
+      return "", err
+    }
+    if count == 0 {
+      return newName, nil
+    } else {
+      iter += 1
+    }
+  }
+}
+
+
+func tableName(documentStructure string) (string, error) {
+  var name sql.NullString
+  err := SQLDB.QueryRow("select tbl_name from qf_document_structures where fullname = ?", documentStructure).Scan(&name)
+  if err != nil {
+    return "", err
+  }
+
+  if ! name.Valid {
+    return "", errors.New("document structure does not exists.")
+  } else {
+    return name.String, nil
+  }
+}
+
+
+func newApprovalTableName(documentStructure, role string) (string, error) {
+  iter := 0
+  for {
+    newName := "qf" + abbreviateName(fmt.Sprintf("%s %s Approvals", documentStructure, role))
+    if iter != 0 {
+      newName += strconv.Itoa(iter)
+    }
+
+    var count int
+    err := SQLDB.QueryRow(`select count(*) as count from information_schema.tables
+      where table_schema=? and table_name=?`, SiteDB, newName).Scan(&count)
+    if err != nil {
+      return "", err
+    }
+
+    if count == 0 {
+      return newName, nil
+    } else {
+      iter += 1
+    }
+  }
+}
+
+
+func getApprovalTable(documentStructure, role string) (string, error) {
+  var name sql.NullString
+  err := SQLDB.QueryRow("select tbl_name from qf_approvals_tables where document_structure = ? and role = ?",
+    documentStructure, role).Scan(&name)
+  if err != nil {
+    return "", err
+  }
+
+  if ! name.Valid {
+    return "", errors.New("document structure or role does not exists.")
+  } else {
+    return name.String, nil
+  }
 }

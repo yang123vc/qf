@@ -36,6 +36,18 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  // verify if this document structure already has the approval framework.
+  var stepsStr sql.NullString
+  err = SQLDB.QueryRow("select approval_steps from qf_document_structures where fullname = ?", ds).Scan(&stepsStr)
+  if err != nil {
+    errorPage(w, "Error occured when getting approval steps of this document structure.", err)
+    return
+  }
+  if stepsStr.Valid {
+    errorPage(w, "This document structure already has approval steps.", nil)
+    return
+  }
+
   if r.Method == http.MethodGet {
     type Context struct {
       Roles []string
@@ -55,18 +67,6 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
 
   } else if r.Method == http.MethodPost {
 
-    // verify if this document structure already has the approval framework.
-    var stepsStr sql.NullString
-    err = SQLDB.QueryRow("select approval_steps from qf_document_structures where name = ?", ds).Scan(&stepsStr)
-    if err != nil {
-      errorPage(w, "Error occured when getting approval steps of this document structure.", err)
-      return
-    }
-    if stepsStr.Valid {
-      errorPage(w, "This document structure already has approval steps.", nil)
-      return
-    }
-
     steps := make([]string, 0)
     for i := 1; i < 100 ; i++ {
       iStr := strconv.Itoa(i)
@@ -77,8 +77,48 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
       }
     }
 
+    atns := make([]string, 0)
+    for _, step := range steps {
+      atn, err := newApprovalTableName(ds, step)
+      if err != nil {
+        errorPage(w, "Error creating approval's table name", err)
+        return
+      }
+      atns = append(atns, atn)
+
+      sqlStmt := fmt.Sprintf("create table `%s` ( id bigint unsigned not null auto_increment, ", atn)
+      sqlStmt += "created datetime not null,"
+      sqlStmt += "modified datetime not null,"
+      sqlStmt += "created_by bigint unsigned not null,"
+      sqlStmt += "docid bigint unsigned not null,"
+      sqlStmt += "status varchar(20) not null,"
+      sqlStmt += "message text, primary key (id), unique(docid),"
+      sqlStmt += fmt.Sprintf("foreign key (created_by) references `%s`(id),", UsersTable)
+
+      tblName, err := tableName(ds)
+      if err != nil {
+        errorPage(w, "Error getting document structure's table name.", err)
+        return
+      }
+
+      sqlStmt += fmt.Sprintf("foreign key (docid) references `%s`(id) )", tblName)
+
+      _, err = SQLDB.Exec(sqlStmt)
+      if err != nil {
+        errorPage(w, "An error occured while creating approvals table.", err)
+        return
+      }
+
+      _, err = SQLDB.Exec("insert into qf_approvals_tables(document_structure, role, tbl_name) values (?,?,?)",
+        ds, step, atn)
+      if err != nil {
+        errorPage(w, "Error occurred storing approval table name.", err)
+        return
+      }
+    }
+
     var dsid int
-    err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&dsid)
+    err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&dsid)
     if err != nil {
       errorPage(w, "Error occurred when trying to get document structure id.", err)
       return
@@ -87,24 +127,6 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
     if err != nil {
       errorPage(w, "Error occurred when updating the document structure.", err)
       return
-    }
-
-    for _, step := range steps {
-      sqlStmt := fmt.Sprintf("create table `%s` ( id bigint unsigned not null auto_increment, ", getApprovalTable(ds, step))
-      sqlStmt += "created datetime not null,"
-      sqlStmt += "modified datetime not null,"
-      sqlStmt += "created_by bigint unsigned not null,"
-      sqlStmt += "docid bigint unsigned not null,"
-      sqlStmt += "status varchar(20) not null,"
-      sqlStmt += "message text, primary key (id), unique(docid),"
-      sqlStmt += fmt.Sprintf("foreign key (created_by) references `%s`(id),", UsersTable)
-      sqlStmt += fmt.Sprintf("foreign key (docid) references `%s`(id) )", tableName(ds))
-
-      _, err = SQLDB.Exec(sqlStmt)
-      if err != nil {
-        errorPage(w, "An error occured while creating approvals table.", err)
-        return
-      }
     }
 
     redirectURL := fmt.Sprintf("/view-document-structure/%s/", ds)
@@ -144,11 +166,25 @@ func removeApprovals(w http.ResponseWriter, r *http.Request) {
   }
 
   for _, step := range approvers {
-    _, err = SQLDB.Exec(fmt.Sprintf("drop table `%s`", getApprovalTable(ds, step)) )
+    atn, err := getApprovalTable(ds, step)
+    if err != nil {
+      errorPage(w, "An error occurred getting approval table name.", nil)
+      return
+    }
+
+    _, err = SQLDB.Exec(fmt.Sprintf("drop table `%s`", atn) )
     if err != nil {
       errorPage(w, "An error occured while deleting an approvals table.", err)
       return
     }
+
+    _, err = SQLDB.Exec("delete from qf_approvals_tables where document_structure = ? and role = ?",
+      ds, step)
+    if err != nil {
+      errorPage(w, "Error occurred removing record of approval table.", nil)
+      return
+    }
+
   }
 
   _, err = SQLDB.Exec("update qf_document_structures set approval_steps = null where name = ?", ds)
@@ -187,8 +223,14 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, "Error getting document structure's table name.", err)
+    return
+  }
+
   var count uint64
-  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(ds), docid)
+  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tblName, docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid), nil)
@@ -212,7 +254,7 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
   }
 
   var createdBy uint64
-  sqlStmt = fmt.Sprintf("select created_by from `%s` where id = %s", tableName(ds), docid)
+  sqlStmt = fmt.Sprintf("select created_by from `%s` where id = %s", tblName, docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
   if err != nil {
     errorPage(w, "An internal error occured. " , err)
@@ -233,7 +275,7 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
       }
 
       var muColumnData uint64
-      sqlStmt = fmt.Sprintf("select %s from `%s` where id = %s", muColumn, tableName(ds), docid)
+      sqlStmt = fmt.Sprintf("select %s from `%s` where id = %s", muColumn, tblName, docid)
       err = SQLDB.QueryRow(sqlStmt).Scan(&muColumnData)
       if err != nil {
         errorPage(w, "An error occurred while reading the mentioned user column.", err)
@@ -282,8 +324,15 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
           break
         }
       }
+
+      atn, err := getApprovalTable(ds, role)
+      if err != nil {
+        errorPage(w, "An error occurred getting approval table name.", nil)
+        return
+      }
+
       var approvalDataCount uint64
-      sqlStmt = fmt.Sprintf("select count(*) from `%s` where docid = ?", getApprovalTable(ds, role))
+      sqlStmt = fmt.Sprintf("select count(*) from `%s` where docid = ?", atn)
       err = SQLDB.QueryRow(sqlStmt, docid).Scan(&approvalDataCount)
       if err != nil {
         errorPage(w, "Error occurred while checking for approval data. " , err)
@@ -293,7 +342,7 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
         ads = append(ads, ApprovalData{role, "", "", cuhtr})
       } else if approvalDataCount == 1 {
         var status, message sql.NullString
-        sqlStmt = fmt.Sprintf("select status, message from `%s` where docid = ?", getApprovalTable(ds, role))
+        sqlStmt = fmt.Sprintf("select status, message from `%s` where docid = ?", atn)
         err = SQLDB.QueryRow(sqlStmt, docid).Scan(&status, &message)
         if err != nil {
           errorPage(w, "Error occurred while checking for approval data. " , err)
@@ -327,15 +376,21 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
     status := r.FormValue("status")
     message := r.FormValue("message")
 
+    atn, err := getApprovalTable(ds, role)
+    if err != nil {
+      errorPage(w, "An error occurred getting approval table name.", nil)
+      return
+    }
+
     var approvalDataCount uint64
-    sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = ?", getApprovalTable(ds, role))
+    sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = ?", atn)
     err = SQLDB.QueryRow(sqlStmt, docid).Scan(&approvalDataCount)
     if err != nil {
       errorPage(w, "Error occurred while checking for approval data. " , err)
       return
     }
     if approvalDataCount == 0 {
-      sqlStmt = fmt.Sprintf("insert into `%s` (created, modified, created_by, status, message, docid)", getApprovalTable(ds, role) )
+      sqlStmt = fmt.Sprintf("insert into `%s` (created, modified, created_by, status, message, docid)", atn )
       sqlStmt += " values(now(), now(), ?, ?, ?, ?)"
       _, err = SQLDB.Exec(sqlStmt, useridUint64, status, message, docid)
       if err != nil {
@@ -343,7 +398,7 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
         return
       }
     } else if approvalDataCount == 1 {
-      sqlStmt = fmt.Sprintf("update `%s` set modified = now(), status = ?, message = ? where docid = ?", getApprovalTable(ds, role))
+      sqlStmt = fmt.Sprintf("update `%s` set modified = now(), status = ?, message = ? where docid = ?", atn)
       _, err = SQLDB.Exec(sqlStmt, status, message, docid)
       if err != nil {
         errorPage(w, "Error occurred while updating approval data. " , err)

@@ -47,7 +47,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 
   var id int
   var helpText sql.NullString
-  err = SQLDB.QueryRow("select id, help_text from qf_document_structures where name = ?", ds).Scan(&id, &helpText)
+  err = SQLDB.QueryRow("select id, help_text from qf_document_structures where fullname = ?", ds).Scan(&id, &helpText)
   if err != nil {
     errorPage(w, "An internal error occured.", err)
     return
@@ -178,8 +178,12 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
               formDataCT = append(formDataCT, data)
             }
           }
-
-          sqlStmt := fmt.Sprintf("insert into `%s`(%s) values (%s)", tableName(childTableName),
+          ctblName, err := tableName(childTableName)
+          if err != nil {
+            errorPage(w, "Error getting child table db name", err)
+            return
+          }
+          sqlStmt := fmt.Sprintf("insert into `%s`(%s) values (%s)", ctblName,
             strings.Join(colNamesCT, ", "), strings.Join(formDataCT, ", "))
           res, err := SQLDB.Exec(sqlStmt)
           if err != nil {
@@ -205,9 +209,17 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
         formData = append(formData, data)
       }
     }
+
+    tblName, err := tableName(ds)
+    if err != nil {
+      errorPage(w, "Error getting document structure's table name.", err)
+      return
+    }
+
     colNamesStr := strings.Join(colNames, ", ")
     formDataStr := strings.Join(formData, ", ")
-    sqlStmt := fmt.Sprintf("insert into `%s`(created, modified, created_by, %s) values(now(), now(), %d, %s)", tableName(ds), colNamesStr, useridUint64, formDataStr)
+    sqlStmt := fmt.Sprintf("insert into `%s`(created, modified, created_by, %s) values(now(), now(), %d, %s)",
+      tblName, colNamesStr, useridUint64, formDataStr)
     res, err := SQLDB.Exec(sqlStmt)
     if err != nil {
       errorPage(w, "An error occured while saving." , err)
@@ -268,8 +280,14 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, "Error getting document structure's table name.", err)
+    return
+  }
+
   var createdBy uint64
-  sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %s", tableName(ds), docid)
+  sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %s", tblName, docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
   if err != nil {
     errorPage(w, "An internal error occured.  " , err)
@@ -289,7 +307,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   var count uint64
-  sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(ds), docid)
+  sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = %s", tblName, docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid), nil)
@@ -331,7 +349,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     } else {
       var data string
       var dataFromDB sql.NullString
-      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %s", docData.Name, tableName(ds), docid)
+      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %s", docData.Name, tblName, docid)
       err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
       if err != nil {
         errorPage(w, "Error occurred when getting edit data.  " , err)
@@ -358,10 +376,17 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         for _, part := range parts {
           docAndStructureSliceCT := make([]docAndStructure, 0)
           for _, ctdd := range ctdds {
+            ctblName, err := tableName(childTable)
+            if err != nil {
+              errorPage(w, "Error getting child table db name", err)
+              return
+            }
+
             var data string
             var dataFromDB sql.NullString
-            sqlStmt := fmt.Sprintf("select %s from `%s` where id = ?", ctdd.Name, tableName(childTable))
-            err := SQLDB.QueryRow(sqlStmt, part).Scan(&dataFromDB)
+
+            sqlStmt := fmt.Sprintf("select %s from `%s` where id = ?", ctdd.Name, ctblName)
+            err = SQLDB.QueryRow(sqlStmt, part).Scan(&dataFromDB)
             if err != nil {
               errorPage(w, "Error occurred when getting edit child table data." , err)
               return
@@ -382,8 +407,8 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 
   var created, modified, firstname, surname string
   var created_by uint64
-  sqlStmt = fmt.Sprintf("select `%[1]s`.created, `%[1]s`.modified, `%[2]s`.firstname, `%[2]s`.surname, `%[2]s`.id ", tableName(ds), UsersTable)
-  sqlStmt += fmt.Sprintf("from `%[1]s` inner join `%[2]s` on `%[1]s`.created_by = `%[2]s`.id where `%[1]s`.id = ?", tableName(ds), UsersTable)
+  sqlStmt = fmt.Sprintf("select `%[1]s`.created, `%[1]s`.modified, `%[2]s`.firstname, `%[2]s`.surname, `%[2]s`.id ", tblName, UsersTable)
+  sqlStmt += fmt.Sprintf("from `%[1]s` inner join `%[2]s` on `%[1]s`.created_by = `%[2]s`.id where `%[1]s`.id = ?", tblName, UsersTable)
   err = SQLDB.QueryRow(sqlStmt, docid).Scan(&created, &modified, &firstname, &surname, &created_by)
   if err != nil {
     errorPage(w, "An error occured while getting extra read data of this document.", err)
@@ -487,7 +512,13 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         // delete old table data
         parts := strings.Split(docAndStructure.Data, ",")
         for _, part := range parts {
-          sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", tableName(docAndStructure.DocData.OtherOptions[0]))
+          ottblName, err := tableName(docAndStructure.DocData.OtherOptions[0])
+          if err != nil {
+            errorPage(w, "Error getting table name of the table in other options.", nil)
+            return
+          }
+
+          sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", ottblName)
           _, err = SQLDB.Exec(sqlStmt, part)
           if err != nil {
             errorPage(w, "An error occurred deleting child table data.", err)
@@ -542,8 +573,12 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
               formDataCT = append(formDataCT, data)
             }
           }
-
-          sqlStmt := fmt.Sprintf("insert into `%s`(%s) values (%s)", tableName(childTableName),
+          ctblName, err := tableName(childTableName)
+          if err != nil {
+            errorPage(w, "Error getting document structure's table name.", err)
+            return
+          }
+          sqlStmt := fmt.Sprintf("insert into `%s`(%s) values (%s)", ctblName,
             strings.Join(colNamesCT, ", "), strings.Join(formDataCT, ", "))
           res, err := SQLDB.Exec(sqlStmt)
           if err != nil {
@@ -589,7 +624,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       updatePartStmt = append(updatePartStmt, stmt1)
     }
 
-    sqlStmt := fmt.Sprintf("update `%s` set %s where id = %s", tableName(ds), strings.Join(updatePartStmt, ", "), docid)
+    sqlStmt := fmt.Sprintf("update `%s` set %s where id = %s", tblName, strings.Join(updatePartStmt, ", "), docid)
     _, err = SQLDB.Exec(sqlStmt)
     if err != nil {
       errorPage(w, "An error occured while saving: " , err)
@@ -616,7 +651,12 @@ func deleteApproversData(documentStructure string, dsid string) error {
   }
 
   for _, step := range approvers {
-    _, err = SQLDB.Exec(fmt.Sprintf("delete from `%s` where docid = ?", getApprovalTable(documentStructure, step)), dsid)
+    atn, err := getApprovalTable(documentStructure, step)
+    if err != nil {
+      return err
+    }
+
+    _, err = SQLDB.Exec(fmt.Sprintf("delete from `%s` where docid = ?", atn), dsid)
     if err != nil {
       return err
     }
@@ -650,8 +690,14 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, "Error getting document structure's table name.", err)
+    return
+  }
+
   var count uint64
-  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tableName(ds), docid)
+  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tblName, docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
     errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid), nil)
@@ -680,7 +726,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
   for _, colName := range colNames {
     var data string
     var dataFromDB sql.NullString
-    sqlStmt := fmt.Sprintf("select %s from `%s` where id = %s", colName, tableName(ds), docid)
+    sqlStmt := fmt.Sprintf("select %s from `%s` where id = %s", colName, tblName, docid)
     err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
     if err != nil {
       errorPage(w, "An internal error occured.  " , err)
@@ -697,7 +743,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
   ec, ectv := getEC(ds)
 
   var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where name = ?", ds).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
   if err != nil {
     errorPage(w, "An internal error occured.", err)
     return
@@ -719,7 +765,13 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
 
       parts := strings.Split(fData[dd.Name], ",")
       for _, part := range parts {
-        sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", tableName(dd.OtherOptions[0]))
+        ottblName, err := tableName(dd.OtherOptions[0])
+        if err != nil {
+          errorPage(w, "Error getting table name of the other options document structure", nil)
+          return
+        }
+
+        sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", ottblName)
         _, err = SQLDB.Exec(sqlStmt, part)
         if err != nil {
           errorPage(w, "An error occurred deleting child table data.", err)
@@ -728,7 +780,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tableName(ds), docid)
+    sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tblName, docid)
     _, err = SQLDB.Exec(sqlStmt)
     if err != nil {
       errorPage(w, "An error occured while deleting this document: " , err)
@@ -742,7 +794,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
   } else if docPerm {
 
     var createdBy uint64
-    sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %s", tableName(ds), docid)
+    sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %s", tblName, docid)
     err := SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
     if err != nil {
       errorPage(w, "An internal error occured.  " , err)
@@ -763,7 +815,12 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
 
         parts := strings.Split(fData[dd.Name], ",")
         for _, part := range parts {
-          sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", tableName(dd.OtherOptions[0]))
+          ottblName, err := tableName(dd.OtherOptions[0])
+          if err != nil {
+            errorPage(w, "Error occured getting the table name of the other options document structure.", err)
+            return
+          }
+          sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", ottblName)
           _, err = SQLDB.Exec(sqlStmt, part)
           if err != nil {
             errorPage(w, "An error occurred deleting child table data.", err)
@@ -772,7 +829,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
         }
       }
 
-      sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tableName(ds), docid)
+      sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tblName, docid)
       _, err = SQLDB.Exec(sqlStmt)
       if err != nil {
         errorPage(w, "An error occured while deleting this document: " , err)
