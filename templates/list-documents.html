@@ -60,9 +60,11 @@
   {{ end}}
   <a class="button-look" href="/doc/{{.DocumentStructure}}/date-lists/">Date Lists</a>
   <a class="button-look" href="/doc/{{.DocumentStructure}}/search/">Search</a>
-  <a class="button-look" href="/doc/{{.DocumentStructure}}/approved-list/">Approved</a>
-  <a class="button-look" href="/doc/{{.DocumentStructure}}/unapproved-list/">Not Approved</a>
-
+  {{if $.HasApprovals}}
+    <a class="button-look" href="/doc/{{.DocumentStructure}}/approved-list/">Approved</a>
+    <a class="button-look" href="/doc/{{.DocumentStructure}}/unapproved-list/">Not Approved</a>
+  {{end}}
+  
   <br><br>
 
   <table>

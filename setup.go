@@ -225,6 +225,8 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/doc/{document-structure}/date-list/{date}/{page:[0-9]+}/", dateList)
   r.HandleFunc("/doc/{document-structure}/approved-list/", approvedList)
   r.HandleFunc("/doc/{document-structure}/approved-list/{page:[0-9]+}/", approvedList)
+  r.HandleFunc("/doc/{document-structure}/unapproved-list/", unapprovedList)
+  r.HandleFunc("/doc/{document-structure}/unapproved-list/{page:[0-9]+}/", unapprovedList)
 
   // Approvals
   r.HandleFunc("/add-approvals-to-document-structure/{document-structure}/", addApprovals)
