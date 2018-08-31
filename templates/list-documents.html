@@ -5,6 +5,10 @@
     List of {{.DocumentStructure}} Documents created on {{.OptionalDate}}
   {{else if eq .ListType "search-list"}}
     A search on {{.DocumentStructure}} Documents
+  {{else if eq .ListType "approved-list"}}
+    List of Approved {{.DocumentStructure}} Documents
+  {{else if eq .ListType "unapproved-list"}}
+    List of Unapproved {{.DocumentStructure}} Documents
   {{end}}
 {{end}}
 
@@ -46,6 +50,8 @@
       A search on {{.DocumentStructure}} Documents
     {{else if eq .ListType "approved-list"}}
       List of Approved {{.DocumentStructure}} Documents
+    {{else if eq .ListType "unapproved-list"}}
+      List of Unapproved {{.DocumentStructure}} Documents
     {{end}}
   </h3>
 
@@ -55,7 +61,7 @@
   <a class="button-look" href="/doc/{{.DocumentStructure}}/date-lists/">Date Lists</a>
   <a class="button-look" href="/doc/{{.DocumentStructure}}/search/">Search</a>
   <a class="button-look" href="/doc/{{.DocumentStructure}}/approved-list/">Approved</a>
-  <!-- <a class="button-look" href="/doc/{{.DocumentStructure}}/not-approved-list/">Not Approved</a> -->
+  <a class="button-look" href="/doc/{{.DocumentStructure}}/unapproved-list/">Not Approved</a>
 
   <br><br>
 
@@ -112,6 +118,8 @@
           <a href='/doc/{{$.DocumentStructure}}/date-list/{{$.OptionalDate}}/{{.}}/'>{{.}}</a>
         {{else if eq $.ListType "approved-list"}}
           <a href="/doc/{{$.DocumentStructure}}/approved-list/{{.}}/">{{.}}</a>
+        {{else if eq $.ListType "unapproved-list"}}
+          <a href="/doc/{{$.DocumentStructure}}/unapproved-list/{{.}}/">{{.}}</a>
         {{end}}
       {{end}}
     {{end}}
