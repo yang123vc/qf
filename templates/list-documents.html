@@ -39,11 +39,13 @@
 {{define "main"}}
   <h3>
     {{if eq .ListType "true-list"}}
-      Lists of {{.DocumentStructure}} Documents
+      List of {{.DocumentStructure}} Documents
     {{else if eq .ListType "date-list"}}
       List of {{.DocumentStructure}} Documents created on {{.OptionalDate}}
     {{else if eq .ListType "search-list"}}
       A search on {{.DocumentStructure}} Documents
+    {{else if eq .ListType "approved-list"}}
+      List of Approved {{.DocumentStructure}} Documents
     {{end}}
   </h3>
 
@@ -52,6 +54,8 @@
   {{ end}}
   <a class="button-look" href="/doc/{{.DocumentStructure}}/date-lists/">Date Lists</a>
   <a class="button-look" href="/doc/{{.DocumentStructure}}/search/">Search</a>
+  <a class="button-look" href="/doc/{{.DocumentStructure}}/approved-list/">Approved</a>
+  <!-- <a class="button-look" href="/doc/{{.DocumentStructure}}/not-approved-list/">Not Approved</a> -->
 
   <br><br>
 
@@ -106,6 +110,8 @@
           <a href='/doc/{{$.DocumentStructure}}/list/{{.}}/'>{{.}}</a>
         {{else if eq $.ListType "date-list"}}
           <a href='/doc/{{$.DocumentStructure}}/date-list/{{$.OptionalDate}}/{{.}}/'>{{.}}</a>
+        {{else if eq $.ListType "approved-list"}}
+          <a href="/doc/{{$.DocumentStructure}}/approved-list/{{.}}/">{{.}}</a>
         {{end}}
       {{end}}
     {{end}}

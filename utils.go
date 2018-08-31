@@ -452,3 +452,31 @@ func getApprovalTable(documentStructure, role string) (string, error) {
     return name.String, nil
   }
 }
+
+
+func isApproved(documentStructure string, docid uint64) (bool, error) {
+  approvers, err := getApprovers(documentStructure)
+  if err != nil {
+    return false, err
+  }
+
+  approved := true
+  for _, approver := range approvers {
+    atn, err := getApprovalTable(documentStructure, approver)
+    if err != nil {
+      return false, err
+    }
+
+    sqlStmt := fmt.Sprintf("select count(*) from `%s` where docid = ? and status = 'Approved'", atn)
+    var count int
+    err = SQLDB.QueryRow(sqlStmt, docid).Scan(&count)
+    if err != nil {
+      return false, err
+    }
+    if count == 0 {
+      return false, nil
+    }
+  }
+
+  return approved, nil
+}

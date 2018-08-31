@@ -406,6 +406,23 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
       }
     }
 
+    approvalSummary, err := isApproved(ds, docidUint64)
+    if err != nil {
+      errorPage(w, "Error getting approvals summary.", err)
+      return
+    }
+
+    dbValue := "f"
+    if approvalSummary {
+      dbValue = "t"
+    }
+    sqlStmt = fmt.Sprintf("update `%s` set fully_approved = ? where id = ?", tblName)
+    _, err = SQLDB.Exec(sqlStmt, dbValue, docidUint64)
+    if err != nil {
+      errorPage(w, "Error setting approval summary.", err)
+      return
+    }
+
     if ApprovalFrameworkMailsFn != nil {
       ApprovalFrameworkMailsFn(docidUint64, role, status, message)
     }
