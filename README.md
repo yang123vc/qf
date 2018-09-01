@@ -109,6 +109,14 @@ The link to display to the user is of the form `doc/{documentStructure}/list/`
 
 ## FAQs
 
+### I just updated and my installation stopped working
+
+This could happen when the database structure changes.
+
+Backup your database, delete the qf tables and recreate them by going to /qf-setup/. Then reload
+data from your database backup keeping in mind the changes that have taken place.
+
+
 ### Groups of Programmers building on QF. How to merge.
 
 Use a shared database.
@@ -128,10 +136,14 @@ There is no inbuilt mail function so as to give a lot of choices in terms of ema
 and the design of the email itself.
 
 
+### When is X Database Support Coming
+
+I don't intend to support more than one database so has to make work easier.
+
+
 ### How to Create a Foreign Key between a QF table and a non QF table
 
 Create a big number field. Then use ExtraCode to validate that the data is in the other table.
-
 
 
 ## License
