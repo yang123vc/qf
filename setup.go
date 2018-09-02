@@ -220,6 +220,8 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/doc/{document-structure}/list/{page:[0-9]+}/", listDocuments)
   r.HandleFunc("/doc/{document-structure}/delete/{id:[0-9]+}/", deleteDocument)
   r.HandleFunc("/doc/{document-structure}/search/", searchDocuments)
+  r.HandleFunc("/doc/{document-structure}/search-results/", searchResults)
+  r.HandleFunc("/doc/{document-structure}/search-results/{page:[0-9]+}/", searchResults)
   r.HandleFunc("/doc/{document-structure}/date-lists/", dateLists)
   r.HandleFunc("/doc/{document-structure}/date-list/{date}/", dateList)
   r.HandleFunc("/doc/{document-structure}/date-list/{date}/{page:[0-9]+}/", dateList)

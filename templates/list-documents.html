@@ -64,7 +64,7 @@
     <a class="button-look" href="/doc/{{.DocumentStructure}}/approved-list/">Approved</a>
     <a class="button-look" href="/doc/{{.DocumentStructure}}/unapproved-list/">Not Approved</a>
   {{end}}
-  
+
   <br><br>
 
   <table>
@@ -111,7 +111,6 @@
 
   <br><br>
   <div id="pagination">
-    {{if ne $.ListType "search-list"}}
       Pages:
       {{range .Pages}}
         {{if eq $.ListType "true-list"}}
@@ -122,9 +121,25 @@
           <a href="/doc/{{$.DocumentStructure}}/approved-list/{{.}}/">{{.}}</a>
         {{else if eq $.ListType "unapproved-list"}}
           <a href="/doc/{{$.DocumentStructure}}/unapproved-list/{{.}}/">{{.}}</a>
+        {{else if eq $.ListType "search-list"}}
+          <a class="search-href" href="/doc/{{$.DocumentStructure}}/search-results/{{.}}/">{{.}}</a>
         {{end}}
       {{end}}
-    {{end}}
   </div>
 
+{{end}}
+
+
+{{define "scripts"}}
+  {{if eq $.ListType "search-list"}}
+    <script>
+      $(document).ready(function() {
+        $('.search-href').each(function(i, el) {
+          var href = $(el).attr('href');
+          href += location.search
+          $(el).attr("href", href);
+        });
+      });
+    </script>
+  {{end}}
 {{end}}

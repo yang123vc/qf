@@ -22,8 +22,8 @@
 {{define "main"}}
   <h3>Search {{.DocumentStructure}} Documents</h3>
 
-  <form method="post" action="">
-    {{if .UserHasReadOnlyCreatedPermission}}
+  <form method="get" action="/doc/{{.DocumentStructure}}/search-results/">
+    {{if .UserHasLimitedReadPermission}}
       <div>
         <label>Created By (User ID)</label>
         <input type="number" name="created_by" />

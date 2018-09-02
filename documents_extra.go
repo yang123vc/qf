@@ -332,16 +332,15 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
   if err != nil {
     errorPage(w, "An internal error occurred.", err)
   }
-
   dds := GetDocData(id)
 
   if r.Method == http.MethodGet {
     type Context struct {
       DocumentStructure string
       DDs []DocData
-      UserHasReadOnlyCreatedPermission bool
+      UserHasLimitedReadPermission bool
     }
-    ctx := Context{ds, dds, tv2}
+    ctx := Context{ds, dds, tv2 || tv3}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/search-documents.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
@@ -428,6 +427,132 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
   }
 }
 
+
+func searchResults(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    errorPage(w, "You need to be logged in to continue.", err)
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  detv, err := docExists(ds)
+  if err != nil {
+    errorPage(w, "Error occurred while determining if this document exists.", err)
+    return
+  }
+  if detv == false {
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    return
+  }
+
+  tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
+  if err != nil {
+    errorPage(w, "Error occured while determining if the user have read permission for this page.", err)
+    return
+  }
+  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
+  if err != nil {
+    errorPage(w, "Error occured while determining if the user have read-only-created permission for this page.", err)
+    return
+  }
+  tv3, err := DoesCurrentUserHavePerm(r, ds, "read-only-mentioned")
+  if err != nil {
+    errorPage(w, "Error reading permissions.", err)
+  }
+
+  if ! tv1 && ! tv2 && ! tv3{
+    errorPage(w, "You don't have the read permission for this document structure.", nil)
+    return
+  }
+
+  var id int
+  err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
+  if err != nil {
+    errorPage(w, "An internal error occurred.", err)
+  }
+  dds := GetDocData(id)
+
+  endSqlStmt := make([]string, 0)
+  for _, dd := range dds {
+    if dd.Type == "Section Break" {
+      continue
+    }
+    if r.FormValue(dd.Name) == "" {
+      continue
+    }
+
+    switch dd.Type {
+    case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
+      var data string
+      if r.FormValue(dd.Name) == "" {
+        data = "null"
+      } else {
+        data = fmt.Sprintf("\"%s\"", html.EscapeString(r.FormValue(dd.Name)))
+      }
+      endSqlStmt = append(endSqlStmt, dd.Name + " = " + data)
+    case "Check":
+      var data string
+      if r.FormValue(dd.Name) == "on" {
+        data = "\"t\""
+      } else {
+        data = "\"f\""
+      }
+      endSqlStmt = append(endSqlStmt, dd.Name + " = " + data)
+    default:
+      var data string
+      if r.FormValue(dd.Name) == "" {
+        data = "null"
+      } else {
+        data = html.EscapeString(r.FormValue(dd.Name))
+      }
+      endSqlStmt = append(endSqlStmt, dd.Name + " = " + data)
+    }
+  }
+
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, "Error getting document structure's table name.", err)
+    return
+  }
+
+  var readSqlStmt string
+  var totalSqlStmt string
+
+  if tv1 {
+    if r.FormValue("created_by") != "" {
+      endSqlStmt = append(endSqlStmt, "created_by = " + html.EscapeString(r.FormValue("created_by")))
+    }
+    if len(endSqlStmt) == 0 {
+      errorPage(w, "Your query is empty.", nil)
+      return
+    } else {
+      readSqlStmt = fmt.Sprintf("select id from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
+      readSqlStmt += " order by created desc limit ?, ?"
+      totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
+    }
+  } else if tv2 {
+    endSqlStmt = append(endSqlStmt, fmt.Sprintf("created_by = %d", useridUint64))
+    readSqlStmt = fmt.Sprintf("select id from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
+    readSqlStmt += " order by created desc limit ?, ?"
+    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
+  } else if tv3 {
+    muColumn, err := getMentionedUserColumn(ds)
+    if err != nil {
+      errorPage(w, "Error getting MentionedUser column.", err)
+      return
+    }
+    endSqlStmt = append(endSqlStmt, fmt.Sprintf("%s = %d", muColumn, useridUint64))
+    readSqlStmt = fmt.Sprintf("select id from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
+    readSqlStmt += " order by created desc limit ?, ?"
+    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
+  }
+
+  innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "search-list")
+  return
+}
 
 func dateLists(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
