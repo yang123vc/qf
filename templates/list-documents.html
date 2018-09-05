@@ -86,21 +86,12 @@
           {{end}}
           <td>
             <a class='button-look' href='/doc/{{$.DocumentStructure}}/update/{{.Id}}/'>
-              {{ if or $.UpdatePerm .RowUpdatePerm}}
-                View/Edit
-              {{ else }}
-                View
-              {{ end }}
+              {{ if or $.UpdatePerm .RowUpdatePerm}} View/Update {{ else }} View {{ end }}
             </a>
             {{ if or $.DeletePerm .RowDeletePerm }}<a class='button-look' href='/doc/{{$.DocumentStructure}}/delete/{{.Id}}/'>Delete</a> {{end}}
             {{if $.HasApprovals}}
               <a class="button-look" href="/approvals/{{$.DocumentStructure}}/{{.Id}}/">
-                {{if $.Approver}}
-                  View/Edit
-                {{else}}
-                  View
-                {{end}}
-                Approvals
+                {{if $.Approver}} View/Update {{else}} View {{end}} Approvals
               </a>
             {{end}}
           </td>

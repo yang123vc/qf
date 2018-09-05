@@ -18,6 +18,7 @@
 
 {{define "main"}}
   <h2>Edit Permissions of Document Structure {{.DocumentStructure}}</h2>
+  <p>Define roles <a href="/roles-view/">here</a>.</p>
 
   {{ if .LenRPS }}
     <h3>Delete Old Permissions Selection </h3>
@@ -51,7 +52,7 @@
     <li>Permissions can be one or more of create, read, update, delete</li>
     <li>Set the permissions field to any/some of the above values seperated by comma eg. create, read, update</li>
     <li>All your permissions must be in lower case.</li>
-    <li>Any role must not have more than one of read, read-only-created or read-only-mentioned. This applies to other permissions too.</li> 
+    <li>Any role must not have more than one of read, read-only-created or read-only-mentioned. This applies to other permissions too.</li>
   </ol>
 
   <p id='error-box'></p>

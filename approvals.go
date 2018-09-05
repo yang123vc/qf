@@ -187,7 +187,7 @@ func removeApprovals(w http.ResponseWriter, r *http.Request) {
 
   }
 
-  _, err = SQLDB.Exec("update qf_document_structures set approval_steps = null where full = ?", ds)
+  _, err = SQLDB.Exec("update qf_document_structures set approval_steps = null where fullname = ?", ds)
   if err != nil {
     errorPage(w, "An error occured while clearing approval steps.", err)
     return
