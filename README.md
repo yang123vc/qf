@@ -92,7 +92,7 @@ To send mails after approvals set the `qf.ApprovalFrameworkMailsFn`. It's defini
 ### Listing of Document Structure Links in your Web App
 
 There is a list of document structures which are accessible to the admininstrator only. It lists
-all the document structures on your installation. To list document structures to the users
+all the document structures in your installation. To list document structures to the users
 you would need to write a custom page. This is because you might have a category page which mixes
 complicated forms, and forms created with this project.
 
@@ -102,6 +102,10 @@ seeing only what he uses.
 
 `qf.DoesCurrentUserHavePerm` has the following definition:
 `func(r *http.Request, documentStructure string, permission string) (bool, error)`
+
+The permissions to test for are `read, read-only-created, read-only-mentioned`. These are the three
+types of read permission in this project.
+
 
 The link to display to the user is of the form `doc/{documentStructure}/list/`
 
