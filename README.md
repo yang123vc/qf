@@ -1,5 +1,7 @@
 # qf
 
+![alt text](https://github.com/bankole7782/qf/raw/master/qf-logo.png "QF logo")
+
 **qf : quick forms**
 
 The method in use here is to mix it with complicated forms. This provides the
