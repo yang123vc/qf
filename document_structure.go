@@ -31,7 +31,32 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     other_options string
   }
 
-  if r.Method == http.MethodPost {
+  if r.Method == http.MethodGet {
+
+    type Context struct {
+      DocumentStructures string
+      ChildTableDocumentStructures string
+    }
+    dsList, err := GetDocumentStructureList()
+    if err != nil {
+      errorPage(w, "An error occured when trying to get the document structure list.", err)
+      return
+    }
+
+    var ctdsl sql.NullString
+    err = SQLDB.QueryRow("select group_concat(fullname separator ',') from qf_document_structures where child_table = 't'").Scan(&ctdsl)
+    if err != nil {
+      errorPage(w, "Error reading child table document structure list.", err)
+      return
+    }
+    ctx := Context{strings.Join(dsList, ","), ctdsl.String }
+
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/new-document-structure.html")
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl.Execute(w, ctx)
+
+  } else {
+
     qffs := make([]QFField, 0)
     r.ParseForm()
     for i := 1; i < 100; i++ {
@@ -172,29 +197,8 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     redirectURL := fmt.Sprintf("/edit-document-structure-permissions/%s/", r.FormValue("ds-name"))
     http.Redirect(w, r, redirectURL, 307)
 
-  } else {
-    type Context struct {
-      DocumentStructures string
-      ChildTableDocumentStructures string
-    }
-    dsList, err := GetDocumentStructureList()
-    if err != nil {
-      errorPage(w, "An error occured when trying to get the document structure list.", err)
-      return
-    }
-
-    var ctdsl sql.NullString
-    err = SQLDB.QueryRow("select group_concat(fullname separator ',') from qf_document_structures where child_table = 't'").Scan(&ctdsl)
-    if err != nil {
-      errorPage(w, "Error reading child table document structure list.", err)
-      return
-    }
-    ctx := Context{strings.Join(dsList, ","), ctdsl.String }
-
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/new-document-structure.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
-    tmpl.Execute(w, ctx)
   }
+
 }
 
 
@@ -436,7 +440,11 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     childTableBool = false
   }
 
-  docDatas := GetDocData(id)
+  docDatas, err := GetDocData(ds)
+  if err != nil {
+    errorPage(w, "Error getting fields data.", err)
+    return
+  }
   type Context struct {
     DocumentStructure string
     DocDatas []DocData

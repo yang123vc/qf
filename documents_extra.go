@@ -327,12 +327,11 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
+  dds, err := GetDocData(ds)
   if err != nil {
-    errorPage(w, "An internal error occurred.", err)
+    errorPage(w, "Error occurred getting fields data.", err)
+    return
   }
-  dds := GetDocData(id)
 
   type Context struct {
     DocumentStructure string
@@ -387,12 +386,11 @@ func searchResults(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var id int
-  err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
+  dds, err := GetDocData(ds)
   if err != nil {
-    errorPage(w, "An internal error occurred.", err)
+    errorPage(w, "Error occurred getting fields data.", err)
+    return
   }
-  dds := GetDocData(id)
 
   endSqlStmt := make([]string, 0)
   for _, dd := range dds {

@@ -172,19 +172,25 @@ type DocData struct {
 }
 
 
-func GetDocData(dsid int) []DocData{
+func GetDocData(documentStructure string) ([]DocData, error) {
+  dds := make([]DocData, 0)
+
+  var dsid int
+  err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", documentStructure).Scan(&dsid)
+  if err != nil {
+    return dds, err
+  }
   var label, name, type_, options, otherOptions string
 
-  dds := make([]DocData, 0)
   rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where dsid = ? order by id asc", dsid)
   if err != nil {
-    panic(err)
+    return dds, err
   }
   defer rows.Close()
   for rows.Next() {
     err := rows.Scan(&label, &name, &type_, &options, &otherOptions)
     if err != nil {
-      panic(err)
+      return dds, err
     }
     var required, unique bool
     if optionSearch(options, "required") {
@@ -198,10 +204,10 @@ func GetDocData(dsid int) []DocData{
   }
   err = rows.Err()
   if err != nil {
-    panic(err)
+    return dds, err
   }
 
-  return dds
+  return dds, nil
 }
 
 

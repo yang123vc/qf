@@ -45,9 +45,8 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
   }
 
 
-  var id int
   var helpText sql.NullString
-  err = SQLDB.QueryRow("select id, help_text from qf_document_structures where fullname = ?", ds).Scan(&id, &helpText)
+  err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", ds).Scan(&helpText)
   if err != nil {
     errorPage(w, "An internal error occured.", err)
     return
@@ -64,7 +63,11 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     return template.HTML(s)
   }
 
-  dds := GetDocData(id)
+  dds, err := GetDocData(ds)
+  if err != nil {
+    errorPage(w, "Error getting fields data.", err)
+    return
+  }
 
   tableFields := make(map[string][]DocData)
   for _, dd := range dds {
@@ -72,13 +75,11 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
       continue
     }
     ct := dd.OtherOptions[0]
-    var ctid int
-    err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ct).Scan(&ctid)
+    tableFields[ct], err = GetDocData(ct)
     if err != nil {
       errorPage(w, "An error occurred while getting child table form structure.", err)
       return
     }
-    tableFields[ct] = GetDocData(ctid)
   }
 
   if r.Method == http.MethodGet {
@@ -314,9 +315,8 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var id int
   var helpText sql.NullString
-  err = SQLDB.QueryRow("select id, help_text from qf_document_structures where fullname = ?", ds).Scan(&id, &helpText)
+  err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", ds).Scan(&helpText)
   if err != nil {
     errorPage(w, "An error occurred when reading document structure. Exact Error" , err)
     return
@@ -333,7 +333,11 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     return template.HTML(s)
   }
 
-  docDatas := GetDocData(id)
+  docDatas, err := GetDocData(ds)
+  if err != nil {
+    errorPage(w, "Error getting fields data.", err)
+    return
+  }
 
   type docAndStructure struct {
     DocData
@@ -363,13 +367,11 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, data})
       if docData.Type == "Table" {
         childTable := docData.OtherOptions[0]
-        var ctid int
-        err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", childTable).Scan(&ctid)
+        ctdds, err := GetDocData(childTable)
         if err != nil {
           errorPage(w, "An error occurred while getting child table form structure.", err)
           return
         }
-        ctdds := GetDocData(ctid)
         dASSuper := make([][]docAndStructure, 0)
 
         parts := strings.Split(data, ",")
@@ -528,13 +530,11 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 
         // add new table data
         childTableName := docAndStructure.DocData.OtherOptions[0]
-        var ctid int
-        err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", childTableName).Scan(&ctid)
+        ddsCT, err := GetDocData(childTableName)
         if err != nil {
           errorPage(w, "An error occurred while getting child table form structure.", err)
           return
         }
-        ddsCT := GetDocData(ctid)
 
         rowCount := r.FormValue("rows-count-for-" + docAndStructure.DocData.Name)
         rowCountInt, _ := strconv.Atoi(rowCount)
@@ -749,7 +749,11 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
   jsonString, _ := json.Marshal(fData)
   ec, ectv := getEC(ds)
 
-  dds := GetDocData(id)
+  dds, err := GetDocData(ds)
+  if err != nil {
+    errorPage(w, "Error occurred getting fields data.", err)
+    return
+  }
 
   if deletePerm {
     err = deleteApproversData(ds, docid)
