@@ -53,20 +53,23 @@ Steps:
 - qf.ExtraCode has the following definitions:
   ```go
   type ExtraCode struct {
-    ValidationFn func(jsonData string) string
+    ValidationFn func(postForm url.Values) string
     AfterCreateFn func(id uint64)
     AfterUpdateFn func(id uint64)
     AfterDeleteFn func(jsonData string)
   }
   ```
+  For ValidationFn take a look at [url.Values description](https://golang.org/pkg/net/url/#Values)
 
 - Create a type qf.ExtraCode and add it to the qf.ExtraCodeMap in your main function with
 the ID of the document structure as the key. Example is :
 
   ```go
-  validateProfile := func(jsonData string) string{
-    fmt.Println(jsonData)
-    return "not valid."
+  validateProfile := func(postForm url.Values) string{
+    if postForm.Get("email") == "john@dd.com" {
+      return "not valid."
+    }
+    return ""
   }
 
   qf.ExtraCodeMap[1] = qf.ExtraCode{ValidationFn: validateProfile}

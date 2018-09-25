@@ -6,6 +6,7 @@ import (
   "database/sql"
   _ "github.com/go-sql-driver/mysql"
   "github.com/gorilla/mux"
+  "net/url"
 )
 
 
@@ -17,7 +18,7 @@ var GetCurrentUser func(r *http.Request) (uint64, error)
 var BaseTemplate string
 
 type ExtraCode struct {
-  ValidationFn func(jsonData string) string
+  ValidationFn func(postForm url.Values) string
   AfterCreateFn func(id uint64)
   AfterUpdateFn func(id uint64)
   BeforeDeleteFn func(id uint64)

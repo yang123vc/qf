@@ -7,7 +7,6 @@ import (
   "strings"
   "html/template"
   "github.com/gorilla/mux"
-  "encoding/json"
   "strconv"
   "database/sql"
   "html"
@@ -100,15 +99,9 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 
     // first check if it passes the extra code validation for this document.
     r.ParseForm()
-    fData := make(map[string]string)
-    for k := range r.PostForm {
-      fData[k] = r.FormValue(k)
-    }
-    jsonString, _ := json.Marshal(fData)
-
     ec, ectv := getEC(ds)
     if ectv && ec.ValidationFn != nil {
-      outString := ec.ValidationFn(string(jsonString))
+      outString := ec.ValidationFn(r.PostForm)
       if outString != "" {
         errorPage(w, "Exra Code Validation Error: " + outString, nil)
         return
@@ -492,15 +485,9 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     r.ParseForm()
 
     // first check if it passes the extra code validation for this document.
-    fData := make(map[string]string)
-    for k := range r.PostForm {
-      fData[k] = r.FormValue(k)
-    }
-    jsonString, err := json.Marshal(fData)
-
     ec, ectv := getEC(ds)
     if ectv && ec.ValidationFn != nil {
-      outString := ec.ValidationFn(string(jsonString))
+      outString := ec.ValidationFn(r.PostForm)
       if outString != "" {
         errorPage(w, "Exra Code Validation Error: " + outString, nil)
         return
