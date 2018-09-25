@@ -56,7 +56,7 @@ Steps:
     ValidationFn func(postForm url.Values) string
     AfterCreateFn func(id uint64)
     AfterUpdateFn func(id uint64)
-    AfterDeleteFn func(jsonData string)
+    BeforeDeleteFn func(id uint64)
   }
   ```
   For ValidationFn take a look at [url.Values description](https://golang.org/pkg/net/url/#Values)
