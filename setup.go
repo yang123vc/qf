@@ -20,7 +20,7 @@ type ExtraCode struct {
   ValidationFn func(jsonData string) string
   AfterCreateFn func(id uint64)
   AfterUpdateFn func(id uint64)
-  AfterDeleteFn func(jsonData string)
+  BeforeDeleteFn func(id uint64)
 }
 
 var ExtraCodeMap = make(map[int]ExtraCode)

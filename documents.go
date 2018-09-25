@@ -675,7 +675,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   ds := vars["document-structure"]
   docid := vars["id"]
-  _, err = strconv.ParseUint(docid, 10, 64)
+  docidUint64, err := strconv.ParseUint(docid, 10, 64)
   if err != nil {
     errorPage(w, "Document ID is invalid.", err)
   }
@@ -746,7 +746,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     }
     fData[colName] = data
   }
-  jsonString, _ := json.Marshal(fData)
+
   ec, ectv := getEC(ds)
 
   dds, err := GetDocData(ds)
@@ -756,6 +756,10 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   if deletePerm {
+    if ectv && ec.BeforeDeleteFn != nil {
+      ec.BeforeDeleteFn(docidUint64)
+    }
+
     err = deleteApproversData(ds, docid)
     if err != nil {
       errorPage(w, "Error deleting approval data for this document.  " , err)
@@ -791,10 +795,6 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    if ectv && ec.AfterDeleteFn != nil {
-      ec.AfterDeleteFn(string(jsonString))
-    }
-
   } else if docPerm {
 
     var createdBy uint64
@@ -806,6 +806,10 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     }
 
     if createdBy == useridUint64 {
+      if ectv && ec.BeforeDeleteFn != nil {
+        ec.BeforeDeleteFn(docidUint64)
+      }
+
       err = deleteApproversData(ds, docid)
       if err != nil {
         errorPage(w, "Error deleting approval data for this document.  " , err)
@@ -838,10 +842,6 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
       if err != nil {
         errorPage(w, "An error occured while deleting this document: " , err)
         return
-      }
-
-      if ectv && ec.AfterDeleteFn != nil {
-        ec.AfterDeleteFn(string(jsonString))
       }
 
     } else {
