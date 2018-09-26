@@ -345,7 +345,8 @@ func getColumnNames(ds string) ([]string, error){
   }
 
   var colName string
-  rows, err := SQLDB.Query("select name from qf_fields where dsid = ? and  type != \"Table\" and type != \"Section Break\" order by id asc limit 3", dsid)
+  rows, err := SQLDB.Query(`select name from qf_fields where dsid = ? and  type != "Table"
+    and type != "Section Break" and type != "File" and type != "Image" order by id asc limit 3`, dsid)
   if err != nil {
     return colNames, err
   }
