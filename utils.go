@@ -12,6 +12,8 @@ import (
   "html/template"
   "html"
   "errors"
+  "math/rand"
+  "time"
 )
 
 
@@ -485,4 +487,16 @@ func isApproved(documentStructure string, docid uint64) (bool, error) {
   }
 
   return approved, nil
+}
+
+
+func untestedRandomString(length int) string {
+  var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+  const charset = "abcdefghijklmnopqrstuvwxyz1234567890"
+
+  b := make([]byte, length)
+  for i := range b {
+    b[i] = charset[seededRand.Intn(len(charset))]
+  }
+  return string(b)
 }

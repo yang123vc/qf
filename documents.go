@@ -10,6 +10,9 @@ import (
   "strconv"
   "database/sql"
   "html"
+  "golang.org/x/net/context"
+  "cloud.google.com/go/storage"
+  "io"
 )
 
 
@@ -97,8 +100,17 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 
   } else if r.Method == http.MethodPost {
 
+    r.FormValue("email")
+
+    ctx := context.Background()
+    // projectID := "paintsandwebs"
+    client, err := storage.NewClient(ctx)
+    if err != nil {
+      errorPage(w, "Error creating GCP storage client.", err)
+      return
+    }
+
     // first check if it passes the extra code validation for this document.
-    r.ParseForm()
     ec, ectv := getEC(ds)
     if ectv && ec.ValidationFn != nil {
       outString := ec.ValidationFn(r.PostForm)
@@ -193,6 +205,38 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
           rowIds = append(rowIds, strconv.FormatInt(lastid, 10))
         }
         formData = append(formData, fmt.Sprintf("\"%s\"", strings.Join(rowIds, ",")))
+      case "File", "Image":
+        file, handle, err := r.FormFile(dd.Name)
+        if err != nil {
+          formData = append(formData, "null")
+          continue
+        }
+        defer file.Close()
+
+        // ctx := context.Background()
+        var newFileName string
+        for {
+          randomFileName := untestedRandomString(100) + filepath.Ext(handle.Filename)
+          objHandle := client.Bucket(QFBucketName).Object(randomFileName)
+          _, err := objHandle.NewReader(ctx)
+          if err == nil {
+            continue
+          }
+
+          wc := objHandle.NewWriter(ctx)
+          if _, err := io.Copy(wc, file); err != nil {
+            errorPage(w, "Error saving file object.", err)
+            return
+          }
+          if err := wc.Close(); err != nil {
+            errorPage(w, "Error closing file object.", err)
+            return
+          }
+          newFileName = randomFileName
+          break
+        }
+        data := fmt.Sprintf("\"%s\"", newFileName)
+        formData = append(formData, data)
       default:
         var data string
         if r.FormValue(dd.Name) == "" {

@@ -23,14 +23,6 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  type QFField struct {
-    label string
-    name string
-    type_ string
-    options string
-    other_options string
-  }
-
   if r.Method == http.MethodGet {
 
     type Context struct {
@@ -56,6 +48,13 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     tmpl.Execute(w, ctx)
 
   } else {
+    type QFField struct {
+      label string
+      name string
+      type_ string
+      options string
+      other_options string
+    }
 
     qffs := make([]QFField, 0)
     r.ParseForm()
@@ -150,6 +149,8 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
         sql += "varchar(255)"
       } else if qff.type_ == "Text" || qff.type_ == "Table" {
         sql += "text"
+      } else if qff.type_ == "File" || qff.type_ == "Image" {
+        sql += "varchar(255)"
       }
       if optionSearch(qff.options, "required") {
         sql += " not null"

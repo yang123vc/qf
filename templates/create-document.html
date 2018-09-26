@@ -40,7 +40,8 @@
       {{call .UndoEscape .HelpText}}
     </div>
   {{end}}
-  <form method="post" action="">
+
+  <form method="post" action="" enctype="multipart/form-data">
     {{range .DDs}}
       <div>
         {{ if eq .Type "Section Break"}}
@@ -92,6 +93,13 @@
             <input type="number" step="0.0000001" name="{{.Name}}" required>
           {{else}}
             <input type="number" step="0.0000001" name="{{.Name}}">
+          {{end}}
+
+        {{else if or (eq .Type "File") (eq .Type "Image")}}
+          {{if .Required}}
+            <input type="file" name="{{.Name}}" required>
+          {{else}}
+            <input type="file" name="{{.Name}}">
           {{end}}
 
         {{else if or (eq .Type "Int") (eq .Type "Link")}}

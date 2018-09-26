@@ -28,6 +28,8 @@ var ExtraCodeMap = make(map[int]ExtraCode)
 
 var ApprovalFrameworkMailsFn func(docid uint64, role, status, message string)
 
+var QFBucketName string
+
 
 func qfSetup(w http.ResponseWriter, r *http.Request) {
   if SQLDB == nil {
@@ -79,6 +81,11 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
 
   if GetCurrentUser == nil {
     errorPage(w, "You must set the \"qf.GetCurrentUser\". Please set this variable to a function with signature func(r *http.Request) (uint64, err).", nil)
+    return
+  }
+
+  if QFBucketName == "" {
+    errorPage(w, "You must set the \"qf.QFBucketName\". Create a bucket on google cloud and set it to this variable.", nil)
     return
   }
 
