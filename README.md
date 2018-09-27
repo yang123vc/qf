@@ -34,6 +34,9 @@ The links used in the project can be found in the function `AddQFHandlers` in th
 
 ### Files Setup
 
+Read [this](https://cloud.google.com/docs/authentication/production) for how to setup a service account
+to use in communicating with google cloud storage.
+
 You would need to create a bucket on google cloud storage for all your files in a qf installation. Then
 set the name of the bucket to `qf.QFBucketName`.
 
