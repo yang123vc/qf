@@ -30,7 +30,7 @@ var ApprovalFrameworkMailsFn func(docid uint64, role, status, message string)
 
 var QFBucketName string
 var KeyFilePath string
-var AccessID string
+var GoogleAccessID string
 
 
 func qfSetup(w http.ResponseWriter, r *http.Request) {

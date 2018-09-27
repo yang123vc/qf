@@ -409,7 +409,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
           return
         }
         opts := &storage.SignedURLOptions{
-          GoogleAccessID: AccessID,
+          GoogleAccessID: GoogleAccessID,
           PrivateKey: pkey,
           Method: "GET",
           Expires: time.Now().Add(1 * time.Hour),
