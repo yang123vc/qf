@@ -32,6 +32,15 @@ Go to `/qf-setup/` to create some tables that the project would need.
 The links used in the project can be found in the function `AddQFHandlers` in the utils.go of this project.
 
 
+### Files Setup
+
+You would need to create a bucket on google cloud storage for all your files in a qf installation. Then
+set the name of the bucket to `qf.QFBucketName`.
+
+Read [this](https://godoc.org/cloud.google.com/go/storage#SignedURLOptions) to find out how to get the values
+to enter into `qf.KeyFilePath` and `qf.AccessID`
+
+
 ### Theming Your Project
 
 The sample project has no design. To add yours copy the template `templates/bad-base.html` to your project.
