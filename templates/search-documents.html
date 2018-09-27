@@ -36,6 +36,8 @@
           <!-- <h4>{{.Label}}</h4> -->
         {{ else if eq .Type "Table" }}
 
+        {{ else if or (eq .Type "Image") (eq .Type "File")}}
+
         {{else}}
           <label>{{.Label}}</label>
         {{ end }}

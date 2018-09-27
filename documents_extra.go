@@ -394,7 +394,7 @@ func searchResults(w http.ResponseWriter, r *http.Request) {
 
   endSqlStmt := make([]string, 0)
   for _, dd := range dds {
-    if dd.Type == "Section Break" {
+    if dd.Type == "Section Break" || dd.Type == "Image" || dd.Type == "File" {
       continue
     }
     if r.FormValue(dd.Name) == "" {
