@@ -60,7 +60,7 @@
     </div>
   {{end}}
 
-  <form method="post" action="">
+  <form method="post" action="" enctype="multipart/form-data">
     {{range .DocAndStructures}}
       <div>
         {{ if eq .Type "Section Break"}}

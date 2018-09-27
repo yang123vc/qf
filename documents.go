@@ -104,13 +104,6 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 
     r.FormValue("email")
 
-    ctx := context.Background()
-    client, err := storage.NewClient(ctx)
-    if err != nil {
-      errorPage(w, "Error creating GCP storage client.", err)
-      return
-    }
-
     // first check if it passes the extra code validation for this document.
     ec, ectv := getEC(ds)
     if ectv && ec.ValidationFn != nil {
@@ -119,6 +112,13 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
         errorPage(w, "Exra Code Validation Error: " + outString, nil)
         return
       }
+    }
+
+    ctx := context.Background()
+    client, err := storage.NewClient(ctx)
+    if err != nil {
+      errorPage(w, "Error creating GCP storage client.", err)
+      return
     }
 
     colNames := make([]string, 0)
@@ -546,7 +546,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    r.ParseForm()
+    r.FormValue("email")
 
     // first check if it passes the extra code validation for this document.
     ec, ectv := getEC(ds)
@@ -556,6 +556,13 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         errorPage(w, "Exra Code Validation Error: " + outString, nil)
         return
       }
+    }
+
+    ctx := context.Background()
+    client, err := storage.NewClient(ctx)
+    if err != nil {
+      errorPage(w, "Error creating GCP storage client.", err)
+      return
     }
 
     colNames := make([]string, 0)
@@ -647,6 +654,36 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         colNames = append(colNames, docAndStructure.DocData.Name)
         formData = append(formData, fmt.Sprintf("\"%s\"", strings.Join(rowIds, ",")))
 
+      } else if docAndStructure.Type == "Image" || docAndStructure.Type == "File" {
+        file, handle, err := r.FormFile(docAndStructure.DocData.Name)
+        if err != nil {
+          continue
+        }
+        defer file.Close()
+
+        var newFileName string
+        for {
+          randomFileName := untestedRandomString(100) + filepath.Ext(handle.Filename)
+          objHandle := client.Bucket(QFBucketName).Object(randomFileName)
+          _, err := objHandle.NewReader(ctx)
+          if err == nil {
+            continue
+          }
+
+          wc := objHandle.NewWriter(ctx)
+          if _, err := io.Copy(wc, file); err != nil {
+            errorPage(w, "Error saving file object.", err)
+            return
+          }
+          if err := wc.Close(); err != nil {
+            errorPage(w, "Error closing file object.", err)
+            return
+          }
+          newFileName = randomFileName
+          break
+        }
+        colNames = append(colNames, docAndStructure.DocData.Name)
+        formData = append(formData, fmt.Sprintf("\"%s\"", newFileName))
       } else if docAndStructure.Data != html.EscapeString(r.FormValue(docAndStructure.DocData.Name)) {
 
         colNames = append(colNames, docAndStructure.DocData.Name)
