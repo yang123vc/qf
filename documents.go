@@ -103,7 +103,6 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     r.FormValue("email")
 
     ctx := context.Background()
-    // projectID := "paintsandwebs"
     client, err := storage.NewClient(ctx)
     if err != nil {
       errorPage(w, "Error creating GCP storage client.", err)
@@ -675,27 +674,6 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func deleteApproversData(documentStructure string, dsid string) error {
-  approvers, err := getApprovers(documentStructure)
-  if err != nil {
-    return err
-  }
-
-  for _, step := range approvers {
-    atn, err := getApprovalTable(documentStructure, step)
-    if err != nil {
-      return err
-    }
-
-    _, err = SQLDB.Exec(fmt.Sprintf("delete from `%s` where docid = ?", atn), dsid)
-    if err != nil {
-      return err
-    }
-  }
-  return nil
-}
-
-
 func deleteDocument(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
@@ -786,79 +764,56 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  if deletePerm {
+  var createdBy uint64
+  sqlStmt = fmt.Sprintf("select created_by from `%s` where id = %s", tblName, docid)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
+  if err != nil {
+    errorPage(w, "An internal error occured.  " , err)
+    return
+  }
+
+  if deletePerm || (docPerm && createdBy == useridUint64) {
     if ectv && ec.BeforeDeleteFn != nil {
       ec.BeforeDeleteFn(docidUint64)
     }
 
-    err = deleteApproversData(ds, docid)
+    approvers, err := getApprovers(ds)
     if err != nil {
-      errorPage(w, "Error deleting approval data for this document.  " , err)
+      errorPage(w, "Error getting approvers data.", err)
+      return
+    }
+
+    for _, step := range approvers {
+      atn, err := getApprovalTable(ds, step)
+      if err != nil {
+        errorPage(w, "Error getting an approval table.", err)
+        return
+      }
+
+      _, err = SQLDB.Exec(fmt.Sprintf("delete from `%s` where docid = ?", atn), docid)
+      if err != nil {
+        errorPage(w, "Error deleting approval data.", err)
+        return
+      }
+    }
+
+    ctx := context.Background()
+    client, err := storage.NewClient(ctx)
+    if err != nil {
+      errorPage(w, "Error creating GCP storage client.", err)
       return
     }
 
     for _, dd := range dds {
-      if dd.Type != "Table" {
-        continue
-      }
-
-      parts := strings.Split(fData[dd.Name], ",")
-      for _, part := range parts {
-        ottblName, err := tableName(dd.OtherOptions[0])
-        if err != nil {
-          errorPage(w, "Error getting table name of the other options document structure", nil)
-          return
-        }
-
-        sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", ottblName)
-        _, err = SQLDB.Exec(sqlStmt, part)
-        if err != nil {
-          errorPage(w, "An error occurred deleting child table data.", err)
-          return
-        }
-      }
-    }
-
-    sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tblName, docid)
-    _, err = SQLDB.Exec(sqlStmt)
-    if err != nil {
-      errorPage(w, "An error occured while deleting this document: " , err)
-      return
-    }
-
-  } else if docPerm {
-
-    var createdBy uint64
-    sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %s", tblName, docid)
-    err := SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
-    if err != nil {
-      errorPage(w, "An internal error occured.  " , err)
-      return
-    }
-
-    if createdBy == useridUint64 {
-      if ectv && ec.BeforeDeleteFn != nil {
-        ec.BeforeDeleteFn(docidUint64)
-      }
-
-      err = deleteApproversData(ds, docid)
-      if err != nil {
-        errorPage(w, "Error deleting approval data for this document.  " , err)
-        return
-      }
-
-      for _, dd := range dds {
-        if dd.Type != "Table" {
-          continue
-        }
-
+      if dd.Type == "Table" {
         parts := strings.Split(fData[dd.Name], ",")
         for _, part := range parts {
           ottblName, err := tableName(dd.OtherOptions[0])
           if err != nil {
-            errorPage(w, "Error occured getting the table name of the other options document structure.", err)
+            errorPage(w, "Error getting table name of the other options document structure", nil)
             return
           }
+
           sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", ottblName)
           _, err = SQLDB.Exec(sqlStmt, part)
           if err != nil {
@@ -868,21 +823,25 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
         }
       }
 
-      sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tblName, docid)
-      _, err = SQLDB.Exec(sqlStmt)
-      if err != nil {
-        errorPage(w, "An error occured while deleting this document: " , err)
-        return
+      if dd.Type == "File" || dd.Type == "Image" {
+        err = client.Bucket(QFBucketName).Object(fData[dd.Name]).Delete(ctx)
+        if err != nil {
+          errorPage(w, "Error deleting file data.", err)
+          return
+        }
       }
 
-    } else {
-      errorPage(w, "You don't have permissions to delete this document.", nil)
+    }
+
+    sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tblName, docid)
+    _, err = SQLDB.Exec(sqlStmt)
+    if err != nil {
+      errorPage(w, "An error occured while deleting this document: " , err)
       return
     }
 
   } else {
-
-    errorPage(w, "You don't have the delete permission for this document structure.", nil)
+    errorPage(w, "You don't have the delete permission for this document.", nil)
     return
   }
 

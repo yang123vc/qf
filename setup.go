@@ -29,6 +29,8 @@ var ExtraCodeMap = make(map[int]ExtraCode)
 var ApprovalFrameworkMailsFn func(docid uint64, role, status, message string)
 
 var QFBucketName string
+var KeyFilePath string
+var AccessID string
 
 
 func qfSetup(w http.ResponseWriter, r *http.Request) {
