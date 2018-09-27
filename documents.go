@@ -13,6 +13,8 @@ import (
   "golang.org/x/net/context"
   "cloud.google.com/go/storage"
   "io"
+  "io/ioutil"
+  "time"
 )
 
 
@@ -399,6 +401,25 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         data = html.UnescapeString(dataFromDB.String)
       } else {
         data = ""
+      }
+      if data != "" && (docData.Type == "File" || docData.Type == "Image") {
+        pkey, err := ioutil.ReadFile(KeyFilePath)
+        if err != nil {
+          errorPage(w, "Error reading a specific key file.", err)
+          return
+        }
+        opts := &storage.SignedURLOptions{
+          GoogleAccessID: AccessID,
+          PrivateKey: pkey,
+          Method: "GET",
+          Expires: time.Now().Add(1 * time.Hour),
+        }
+        viewableFilePath, err := storage.SignedURL(QFBucketName, data, opts)
+        if err != nil {
+          errorPage(w, "Error creating signed url.", err)
+          return
+        }
+        data = viewableFilePath
       }
       docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, data})
       if docData.Type == "Table" {
