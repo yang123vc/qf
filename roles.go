@@ -383,8 +383,12 @@ func deleteRolePermissions(w http.ResponseWriter, r *http.Request) {
     errorPage(w, "Error occured while getting role id.  " , err)
     return
   }
-
-  _, err = SQLDB.Exec("delete from qf_permissions where roleid = ? and object = ?", roleid, ds)
+  dsid, err := getDocumentStructureID(ds)
+  if err != nil {
+    errorPage(w, "Error getting document structure id.", err)
+    return
+  }
+  _, err = SQLDB.Exec("delete from qf_permissions where roleid = ? and dsid = ?", roleid, dsid)
   if err != nil {
     errorPage(w, "Error occured while trying to delete permission of roles on this document.  " , err)
     return

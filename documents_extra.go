@@ -188,7 +188,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
   tv2, err2 = DoesCurrentUserHavePerm(r, ds, "update")
   tv3, err3 := DoesCurrentUserHavePerm(r, ds, "delete")
   if err1 != nil || err2 != nil || err3 != nil {
-    errorPage(w, "An error occurred when getting permissions of this object for this user.", nil)
+    errorPage(w, "An error occurred when getting permissions of this document structure for this user.", nil)
     return
   }
 

@@ -348,7 +348,12 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  _, err = tx.Exec("delete from qf_permissions where object = ?", ds)
+  dsid, err := getDocumentStructureID(ds)
+  if err != nil {
+    errorPage(w, "Error getting document structure id.", err)
+    return
+  }
+  _, err = tx.Exec("delete from qf_permissions where dsid = ?", dsid)
   if err != nil {
     tx.Rollback()
     errorPage(w, "Error occurred when deleting document permissions.", err)
@@ -379,11 +384,17 @@ type RolePermissions struct {
 
 
 func getRolePermissions(documentStructure string) ([]RolePermissions, error) {
-  var role, permissions string
   rps := make([]RolePermissions, 0)
+
+  dsid, err := getDocumentStructureID(documentStructure)
+  if err != nil {
+    return rps, err
+  }
+
+  var role, permissions string
   rows, err := SQLDB.Query(`select qf_roles.role, qf_permissions.permissions
     from qf_roles inner join qf_permissions on qf_roles.id = qf_permissions.roleid
-    where qf_permissions.object = ?`, documentStructure)
+    where qf_permissions.dsid = ?`, dsid)
   if err != nil {
     return rps, err
   }
@@ -554,13 +565,19 @@ func editDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
       }
     }
 
+    dsid, err := getDocumentStructureID(ds)
+    if err != nil {
+      errorPage(w, "Error getting document structure id.", err)
+      return
+    }
+
     for _, rp := range nrps {
       roleid, err := getRoleId(rp.Role)
       if err != nil {
         errorPage(w, "Error occured while getting role id.", err)
         return
       }
-      _, err = SQLDB.Exec("insert into qf_permissions(roleid, object, permissions) values(?,?,?)", roleid, ds, rp.Permissions)
+      _, err = SQLDB.Exec("insert into qf_permissions(roleid, dsid, permissions) values(?,?,?)", roleid, dsid, rp.Permissions)
       if err != nil {
         errorPage(w, "Error storing role permissions.", err)
         return

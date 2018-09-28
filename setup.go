@@ -169,11 +169,12 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
     _, err = SQLDB.Exec(`create table qf_permissions (
       id int not null auto_increment,
       roleid int not null,
-      object varchar(255) not null,
+      dsid int not null,
       permissions varchar(255) not null,
       primary key (id),
-      unique(roleid, object),
-      foreign key (roleid) references qf_roles (id)
+      unique(roleid, dsid),
+      foreign key (roleid) references qf_roles (id),
+      foreign key (dsid) references qf_document_structures (id)
       )`)
     if err != nil {
       errorPage(w, "An error occured while creating permissions table.", err)

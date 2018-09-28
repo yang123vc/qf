@@ -18,7 +18,7 @@
 
 {{define "main"}}
   <h2>Edit Permissions of Document Structure {{.DocumentStructure}}</h2>
-  <p>Define roles <a href="/roles-view/">here</a>.</p>
+  <p>Create roles <a href="/roles-view/">here</a>.</p>
 
   {{ if .LenRPS }}
     <h3>Delete Old Permissions Selection </h3>
@@ -81,13 +81,25 @@
           <label>Update <input type="checkbox" class="perms-checkbox" name="perms-1" value="update" /> </label>
           <label>Delete <input type="checkbox" class="perms-checkbox" name="perms-1" value="delete" /> </label>
           <br>
-          <label>Read Only Documents created by this Role <input type="checkbox" class="perms-checkbox" name="perms-1" value="read-only-created" /> </label>
+          <label>
+            Read Only Documents created by this Role
+            <input type="checkbox" class="perms-checkbox" name="perms-1" value="read-only-created" />
+          </label>
           <br>
-          <label>Update Only Documents created by this Role <input type="checkbox" class="perms-checkbox" name="perms-1" value="update-only-created" /> </label>
+          <label>
+            Update Only Documents created by this Role
+            <input type="checkbox" class="perms-checkbox" name="perms-1" value="update-only-created" />
+          </label>
           <br>
-          <label>Delete Only Documents created by this Role <input type="checkbox" class="perms-checkbox" name="perms-1" value="delete-only-created" /> </label>
+          <label>
+            Delete Only Documents created by this Role
+            <input type="checkbox" class="perms-checkbox" name="perms-1" value="delete-only-created" />
+          </label>
           <br>
-          <label>Read only Documents this User was Mentioned <input type="checkbox" class="perms-checkbox" name="perms-1" value="read-only-mentioned" /> </label>
+          <label>
+            Read only Documents this User was Mentioned
+            <input type="checkbox" class="perms-checkbox" name="perms-1" value="read-only-mentioned" />
+          </label>
           <br><br>
         </td>
         <td><button type="button" class="delete-role" id="delete-role-1">Delete</button></td>

@@ -110,7 +110,7 @@ func isUserAdmin(r *http.Request) (bool, error) {
 }
 
 
-func DoesCurrentUserHavePerm(r *http.Request, object, permission string) (bool, error) {
+func DoesCurrentUserHavePerm(r *http.Request, documentStructure, permission string) (bool, error) {
   adminTruth, err := isUserAdmin(r)
   if err == nil && adminTruth {
     return true, nil
@@ -131,9 +131,13 @@ func DoesCurrentUserHavePerm(r *http.Request, object, permission string) (bool, 
   }
   rids := strings.Split(roles.String, ",")
 
+  dsid, err := getDocumentStructureID(documentStructure)
+  if err != nil {
+    return false, err
+  }
   for _, rid := range rids {
     var count int
-    err = SQLDB.QueryRow("select count(*) from qf_permissions where object = ? and roleid = ?", object, rid).Scan(&count)
+    err = SQLDB.QueryRow("select count(*) from qf_permissions where dsid = ? and roleid = ?", dsid, rid).Scan(&count)
     if err != nil {
       return false, err
     }
@@ -141,7 +145,7 @@ func DoesCurrentUserHavePerm(r *http.Request, object, permission string) (bool, 
       continue
     }
     var permissions string
-    err = SQLDB.QueryRow("select permissions from qf_permissions where object = ? and roleid = ?", object, rid).Scan(&permissions)
+    err = SQLDB.QueryRow("select permissions from qf_permissions where dsid = ? and roleid = ?", dsid, rid).Scan(&permissions)
     if err != nil {
       return false, err
     }
@@ -500,4 +504,14 @@ func untestedRandomString(length int) string {
     b[i] = charset[seededRand.Intn(len(charset))]
   }
   return string(b)
+}
+
+
+func getDocumentStructureID(documentStructure string) (int, error) {
+  var dsid int
+  err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", documentStructure).Scan(&dsid)
+  if err != nil {
+    return dsid, err
+  }
+  return dsid, nil
 }
