@@ -41,7 +41,7 @@ You would need to create a bucket on google cloud storage for all your files in 
 set the name of the bucket to `qf.QFBucketName`.
 
 Read [this](https://godoc.org/cloud.google.com/go/storage#SignedURLOptions) to find out how to get the values
-to enter into `qf.KeyFilePath` and `qf.AccessID`
+to enter into `qf.KeyFilePath` and `qf.GoogleAccessID`
 
 
 ### Theming Your Project

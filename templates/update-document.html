@@ -113,7 +113,11 @@
 
         {{else if eq .Type "File"}}
           {{if ne .Data ""}}
-            <a href="{{.Data}}">View File</a><br>
+            <a href="{{.Data}}">View File</a>
+            {{if eq .Required false}}
+              <a href="/doc/{{$.DocumentStructure}}/delete-file/{{$.Id}}/{{.Name}}/">Remove File</a>
+            {{end}}
+            <br>
           {{end}}
 
           {{if .Required}}
@@ -131,7 +135,13 @@
 
         {{else if eq .Type "Image"}}
           {{if ne .Data ""}}
-            <img class="image-field" src="{{.Data}}" alt="An Image" /><br>
+            <img class="image-field" src="{{.Data}}" alt="An Image" />
+            {{if eq .Required false}}
+              <br>
+              <a href="/doc/{{$.DocumentStructure}}/delete-file/{{$.Id}}/{{.Name}}/">Remove File</a>
+            {{end}}
+            <br>
+
           {{end}}
 
           {{if .Required}}
