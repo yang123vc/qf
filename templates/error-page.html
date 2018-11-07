@@ -5,9 +5,8 @@
   <h4>Message</h4>
   <p>{{.Message}}</p>
 
-  {{if ne .ExactError ""}}
-    <h4>Exact Error</h4>
-    <p>{{.ExactError}}</p>
-  {{end}}
+  <h4> Details </h4>
+  <p>Function : <b>{{.SourceFn}}</b></p>
+  <p>Line : <b>{{.SourceLine}}</b></p>
 
 {{end}}

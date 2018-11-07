@@ -10,7 +10,7 @@ import (
 func approvedList(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    errorPage(w, "You need to be logged in to continue.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -19,20 +19,20 @@ func approvedList(w http.ResponseWriter, r *http.Request) {
 
   tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
-    errorPage(w, "Error reading permissions.", err)
+    errorPage(w, err.Error())
   }
   tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
   if err != nil {
-    errorPage(w, "Error reading permissions.", err)
+    errorPage(w, err.Error())
   }
   tv3, err := DoesCurrentUserHavePerm(r, ds, "read-only-mentioned")
   if err != nil {
-    errorPage(w, "Error reading permissions.", err)
+    errorPage(w, err.Error())
   }
 
   tblName, err := tableName(ds)
   if err != nil {
-    errorPage(w, "Error getting document structure's table name.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -48,7 +48,7 @@ func approvedList(w http.ResponseWriter, r *http.Request) {
   } else if tv3 {
     muColumn, err := getMentionedUserColumn(ds)
     if err != nil {
-      errorPage(w, "Error getting MentionedUser column.", err)
+      errorPage(w, err.Error())
       return
     }
     readSqlStmt = fmt.Sprintf("select id from `%s` where %s = %d and fully_approved = 't' order by created desc limit ?, ?",
@@ -64,7 +64,7 @@ func approvedList(w http.ResponseWriter, r *http.Request) {
 func unapprovedList(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    errorPage(w, "You need to be logged in to continue.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -73,20 +73,20 @@ func unapprovedList(w http.ResponseWriter, r *http.Request) {
 
   tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
-    errorPage(w, "Error reading permissions.", err)
+    errorPage(w, err.Error())
   }
   tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
   if err != nil {
-    errorPage(w, "Error reading permissions.", err)
+    errorPage(w, err.Error())
   }
   tv3, err := DoesCurrentUserHavePerm(r, ds, "read-only-mentioned")
   if err != nil {
-    errorPage(w, "Error reading permissions.", err)
+    errorPage(w, err.Error())
   }
 
   tblName, err := tableName(ds)
   if err != nil {
-    errorPage(w, "Error getting document structure's table name.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -102,7 +102,7 @@ func unapprovedList(w http.ResponseWriter, r *http.Request) {
   } else if tv3 {
     muColumn, err := getMentionedUserColumn(ds)
     if err != nil {
-      errorPage(w, "Error getting MentionedUser column.", err)
+      errorPage(w, err.Error())
       return
     }
     readSqlStmt = fmt.Sprintf("select id from `%s` where %s = %d and fully_approved = 'f' order by created desc limit ?, ?",

@@ -15,11 +15,11 @@ import (
 func addApprovals(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
@@ -28,11 +28,11 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, "Error occurred while determining if this document exists.", err)
+    errorPage(w, err.Error())
     return
   }
   if detv == false {
-    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
     return
   }
 
@@ -40,11 +40,11 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
   var stepsStr sql.NullString
   err = SQLDB.QueryRow("select approval_steps from qf_document_structures where fullname = ?", ds).Scan(&stepsStr)
   if err != nil {
-    errorPage(w, "Error occured when getting approval steps of this document structure.", err)
+    errorPage(w, err.Error())
     return
   }
   if stepsStr.Valid {
-    errorPage(w, "This document structure already has approval steps.", nil)
+    errorPage(w, "This document structure already has approval steps.")
     return
   }
 
@@ -56,7 +56,7 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
 
     roles, err := GetRoles()
     if err != nil {
-      errorPage(w, "Error getting roles.", err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -81,7 +81,7 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
     for _, step := range steps {
       atn, err := newApprovalTableName(ds, step)
       if err != nil {
-        errorPage(w, "Error creating approval's table name", err)
+        errorPage(w, err.Error())
         return
       }
       atns = append(atns, atn)
@@ -97,7 +97,7 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
 
       tblName, err := tableName(ds)
       if err != nil {
-        errorPage(w, "Error getting document structure's table name.", err)
+        errorPage(w, err.Error())
         return
       }
 
@@ -105,14 +105,14 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
 
       _, err = SQLDB.Exec(sqlStmt)
       if err != nil {
-        errorPage(w, "An error occured while creating approvals table.", err)
+        errorPage(w, err.Error())
         return
       }
 
       _, err = SQLDB.Exec("insert into qf_approvals_tables(document_structure, role, tbl_name) values (?,?,?)",
         ds, step, atn)
       if err != nil {
-        errorPage(w, "Error occurred storing approval table name.", err)
+        errorPage(w, err.Error())
         return
       }
     }
@@ -120,12 +120,12 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
     var dsid int
     err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&dsid)
     if err != nil {
-      errorPage(w, "Error occurred when trying to get document structure id.", err)
+      errorPage(w, err.Error())
       return
     }
     _, err := SQLDB.Exec("update qf_document_structures set approval_steps = ? where id = ?", strings.Join(steps, ","), dsid)
     if err != nil {
-      errorPage(w, "Error occurred when updating the document structure.", err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -138,11 +138,11 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
 func removeApprovals(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
@@ -151,37 +151,37 @@ func removeApprovals(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, "Error occurred while determining if this document exists.", err)
+    errorPage(w, err.Error())
     return
   }
   if detv == false {
-    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
     return
   }
 
   approvers, err := getApprovers(ds)
   if err != nil {
-    errorPage(w, "Error occurred getting approvers.", err)
+    errorPage(w, err.Error())
     return
   }
 
   for _, step := range approvers {
     atn, err := getApprovalTable(ds, step)
     if err != nil {
-      errorPage(w, "An error occurred getting approval table name.", nil)
+      errorPage(w, "An error occurred getting approval table name.")
       return
     }
 
     _, err = SQLDB.Exec(fmt.Sprintf("drop table `%s`", atn) )
     if err != nil {
-      errorPage(w, "An error occured while deleting an approvals table.", err)
+      errorPage(w, err.Error())
       return
     }
 
     _, err = SQLDB.Exec("delete from qf_approvals_tables where document_structure = ? and role = ?",
       ds, step)
     if err != nil {
-      errorPage(w, "Error occurred removing record of approval table.", nil)
+      errorPage(w, "Error occurred removing record of approval table.")
       return
     }
 
@@ -189,7 +189,7 @@ func removeApprovals(w http.ResponseWriter, r *http.Request) {
 
   _, err = SQLDB.Exec("update qf_document_structures set approval_steps = null where fullname = ?", ds)
   if err != nil {
-    errorPage(w, "An error occured while clearing approval steps.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -201,7 +201,7 @@ func removeApprovals(w http.ResponseWriter, r *http.Request) {
 func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    errorPage(w, "You need to be logged in to continue.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -210,22 +210,22 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
   docid := vars["id"]
   docidUint64, err := strconv.ParseUint(docid, 10, 64)
   if err != nil {
-    errorPage(w, "Document ID is invalid.", err)
+    errorPage(w, err.Error())
   }
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, "Error occurred while determining if this document exists.", err)
+    errorPage(w, err.Error())
     return
   }
   if detv == false {
-    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
     return
   }
 
   tblName, err := tableName(ds)
   if err != nil {
-    errorPage(w, "Error getting document structure's table name.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -233,23 +233,23 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
   sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tblName, docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
-    errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid), nil)
+    errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid))
     return
   }
 
   readPerm, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
-    errorPage(w, "Error occured while determining if the user have read permission for this document structure. " , err)
+    errorPage(w, err.Error())
     return
   }
   rocPerm, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
   if err != nil {
-    errorPage(w, "Error occured while determining if the user have read-only-created permission for this document. " , err)
+    errorPage(w, err.Error())
     return
   }
   romPerm, err := DoesCurrentUserHavePerm(r, ds, "read-only-mentioned")
   if err != nil {
-    errorPage(w, "Error while getting user's permissions.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -257,20 +257,20 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
   sqlStmt = fmt.Sprintf("select created_by from `%s` where id = %s", tblName, docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
   if err != nil {
-    errorPage(w, "An internal error occured. " , err)
+    errorPage(w, err.Error())
     return
   }
 
   if ! readPerm {
     if rocPerm {
       if createdBy != useridUint64 {
-        errorPage(w, "You are not the owner of this document so can't read it.", nil)
+        errorPage(w, "You are not the owner of this document so can't read it.")
         return
       }
     } else if romPerm {
       muColumn, err := getMentionedUserColumn(ds)
       if err != nil {
-        errorPage(w, "Error getting MentionedUser column.", err)
+        errorPage(w, err.Error())
         return
       }
 
@@ -278,33 +278,33 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
       sqlStmt = fmt.Sprintf("select %s from `%s` where id = %s", muColumn, tblName, docid)
       err = SQLDB.QueryRow(sqlStmt).Scan(&muColumnData)
       if err != nil {
-        errorPage(w, "An error occurred while reading the mentioned user column.", err)
+        errorPage(w, err.Error())
         return
       }
 
       if muColumnData != useridUint64 {
-        errorPage(w, "You are not mentioned in this document so can't read it.", nil)
+        errorPage(w, "You are not mentioned in this document so can't read it.")
         return
       }
     } else {
-      errorPage(w, "You don't have the read permission for this document structure.", nil)
+      errorPage(w, "You don't have the read permission for this document structure.")
       return
     }
   }
 
   approvers, err := getApprovers(ds)
   if err != nil {
-    errorPage(w, "Error getting approvers for this document structure. " , err)
+    errorPage(w, err.Error())
     return
   }
   if len(approvers) == 0 {
-    errorPage(w, "This document structure doesn't have the approval framework on it.", nil)
+    errorPage(w, "This document structure doesn't have the approval framework on it.")
   }
 
 
   userRoles, err := GetCurrentUserRoles(r)
   if err != nil {
-    errorPage(w, "Error occured when getting current user roles. " , err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -327,7 +327,7 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
 
       atn, err := getApprovalTable(ds, role)
       if err != nil {
-        errorPage(w, "An error occurred getting approval table name.", nil)
+        errorPage(w, "An error occurred getting approval table name.")
         return
       }
 
@@ -335,7 +335,7 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
       sqlStmt = fmt.Sprintf("select count(*) from `%s` where docid = ?", atn)
       err = SQLDB.QueryRow(sqlStmt, docid).Scan(&approvalDataCount)
       if err != nil {
-        errorPage(w, "Error occurred while checking for approval data. " , err)
+        errorPage(w, err.Error())
         return
       }
       if approvalDataCount == 0 {
@@ -345,7 +345,7 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
         sqlStmt = fmt.Sprintf("select status, message from `%s` where docid = ?", atn)
         err = SQLDB.QueryRow(sqlStmt, docid).Scan(&status, &message)
         if err != nil {
-          errorPage(w, "Error occurred while checking for approval data. " , err)
+          errorPage(w, err.Error())
           return
         }
         var actualMessage string
@@ -378,7 +378,7 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
 
     atn, err := getApprovalTable(ds, role)
     if err != nil {
-      errorPage(w, "An error occurred getting approval table name.", nil)
+      errorPage(w, "An error occurred getting approval table name.")
       return
     }
 
@@ -386,7 +386,7 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
     sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = ?", atn)
     err = SQLDB.QueryRow(sqlStmt, docid).Scan(&approvalDataCount)
     if err != nil {
-      errorPage(w, "Error occurred while checking for approval data. " , err)
+      errorPage(w, err.Error())
       return
     }
     if approvalDataCount == 0 {
@@ -394,21 +394,21 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
       sqlStmt += " values(now(), now(), ?, ?, ?, ?)"
       _, err = SQLDB.Exec(sqlStmt, useridUint64, status, message, docid)
       if err != nil {
-        errorPage(w, "Error occurred while saving approval data. " , err)
+        errorPage(w, err.Error())
         return
       }
     } else if approvalDataCount == 1 {
       sqlStmt = fmt.Sprintf("update `%s` set modified = now(), status = ?, message = ? where docid = ?", atn)
       _, err = SQLDB.Exec(sqlStmt, status, message, docid)
       if err != nil {
-        errorPage(w, "Error occurred while updating approval data. " , err)
+        errorPage(w, err.Error())
         return
       }
     }
 
     approvalSummary, err := isApproved(ds, docidUint64)
     if err != nil {
-      errorPage(w, "Error getting approvals summary.", err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -419,7 +419,7 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
     sqlStmt = fmt.Sprintf("update `%s` set fully_approved = ? where id = ?", tblName)
     _, err = SQLDB.Exec(sqlStmt, dbValue, docidUint64)
     if err != nil {
-      errorPage(w, "Error setting approval summary.", err)
+      errorPage(w, err.Error())
       return
     }
 

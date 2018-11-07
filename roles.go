@@ -15,17 +15,17 @@ import (
 func rolesView(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
   roles, err := GetRoles()
   if err != nil {
-    errorPage(w, "Error getting roles.  " , err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -43,7 +43,7 @@ func rolesView(w http.ResponseWriter, r *http.Request) {
 func newRole(w http.ResponseWriter, r *http.Request) {
   roles, err := GetRoles()
   if err != nil {
-    errorPage(w, "Error getting roles.  " , err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -53,7 +53,7 @@ func newRole(w http.ResponseWriter, r *http.Request) {
     if len(roles) != 0 {
       for _, rl := range roles {
         if role == rl {
-          errorPage(w, fmt.Sprintf("The role \"%s\" already exists.", role), nil)
+          errorPage(w, fmt.Sprintf("The role \"%s\" already exists.", role))
           return
         }
       }
@@ -61,7 +61,7 @@ func newRole(w http.ResponseWriter, r *http.Request) {
 
     _, err := SQLDB.Exec("insert into qf_roles(role) values(?)", role)
     if err != nil {
-      errorPage(w, "Error creating role.  " , err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -73,11 +73,11 @@ func newRole(w http.ResponseWriter, r *http.Request) {
 func deleteRole(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
@@ -86,24 +86,24 @@ func deleteRole(w http.ResponseWriter, r *http.Request) {
 
   roleid, err := getRoleId(role)
   if err != nil {
-    errorPage(w, "Error occured while getting role id.  " , err)
+    errorPage(w, err.Error())
     return
   }
 
   _, err = SQLDB.Exec("delete from qf_permissions where roleid = ?", roleid)
   if err != nil {
-    errorPage(w, "Error occured while deleting role permissions.  " , err)
+    errorPage(w, err.Error())
     return
   }
   _, err = SQLDB.Exec("delete from qf_user_roles where roleid = ?", roleid)
   if err != nil {
-    errorPage(w, "Error occured while deleting user and this role data.  " , err)
+    errorPage(w, err.Error())
     return
   }
 
   _, err = SQLDB.Exec("delete from qf_roles where role=?", role)
   if err != nil {
-    errorPage(w, fmt.Sprintf("Error occured while deleting role \"%s\".  ", role) , err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -114,11 +114,11 @@ func deleteRole(w http.ResponseWriter, r *http.Request) {
 func usersToRolesList(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
@@ -141,14 +141,14 @@ func usersToRolesList(w http.ResponseWriter, r *http.Request) {
   userRoleMap := make(map[uint64][]string)
   rows, err := SQLDB.Query(sqlStmt)
   if err != nil {
-    errorPage(w, "An error occured while reading user and role data. Exact error: " , err)
+    errorPage(w, err.Error())
     return
   }
   defer rows.Close()
   for rows.Next() {
     err := rows.Scan(&userid, &firstname, &surname, &role)
     if err != nil {
-      errorPage(w, "An error occured while reading a row. Exact error: " , err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -169,7 +169,7 @@ func usersToRolesList(w http.ResponseWriter, r *http.Request) {
   }
 
   if err = rows.Err(); err != nil {
-    errorPage(w, "A post reading user and role data error occured. Exact error: " , err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -203,11 +203,11 @@ func usersToRolesList(w http.ResponseWriter, r *http.Request) {
 func editUserRoles(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
@@ -219,11 +219,11 @@ func editUserRoles(w http.ResponseWriter, r *http.Request) {
   sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", UsersTable, userid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if err != nil {
-    errorPage(w, "An error occured when verifiying whether the user id exists. Exact error: " , err)
+    errorPage(w, err.Error())
     return
   }
   if count == 0 {
-    errorPage(w, "The userid does not exist.", nil)
+    errorPage(w, "The userid does not exist.")
     return
   }
 
@@ -232,27 +232,27 @@ func editUserRoles(w http.ResponseWriter, r *http.Request) {
   rows, err := SQLDB.Query(`select qf_roles.role from qf_roles inner join qf_user_roles on qf_roles.id = qf_user_roles.roleid
     where qf_user_roles.userid = ?`, useridUint64)
   if err != nil {
-    errorPage(w, "Error reading roles.  " , err)
+    errorPage(w, err.Error())
     return
   }
   defer rows.Close()
   for rows.Next() {
     err := rows.Scan(&role)
     if err != nil {
-      errorPage(w, "Error reading single row.  " , err)
+      errorPage(w, err.Error())
       return
     }
     userRoles = append(userRoles, role)
   }
   if err = rows.Err(); err != nil {
-    errorPage(w, "Error after reading roles.  " , err)
+    errorPage(w, err.Error())
     return
   }
 
   if r.Method == http.MethodGet {
     roles, err := GetRoles()
     if err != nil {
-      errorPage(w, "Error getting roles.  " , err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -260,7 +260,7 @@ func editUserRoles(w http.ResponseWriter, r *http.Request) {
     sqlStmt = fmt.Sprintf("select firstname, surname from `%s` where id = %d", UsersTable, useridUint64)
     err = SQLDB.QueryRow(sqlStmt).Scan(&firstname, &surname)
     if err != nil {
-      errorPage(w, "Error reading user details.  " , err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -282,18 +282,18 @@ func editUserRoles(w http.ResponseWriter, r *http.Request) {
     newRoles := r.PostForm["roles"]
     stmt, err := SQLDB.Prepare("insert into qf_user_roles(userid, roleid) values(?, ?)")
     if err != nil {
-      errorPage(w, "An error occured while trying to make prepared statemnt.  " , err)
+      errorPage(w, err.Error())
       return
     }
     for _, str := range newRoles {
       roleid, err := getRoleId(str)
       if err != nil {
-        errorPage(w, "An error occured while trying to get roleid.  " , err)
+        errorPage(w, err.Error())
         return
       }
       _, err = stmt.Exec(useridUint64, roleid)
       if err != nil {
-        errorPage(w, "An error occured while writing a user role.  " , err)
+        errorPage(w, err.Error())
         return
       }
     }
@@ -307,11 +307,11 @@ func editUserRoles(w http.ResponseWriter, r *http.Request) {
 func removeRoleFromUser(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
@@ -320,7 +320,7 @@ func removeRoleFromUser(w http.ResponseWriter, r *http.Request) {
   role := vars["role"]
   useridUint64, err := strconv.ParseUint(userid, 10, 64)
   if err != nil {
-    errorPage(w, "The userid is not a uint64.  " , err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -328,23 +328,23 @@ func removeRoleFromUser(w http.ResponseWriter, r *http.Request) {
   sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", UsersTable, userid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if err != nil {
-    errorPage(w, "An error occured when verifiying whether the user id exists. Exact error: " , err)
+    errorPage(w, err.Error())
     return
   }
   if count == 0 {
-    errorPage(w, "The userid does not exist.", nil)
+    errorPage(w, "The userid does not exist.")
     return
   }
 
   roleid, err := getRoleId(role)
   if err != nil {
-    errorPage(w, "Error occured while getting role id.  " , err)
+    errorPage(w, err.Error())
     return
   }
 
   _, err = SQLDB.Exec("delete from qf_user_roles where userid = ? and roleid = ?", useridUint64, roleid)
   if err != nil {
-    errorPage(w, "Error occured while deleting role.  " , err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -356,11 +356,11 @@ func removeRoleFromUser(w http.ResponseWriter, r *http.Request) {
 func deleteRolePermissions(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
@@ -370,27 +370,27 @@ func deleteRolePermissions(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, "Error occurred while determining if this document exists.", err)
+    errorPage(w, err.Error())
     return
   }
   if detv == false {
-    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
     return
   }
 
   roleid, err := getRoleId(role)
   if err != nil {
-    errorPage(w, "Error occured while getting role id.  " , err)
+    errorPage(w, err.Error())
     return
   }
   dsid, err := getDocumentStructureID(ds)
   if err != nil {
-    errorPage(w, "Error getting document structure id.", err)
+    errorPage(w, err.Error())
     return
   }
   _, err = SQLDB.Exec("delete from qf_permissions where roleid = ? and dsid = ?", roleid, dsid)
   if err != nil {
-    errorPage(w, "Error occured while trying to delete permission of roles on this document.  " , err)
+    errorPage(w, err.Error())
     return
   }
 

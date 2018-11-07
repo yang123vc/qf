@@ -14,6 +14,7 @@ import (
   "errors"
   "math/rand"
   "time"
+  "runtime"
 )
 
 
@@ -306,18 +307,15 @@ type Row struct {
 }
 
 
-func errorPage(w http.ResponseWriter, msg string, err error) {
+func errorPage(w http.ResponseWriter, msg string) {
+  _, fn, line, _ := runtime.Caller(1)
   type Context struct {
     Message string
-    ExactError string
+    SourceFn string
+    SourceLine int
   }
-  var exactError string
-  if err != nil {
-    exactError = err.Error()
-  } else {
-    exactError = ""
-  }
-  ctx := Context{msg, exactError}
+
+  ctx := Context{msg, fn, line}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/error-page.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
@@ -514,4 +512,54 @@ func getDocumentStructureID(documentStructure string) (int, error) {
     return dsid, err
   }
   return dsid, nil
+}
+
+
+func documentStructureHasForm(documentStructure string) (bool, error) {
+  dsid, err := getDocumentStructureID(documentStructure)
+  if err != nil {
+    return false, err
+  }
+
+  var count int
+  err = SQLDB.QueryRow("select count(*) from qf_fields where dsid = ? and (type = 'File' or type = 'Image')", dsid).Scan(&count)
+  if err != nil {
+    return false, err
+  }
+  ret := false
+  if count > 0 {
+    ret = true
+  }
+  return ret, nil
+}
+
+
+
+func getRolePermissions(documentStructure string) ([]RolePermissions, error) {
+  rps := make([]RolePermissions, 0)
+
+  dsid, err := getDocumentStructureID(documentStructure)
+  if err != nil {
+    return rps, err
+  }
+
+  var role, permissions string
+  rows, err := SQLDB.Query(`select qf_roles.role, qf_permissions.permissions
+    from qf_roles inner join qf_permissions on qf_roles.id = qf_permissions.roleid
+    where qf_permissions.dsid = ?`, dsid)
+  if err != nil {
+    return rps, err
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&role, &permissions)
+    if err != nil {
+      return rps, err
+    }
+    rps = append(rps, RolePermissions{role, permissions})
+  }
+  if err = rows.Err(); err != nil {
+    return rps, err
+  }
+  return rps, nil
 }

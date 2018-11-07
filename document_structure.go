@@ -15,11 +15,11 @@ import (
 func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
@@ -31,14 +31,14 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     }
     dsList, err := GetDocumentStructureList()
     if err != nil {
-      errorPage(w, "An error occured when trying to get the document structure list.", err)
+      errorPage(w, err.Error())
       return
     }
 
     var ctdsl sql.NullString
     err = SQLDB.QueryRow("select group_concat(fullname separator ',') from qf_document_structures where child_table = 't'").Scan(&ctdsl)
     if err != nil {
-      errorPage(w, "Error reading child table document structure list.", err)
+      errorPage(w, err.Error())
       return
     }
     ctx := Context{strings.Join(dsList, ","), ctdsl.String }
@@ -78,14 +78,14 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
     tblName, err := newTableName(r.FormValue("ds-name"))
     if err != nil {
-      errorPage(w, "Error getting new table name.", err)
+      errorPage(w, err.Error())
       return
     }
     res, err := tx.Exec(`insert into qf_document_structures(fullname, tbl_name, help_text) values(?, ?, ?)`,
       r.FormValue("ds-name"), tblName, r.FormValue("help-text"))
     if err != nil {
       tx.Rollback()
-      errorPage(w, "An error ocurred while saving this document structure.", err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -95,7 +95,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       _, err = tx.Exec("update qf_document_structures set child_table = 't' where id = ?", dsid)
       if err != nil {
         tx.Rollback()
-        errorPage(w, "An error ocurred while saving child table status.", err)
+        errorPage(w, err.Error())
         return
       }
     }
@@ -104,13 +104,13 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       values(?, ?, ?, ?, ?, ?)`)
     if err != nil {
       tx.Rollback()
-      errorPage(w, "An internal error occurred.", err)
+      errorPage(w, err.Error())
     }
     for _, o := range(qffs) {
       _, err := stmt.Exec(dsid, o.label, o.name, o.type_, o.options, o.other_options)
       if err != nil {
         tx.Rollback()
-        errorPage(w, "An error occured while saving fields data.", err)
+        errorPage(w, err.Error())
         return
       }
     }
@@ -163,7 +163,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       if qff.type_ == "Link" {
         ottblName, err := tableName(qff.other_options)
         if err != nil {
-          errorPage(w, "Error getting table name for other options table.", err)
+          errorPage(w, err.Error())
           return
         }
         sqlEnding += fmt.Sprintf(", foreign key (%s) references `%s`(id)", qff.name, ottblName)
@@ -179,7 +179,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     _, err1 := tx.Exec(sql)
     if err1 != nil {
       tx.Rollback()
-      errorPage(w, "Error occured when creating document structure mysql table.", err1)
+      errorPage(w, err1.Error())
       return
     }
 
@@ -189,7 +189,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
         _, err := tx.Exec(indexSql)
         if err != nil {
           tx.Rollback()
-          errorPage(w, "An error occured while creating indexes on the document structure table.", err)
+          errorPage(w, err.Error())
           return
         }
       }
@@ -218,11 +218,11 @@ func serveJS(w http.ResponseWriter, r *http.Request) {
 func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
@@ -236,14 +236,14 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
   var ct string
   rows, err := SQLDB.Query("select fullname, child_table from qf_document_structures")
   if err != nil {
-    errorPage(w, "Error getting document structures data.", err)
+    errorPage(w, err.Error())
     return
   }
   defer rows.Close()
   for rows.Next() {
     err := rows.Scan(&str, &ct)
     if err != nil {
-      errorPage(w, "Error occurred reading a row of document structures data.", err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -257,7 +257,7 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
   }
   err = rows.Err()
   if err != nil {
-    errorPage(w, "Error after reading document structures data.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -276,11 +276,11 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
 func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
@@ -289,37 +289,37 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, "Error occurred while determining if this document exists.", err)
+    errorPage(w, err.Error())
     return
   }
   if detv == false {
-    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
     return
   }
 
   approvers, err := getApprovers(ds)
   if err != nil {
-    errorPage(w, "Error getting approvers.", err)
+    errorPage(w, err.Error())
     return
   }
 
   for _, step := range approvers {
     atn, err := getApprovalTable(ds, step)
     if err != nil {
-      errorPage(w, "An error occurred getting approval table name.", nil)
+      errorPage(w, "An error occurred getting approval table name.")
       return
     }
 
     _, err = SQLDB.Exec(fmt.Sprintf("drop table `%s`", atn) )
     if err != nil {
-      errorPage(w, "An error occured while deleting an approvals table.", err)
+      errorPage(w, err.Error())
       return
     }
 
     _, err = SQLDB.Exec("delete from qf_approvals_tables where document_structure = ? and role = ?",
       ds, step)
     if err != nil {
-      errorPage(w, "Error occurred removing record of approval table.", nil)
+      errorPage(w, "Error occurred removing record of approval table.")
       return
     }
 
@@ -330,46 +330,46 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
   err = tx.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
   if err != nil {
     tx.Rollback()
-    errorPage(w, "Error occurred when trying to get document structure id.", err)
+    errorPage(w, err.Error())
     return
   }
 
   _, err = tx.Exec("delete from qf_fields where dsid = ?", id)
   if err != nil {
     tx.Rollback()
-    errorPage(w, "Error occurred when deleting document structure fields.", err)
+    errorPage(w, err.Error())
     return
   }
 
   _, err = tx.Exec("delete from qf_document_structures where fullname = ?", ds)
   if err != nil {
     tx.Rollback()
-    errorPage(w, "Error occurred when deleting document structure.", err)
+    errorPage(w, err.Error())
     return
   }
 
   dsid, err := getDocumentStructureID(ds)
   if err != nil {
-    errorPage(w, "Error getting document structure id.", err)
+    errorPage(w, err.Error())
     return
   }
   _, err = tx.Exec("delete from qf_permissions where dsid = ?", dsid)
   if err != nil {
     tx.Rollback()
-    errorPage(w, "Error occurred when deleting document permissions.", err)
+    errorPage(w, err.Error())
     return
   }
 
   tblName, err := tableName(ds)
   if err != nil {
-    errorPage(w, "Error getting document structure's table name.", err)
+    errorPage(w, err.Error())
     return
   }
   sql := fmt.Sprintf("drop table `%s`", tblName)
   _, err = tx.Exec(sql)
   if err != nil {
     tx.Rollback()
-    errorPage(w, "Error occurred when dropping document structure table.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -383,44 +383,14 @@ type RolePermissions struct {
 }
 
 
-func getRolePermissions(documentStructure string) ([]RolePermissions, error) {
-  rps := make([]RolePermissions, 0)
-
-  dsid, err := getDocumentStructureID(documentStructure)
-  if err != nil {
-    return rps, err
-  }
-
-  var role, permissions string
-  rows, err := SQLDB.Query(`select qf_roles.role, qf_permissions.permissions
-    from qf_roles inner join qf_permissions on qf_roles.id = qf_permissions.roleid
-    where qf_permissions.dsid = ?`, dsid)
-  if err != nil {
-    return rps, err
-  }
-  defer rows.Close()
-  for rows.Next() {
-    err := rows.Scan(&role, &permissions)
-    if err != nil {
-      return rps, err
-    }
-    rps = append(rps, RolePermissions{role, permissions})
-  }
-  if err = rows.Err(); err != nil {
-    return rps, err
-  }
-  return rps, nil
-}
-
-
 func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
@@ -429,11 +399,11 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, "Error occurred while determining if this document exists.", err)
+    errorPage(w, err.Error())
     return
   }
   if detv == false {
-    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
     return
   }
 
@@ -442,7 +412,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   var tblNameStr string
   err = SQLDB.QueryRow("select id, child_table, tbl_name from qf_document_structures where fullname = ?", ds).Scan(&id, &childTableStr, &tblNameStr)
   if err != nil {
-    errorPage(w, "An error occured when trying to get the document structure id.  ", err)
+    errorPage(w, err.Error())
     return
   }
   var childTableBool bool
@@ -454,7 +424,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   docDatas, err := GetDocData(ds)
   if err != nil {
-    errorPage(w, "Error getting fields data.", err)
+    errorPage(w, err.Error())
     return
   }
   type Context struct {
@@ -475,13 +445,13 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   rps, err := getRolePermissions(ds)
   if err != nil {
-    errorPage(w, "An error occured when trying to get the permissions on roles for this document.", err)
+    errorPage(w, err.Error())
     return
   }
 
   approvers, err := getApprovers(ds)
   if err != nil {
-    errorPage(w, "Error getting approval framework data.", err)
+    errorPage(w, err.Error())
     return
   }
   var hasApprovers bool
@@ -502,11 +472,11 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 func editDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
-    errorPage(w, "Error occurred while trying to ascertain if the user is admin.", err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You are not an admin here. You don't have permissions to view this page.", nil)
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
   }
 
@@ -515,11 +485,11 @@ func editDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, "Error occurred while determining if this document exists.", err)
+    errorPage(w, err.Error())
     return
   }
   if detv == false {
-    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
     return
   }
 
@@ -534,13 +504,13 @@ func editDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
 
     roles, err := GetRoles()
     if err != nil {
-      errorPage(w, "Error getting roles.", err)
+      errorPage(w, err.Error())
       return
     }
 
     rps, err := getRolePermissions(ds)
     if err != nil {
-      errorPage(w, "An error occured when trying to get the permissions on roles for this document.", err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -567,19 +537,19 @@ func editDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
 
     dsid, err := getDocumentStructureID(ds)
     if err != nil {
-      errorPage(w, "Error getting document structure id.", err)
+      errorPage(w, err.Error())
       return
     }
 
     for _, rp := range nrps {
       roleid, err := getRoleId(rp.Role)
       if err != nil {
-        errorPage(w, "Error occured while getting role id.", err)
+        errorPage(w, err.Error())
         return
       }
       _, err = SQLDB.Exec("insert into qf_permissions(roleid, dsid, permissions) values(?,?,?)", roleid, dsid, rp.Permissions)
       if err != nil {
-        errorPage(w, "Error storing role permissions.", err)
+        errorPage(w, err.Error())
         return
       }
     }

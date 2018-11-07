@@ -21,7 +21,7 @@ import (
 func createDocument(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    errorPage(w, "You need to be logged in to continue.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -30,21 +30,21 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, "Error occurred while determining if this document exists.", err)
+    errorPage(w, err.Error())
     return
   }
   if detv == false {
-    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
     return
   }
 
   truthValue, err := DoesCurrentUserHavePerm(r, ds, "create")
   if err != nil {
-    errorPage(w, "Error occured while determining if the user have permission for this page.  " , err)
+    errorPage(w, err.Error())
     return
   }
   if ! truthValue {
-    errorPage(w, "You don't have the create permission for this document structure.", nil)
+    errorPage(w, "You don't have the create permission for this document structure.")
     return
   }
 
@@ -52,7 +52,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
   var helpText sql.NullString
   err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", ds).Scan(&helpText)
   if err != nil {
-    errorPage(w, "An internal error occured.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -69,7 +69,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 
   dds, err := GetDocData(ds)
   if err != nil {
-    errorPage(w, "Error getting fields data.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -81,7 +81,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     ct := dd.OtherOptions[0]
     tableFields[ct], err = GetDocData(ct)
     if err != nil {
-      errorPage(w, "An error occurred while getting child table form structure.", err)
+      errorPage(w, err.Error())
       return
     }
   }
@@ -109,16 +109,22 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     if ectv && ec.ValidationFn != nil {
       outString := ec.ValidationFn(r.PostForm)
       if outString != "" {
-        errorPage(w, "Exra Code Validation Error: " + outString, nil)
+        errorPage(w, "Exra Code Validation Error: " + outString)
         return
       }
     }
 
-    ctx := context.Background()
-    client, err := storage.NewClient(ctx)
-    if err != nil {
-      errorPage(w, "Error creating GCP storage client.", err)
-      return
+    var ctx context.Context
+    var client *storage.Client
+
+    hasForm, err := documentStructureHasForm(ds)
+    if hasForm {
+      ctx = context.Background()
+      client, err = storage.NewClient(ctx)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
     }
 
     colNames := make([]string, 0)
@@ -187,19 +193,19 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
           }
           ctblName, err := tableName(childTableName)
           if err != nil {
-            errorPage(w, "Error getting child table db name", err)
+            errorPage(w, err.Error())
             return
           }
           sqlStmt := fmt.Sprintf("insert into `%s`(%s) values (%s)", ctblName,
             strings.Join(colNamesCT, ", "), strings.Join(formDataCT, ", "))
           res, err := SQLDB.Exec(sqlStmt)
           if err != nil {
-            errorPage(w, "An error occured while saving a child table row." , err)
+            errorPage(w, err.Error())
             return
           }
           lastid, err := res.LastInsertId()
           if err != nil {
-            errorPage(w, "An error occured while trying to run extra code: " , err)
+            errorPage(w, err.Error())
             return
           }
 
@@ -226,11 +232,11 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 
           wc := objHandle.NewWriter(ctx)
           if _, err := io.Copy(wc, file); err != nil {
-            errorPage(w, "Error saving file object.", err)
+            errorPage(w, err.Error())
             return
           }
           if err := wc.Close(); err != nil {
-            errorPage(w, "Error closing file object.", err)
+            errorPage(w, err.Error())
             return
           }
           newFileName = randomFileName
@@ -251,7 +257,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 
     tblName, err := tableName(ds)
     if err != nil {
-      errorPage(w, "Error getting document structure's table name.", err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -261,14 +267,14 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
       tblName, colNamesStr, useridUint64, formDataStr)
     res, err := SQLDB.Exec(sqlStmt)
     if err != nil {
-      errorPage(w, "An error occured while saving." , err)
+      errorPage(w, err.Error())
       return
     }
 
     // new document extra code
     lastid, err := res.LastInsertId()
     if err != nil {
-      errorPage(w, "An error occured while trying to run extra code: " , err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -286,7 +292,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 func updateDocument(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    errorPage(w, "You need to be logged in to continue.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -295,33 +301,33 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   docid := vars["id"]
   _, err = strconv.ParseUint(docid, 10, 64)
   if err != nil {
-    errorPage(w, "Document ID is invalid.", err)
+    errorPage(w, err.Error())
   }
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, "Error occurred while determining if this document exists.", err)
+    errorPage(w, err.Error())
     return
   }
   if detv == false {
-    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds), nil)
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
     return
   }
 
   readPerm, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
-    errorPage(w, "Error occured while determining if the user have read permission for this document structure.  " , err)
+    errorPage(w, err.Error())
     return
   }
   rocPerm, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
   if err != nil {
-    errorPage(w, "Error occured while determining if the user have read-only-created permission for this document.  " , err)
+    errorPage(w, err.Error())
     return
   }
 
   tblName, err := tableName(ds)
   if err != nil {
-    errorPage(w, "Error getting document structure's table name.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -329,18 +335,18 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %s", tblName, docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
   if err != nil {
-    errorPage(w, "An internal error occured.  " , err)
+    errorPage(w, err.Error())
     return
   }
 
   if ! readPerm {
     if rocPerm {
       if createdBy != useridUint64 {
-        errorPage(w, "You are not the owner of this document so can't read it.", nil)
+        errorPage(w, "You are not the owner of this document so can't read it.")
         return
       }
     } else {
-      errorPage(w, "You don't have the read permission for this document structure.", nil)
+      errorPage(w, "You don't have the read permission for this document structure.")
       return
     }
   }
@@ -349,14 +355,14 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = %s", tblName, docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
-    errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid), nil)
+    errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid))
     return
   }
 
   var helpText sql.NullString
   err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", ds).Scan(&helpText)
   if err != nil {
-    errorPage(w, "An error occurred when reading document structure. Exact Error" , err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -373,7 +379,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 
   docDatas, err := GetDocData(ds)
   if err != nil {
-    errorPage(w, "Error getting fields data.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -394,7 +400,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       sqlStmt := fmt.Sprintf("select %s from `%s` where id = %s", docData.Name, tblName, docid)
       err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
       if err != nil {
-        errorPage(w, "Error occurred when getting edit data.  " , err)
+        errorPage(w, err.Error())
         return
       }
       if dataFromDB.Valid {
@@ -405,7 +411,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       if data != "" && (docData.Type == "File" || docData.Type == "Image") {
         pkey, err := ioutil.ReadFile(KeyFilePath)
         if err != nil {
-          errorPage(w, "Error reading a specific key file.", err)
+          errorPage(w, err.Error())
           return
         }
         opts := &storage.SignedURLOptions{
@@ -416,7 +422,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         }
         viewableFilePath, err := storage.SignedURL(QFBucketName, data, opts)
         if err != nil {
-          errorPage(w, "Error creating signed url.", err)
+          errorPage(w, err.Error())
           return
         }
         data = viewableFilePath
@@ -426,7 +432,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         childTable := docData.OtherOptions[0]
         ctdds, err := GetDocData(childTable)
         if err != nil {
-          errorPage(w, "An error occurred while getting child table form structure.", err)
+          errorPage(w, err.Error())
           return
         }
         dASSuper := make([][]docAndStructure, 0)
@@ -437,7 +443,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
           for _, ctdd := range ctdds {
             ctblName, err := tableName(childTable)
             if err != nil {
-              errorPage(w, "Error getting child table db name", err)
+              errorPage(w, err.Error())
               return
             }
 
@@ -447,7 +453,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
             sqlStmt := fmt.Sprintf("select %s from `%s` where id = ?", ctdd.Name, ctblName)
             err = SQLDB.QueryRow(sqlStmt, part).Scan(&dataFromDB)
             if err != nil {
-              errorPage(w, "Error occurred when getting edit child table data." , err)
+              errorPage(w, err.Error())
               return
             }
             if dataFromDB.Valid {
@@ -470,7 +476,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   sqlStmt += fmt.Sprintf("from `%[1]s` inner join `%[2]s` on `%[1]s`.created_by = `%[2]s`.id where `%[1]s`.id = ?", tblName, UsersTable)
   err = SQLDB.QueryRow(sqlStmt, docid).Scan(&created, &modified, &firstname, &surname, &created_by)
   if err != nil {
-    errorPage(w, "An error occured while getting extra read data of this document.", err)
+    errorPage(w, err.Error())
     return
   }
 
@@ -499,17 +505,17 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 
     updatePerm, err := DoesCurrentUserHavePerm(r, ds, "update")
     if err != nil {
-      errorPage(w, "Error occured while determining if the user have update permission for this document structure.  " , err)
+      errorPage(w, err.Error())
       return
     }
     deletePerm, err := DoesCurrentUserHavePerm(r, ds, "delete")
     if err != nil {
-      errorPage(w, "Error occured while determining if the user have delete permission for this document structure.  " , err)
+      errorPage(w, err.Error())
       return
     }
     uocPerm, err := DoesCurrentUserHavePerm(r, ds, "update-only-created")
     if err != nil {
-      errorPage(w, "Error occured while determining if the user have update-only-created permission for this document.  " , err)
+      errorPage(w, err.Error())
       return
     }
 
@@ -527,21 +533,21 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   } else if r.Method == http.MethodPost {
     tv2, err2 := DoesCurrentUserHavePerm(r, ds, "update")
     if err2 != nil {
-      errorPage(w, "Error checking for permissions for this page.  " , err)
+      errorPage(w, err.Error())
       return
     }
     uocPerm, err := DoesCurrentUserHavePerm(r, ds, "update-only-created")
     if err != nil {
-      errorPage(w, "Error checking for permissions of this page.  " , err)
+      errorPage(w, err.Error())
       return
     }
 
     if ! tv2 {
       if uocPerm && createdBy != useridUint64 {
-        errorPage(w, "You are not the owner of this document. So can't update it.", nil)
+        errorPage(w, "You are not the owner of this document. So can't update it.")
         return
       } else if ! uocPerm {
-        errorPage(w, "You don't have permissions to update this document.", nil)
+        errorPage(w, "You don't have permissions to update this document.")
         return
       }
     }
@@ -553,16 +559,22 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     if ectv && ec.ValidationFn != nil {
       outString := ec.ValidationFn(r.PostForm)
       if outString != "" {
-        errorPage(w, "Exra Code Validation Error: " + outString, nil)
+        errorPage(w, "Exra Code Validation Error: " + outString)
         return
       }
     }
 
-    ctx := context.Background()
-    client, err := storage.NewClient(ctx)
-    if err != nil {
-      errorPage(w, "Error creating GCP storage client.", err)
-      return
+    var ctx context.Context
+    var client *storage.Client
+
+    hasForm, err := documentStructureHasForm(ds)
+    if hasForm {
+      ctx = context.Background()
+      client, err = storage.NewClient(ctx)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
     }
 
     colNames := make([]string, 0)
@@ -574,14 +586,14 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         for _, part := range parts {
           ottblName, err := tableName(docAndStructure.DocData.OtherOptions[0])
           if err != nil {
-            errorPage(w, "Error getting table name of the table in other options.", nil)
+            errorPage(w, "Error getting table name of the table in other options.")
             return
           }
 
           sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", ottblName)
           _, err = SQLDB.Exec(sqlStmt, part)
           if err != nil {
-            errorPage(w, "An error occurred deleting child table data.", err)
+            errorPage(w, err.Error())
             return
           }
         }
@@ -590,7 +602,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         childTableName := docAndStructure.DocData.OtherOptions[0]
         ddsCT, err := GetDocData(childTableName)
         if err != nil {
-          errorPage(w, "An error occurred while getting child table form structure.", err)
+          errorPage(w, err.Error())
           return
         }
 
@@ -633,19 +645,19 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
           }
           ctblName, err := tableName(childTableName)
           if err != nil {
-            errorPage(w, "Error getting document structure's table name.", err)
+            errorPage(w, err.Error())
             return
           }
           sqlStmt := fmt.Sprintf("insert into `%s`(%s) values (%s)", ctblName,
             strings.Join(colNamesCT, ", "), strings.Join(formDataCT, ", "))
           res, err := SQLDB.Exec(sqlStmt)
           if err != nil {
-            errorPage(w, "An error occured while saving a child table row." , err)
+            errorPage(w, err.Error())
             return
           }
           lastid, err := res.LastInsertId()
           if err != nil {
-            errorPage(w, "An error occured while trying to run extra code: " , err)
+            errorPage(w, err.Error())
             return
           }
 
@@ -672,11 +684,11 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 
           wc := objHandle.NewWriter(ctx)
           if _, err := io.Copy(wc, file); err != nil {
-            errorPage(w, "Error saving file object.", err)
+            errorPage(w, err.Error())
             return
           }
           if err := wc.Close(); err != nil {
-            errorPage(w, "Error closing file object.", err)
+            errorPage(w, err.Error())
             return
           }
           newFileName = randomFileName
@@ -715,7 +727,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     sqlStmt := fmt.Sprintf("update `%s` set %s where id = %s", tblName, strings.Join(updatePartStmt, ", "), docid)
     _, err = SQLDB.Exec(sqlStmt)
     if err != nil {
-      errorPage(w, "An error occured while saving: " , err)
+      errorPage(w, err.Error())
       return
     }
 
