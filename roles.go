@@ -397,3 +397,68 @@ func deleteRolePermissions(w http.ResponseWriter, r *http.Request) {
   redirectURL := fmt.Sprintf("/edit-document-structure-permissions/%s/", ds)
   http.Redirect(w, r, redirectURL, 307)
 }
+
+
+func userDetails(w http.ResponseWriter, r * http.Request) {
+  _, err := GetCurrentUser(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  vars := mux.Vars(r)
+  useridToView := vars["userid"]
+
+  var count int
+  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", UsersTable, useridToView)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if count == 0 {
+    errorPage(w, "The userid does not exist.")
+    return
+  }
+
+  var firstname, surname string
+  sqlStmt = fmt.Sprintf("select firstname, surname from `%s` where id = %s", UsersTable, useridToView)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&firstname, &surname)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  userRoles := make([]string, 0)
+  var role string
+  rows, err := SQLDB.Query(`select qf_roles.role from qf_roles inner join qf_user_roles on qf_roles.id = qf_user_roles.roleid
+    where qf_user_roles.userid = ?`, useridToView)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&role)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    userRoles = append(userRoles, role)
+  }
+  if err = rows.Err(); err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  type Context struct {
+    UserId string
+    UserRoles []string
+    FullName string
+  }
+
+  ctx := Context{useridToView, userRoles, firstname + " " + surname}
+  fullTemplatePath := filepath.Join(getProjectPath(), "templates/user-details.html")
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl.Execute(w, ctx)
+}

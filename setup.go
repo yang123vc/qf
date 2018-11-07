@@ -223,6 +223,7 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/edit-user-roles/{userid}/", editUserRoles)
   r.HandleFunc("/remove-role-from-user/{userid}/{role}/", removeRoleFromUser)
   r.HandleFunc("/delete-role-permissions/{document-structure}/{role}/", deleteRolePermissions)
+  r.HandleFunc("/user-details/{userid}/", userDetails)
 
   // document links
   r.HandleFunc("/doc/{document-structure}/create/", createDocument)

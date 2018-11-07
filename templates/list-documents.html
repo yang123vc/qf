@@ -82,7 +82,11 @@
         <tr>
           <td>{{.Id}}</td>
           {{range .ColAndDatas}}
-            <td>{{.Data }}</td>
+            {{if eq .ColName "created_by"}}
+              <td><a href="/user-details/{{.Data}}/">{{.Data}}</td>
+            {{else}}
+              <td>{{.Data }}</td>
+            {{end}}
           {{end}}
           <td>
             <a class='button-look' href='/doc/{{$.DocumentStructure}}/update/{{.Id}}/'>
