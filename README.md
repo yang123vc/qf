@@ -46,7 +46,8 @@ Make sure you look at `main.go` in the sample app, copy and edit it to your own 
 
 Go to `/qf-setup/` to create some tables that the project would need.
 
-The links used in the project can be found in the function `AddQFHandlers` in the utils.go of this project.
+The links used in the project can be found in the function `AddQFHandlers` in the
+[setup.go](https://github.com/bankole7782/qf/blob/master/setup.go) of this project.
 
 
 ### Files Setup
