@@ -18,6 +18,23 @@ one authentication system to log on to the system (comfort).
 
 ## Setup
 
+### Users Table Setup
+
+Note that user creation and updating is not part of this project. You as the admininstrator is to provide this. This is to
+ensure that you can use any form of authentication you want eg. social auth (facebook, google, twitter), passwords,
+fingerprint, keys etc.
+
+Create a users table with the following properties:
+* users table must have a primary key id with type bigint unsigned
+* it must also have fields `firstname` and `lastname` for easy recognition.
+* it must also have field `email` for communications.
+Then set the table name to `qf.UsersTable`
+
+You must also provide a function that would get the currently logged in users. The function is given the request object
+to get the cookies for its purpose. Set the `qf.GetCurrentUser` to this function. The function has the following
+declaration `func(r *http.Request) (uint64, error)`.
+
+
 ### Begin
 
 Get the framework through the following command
@@ -44,11 +61,20 @@ Read [this](https://godoc.org/cloud.google.com/go/storage#SignedURLOptions) to f
 to enter into `qf.KeyFilePath` and `qf.GoogleAccessID`
 
 
+## Setting up Role Permissions and Approvals for a Document Structure.
+
+Go to `/roles-view/` to create some roles for the project.
+
+Go to `/users-to-roles-list/` to update the users' roles.
+
+To set up permissions or approvals framework for a document structure, go to `/view-document-structure/{document-structure-full-name}/`
+you would see the links to do so in this page.
+
+
 ### Theming Your Project
 
 The sample project has no design. To add yours copy the template `templates/bad-base.html` to your project.
 Edit it and then point your version to `qf.BaseTemplate` before registering any handlers.
-
 
 
 ### Adding Extra Code to Your Project
@@ -159,7 +185,7 @@ and the design of the email itself.
 
 ### When is X Database Support Coming
 
-I don't intend to support more than one database so has to make work easier.
+I don't intend to support more than one database so has to make the work cheaper.
 
 
 ### How to Create a Foreign Key between a QF table and a non QF table
