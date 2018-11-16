@@ -223,7 +223,16 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
         // ctx := context.Background()
         var newFileName string
         for {
-          randomFileName := untestedRandomString(100) + filepath.Ext(handle.Filename)
+          var extension string
+          if strings.HasSuffix(handle.Filename, "tar.gz") {
+            extension = ".tar.gz"
+          } else if strings.HasSuffix(handle.Filename, "tar.xz") {
+            extension = ".tar.xz"
+          } else {
+            extension = filepath.Ext(handle.Filename)
+          }
+
+          randomFileName := filepath.Join(ds, untestedRandomString(100) + extension)
           objHandle := client.Bucket(QFBucketName).Object(randomFileName)
           _, err := objHandle.NewReader(ctx)
           if err == nil {
@@ -566,7 +575,6 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 
     var ctx context.Context
     var client *storage.Client
-
     hasForm, err := documentStructureHasForm(ds)
     if hasForm {
       ctx = context.Background()
@@ -675,7 +683,16 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 
         var newFileName string
         for {
-          randomFileName := untestedRandomString(100) + filepath.Ext(handle.Filename)
+          var extension string
+          if strings.HasSuffix(handle.Filename, "tar.gz") {
+            extension = ".tar.gz"
+          } else if strings.HasSuffix(handle.Filename, "tar.xz") {
+            extension = ".tar.xz"
+          } else {
+            extension = filepath.Ext(handle.Filename)
+          }
+
+          randomFileName := filepath.Join(ds, untestedRandomString(100) + extension)
           objHandle := client.Bucket(QFBucketName).Object(randomFileName)
           _, err := objHandle.NewReader(ctx)
           if err == nil {
@@ -692,6 +709,14 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
             return
           }
           newFileName = randomFileName
+
+          // delete any file that was previously stored.
+          var datum sql.NullString
+          sqlStmt = fmt.Sprintf("select %s from `%s` where id = ?", docAndStructure.DocData.Name, tblName)
+          SQLDB.QueryRow(sqlStmt, docid).Scan(&datum)
+          if datum.Valid {
+            client.Bucket(QFBucketName).Object(datum.String).Delete(ctx)
+          }
           break
         }
         colNames = append(colNames, docAndStructure.DocData.Name)

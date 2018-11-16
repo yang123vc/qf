@@ -62,7 +62,7 @@ Read [this](https://godoc.org/cloud.google.com/go/storage#SignedURLOptions) to f
 to enter into `qf.KeyFilePath` and `qf.GoogleAccessID`
 
 
-## Setting up Role Permissions and Approvals for a Document Structure.
+### Setting up Role Permissions and Approvals for a Document Structure.
 
 Go to `/roles-view/` to create some roles for the project.
 
