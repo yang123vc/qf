@@ -132,7 +132,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
   myRows := make([]Row, 0)
   for _, id := range ids {
     colAndDatas := make([]ColAndData, 0)
-    for _, col := range colNames {
+    for col, label := range colNames {
       var data string
       var dataFromDB sql.NullString
       sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", col, tblName, id)
@@ -146,7 +146,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
       } else {
         data = ""
       }
-      colAndDatas = append(colAndDatas, ColAndData{col, data})
+      colAndDatas = append(colAndDatas, ColAndData{label, data})
     }
 
     var createdBy uint64
@@ -229,7 +229,11 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     date = ""
   }
 
-  ctx := Context{ds, colNames, myRows, pageI, pages, tv1, tv2, tv3, hasApprovals,
+  colNamesList := make([]string, 0)
+  for _, label := range colNames {
+    colNamesList = append(colNamesList, label)
+  }
+  ctx := Context{ds, colNamesList, myRows, pageI, pages, tv1, tv2, tv3, hasApprovals,
     approver, listType, date}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-documents.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))

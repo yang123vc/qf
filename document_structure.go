@@ -325,25 +325,15 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   }
 
-  tx, _ := SQLDB.Begin()
   var id int
-  err = tx.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
+  err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
   if err != nil {
-    tx.Rollback()
     errorPage(w, err.Error())
     return
   }
 
-  _, err = tx.Exec("delete from qf_fields where dsid = ?", id)
+  _, err = SQLDB.Exec("delete from qf_fields where dsid = ?", id)
   if err != nil {
-    tx.Rollback()
-    errorPage(w, err.Error())
-    return
-  }
-
-  _, err = tx.Exec("delete from qf_document_structures where fullname = ?", ds)
-  if err != nil {
-    tx.Rollback()
     errorPage(w, err.Error())
     return
   }
@@ -353,9 +343,8 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     errorPage(w, err.Error())
     return
   }
-  _, err = tx.Exec("delete from qf_permissions where dsid = ?", dsid)
+  _, err = SQLDB.Exec("delete from qf_permissions where dsid = ?", dsid)
   if err != nil {
-    tx.Rollback()
     errorPage(w, err.Error())
     return
   }
@@ -366,13 +355,18 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
   sql := fmt.Sprintf("drop table `%s`", tblName)
-  _, err = tx.Exec(sql)
+  _, err = SQLDB.Exec(sql)
   if err != nil {
-    tx.Rollback()
     errorPage(w, err.Error())
     return
   }
 
+  _, err = SQLDB.Exec("delete from qf_document_structures where fullname = ?", ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  
   http.Redirect(w, r, "/list-document-structures/", 307)
 }
 

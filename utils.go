@@ -337,34 +337,36 @@ func getEC(documentStructure string) (ExtraCode, bool) {
 }
 
 
-func getColumnNames(ds string) ([]string, error){
-  colNames := make([]string, 0)
-
+func getColumnNames(ds string) (map[string]string, error){
+  returnMap := make(map[string]string)
   var dsid int
   err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&dsid)
   if err != nil {
-    return colNames, err
+    return nil, err
   }
 
   var colName string
-  rows, err := SQLDB.Query(`select name from qf_fields where dsid = ? and  type != "Table"
+  var label string
+  rows, err := SQLDB.Query(`select name, label from qf_fields where dsid = ? and  type != "Table"
     and type != "Section Break" and type != "File" and type != "Image" order by id asc limit 3`, dsid)
   if err != nil {
-    return colNames, err
+    return nil, err
   }
   defer rows.Close()
   for rows.Next() {
-    err := rows.Scan(&colName)
+    err := rows.Scan(&colName, &label)
     if err != nil {
-      return colNames, err
+      return nil, err
     }
-    colNames = append(colNames, colName)
+    returnMap[colName] = label
   }
   if err = rows.Err(); err != nil {
-    return colNames, err
+    return nil, err
   }
-  colNames = append(colNames, "created", "created_by")
-  return colNames, nil
+  returnMap["created"] = "Date of Creation"
+  returnMap["created_by"] = "Created By"
+
+  return returnMap, nil
 }
 
 
@@ -379,23 +381,9 @@ func getMentionedUserColumn(ds string) (string, error) {
 }
 
 
-func abbreviateName(name string) string {
-  parts := strings.Split(name, " ")
-  var abbreviatedName string
-  for _, part := range parts {
-    abbreviatedName += string(part[0])
-  }
-  return abbreviatedName
-}
-
-
 func newTableName(documentStructure string) (string, error) {
-  iter := 0
   for {
-    newName := "qf" + abbreviateName(documentStructure)
-    if iter != 0 {
-      newName += strconv.Itoa(iter)
-    }
+    newName := "qftbl_" + untestedRandomString(3)
     var count int
     err := SQLDB.QueryRow("select count(*) from qf_document_structures where tbl_name = ?", newName).Scan(&count)
     if err != nil {
@@ -403,8 +391,6 @@ func newTableName(documentStructure string) (string, error) {
     }
     if count == 0 {
       return newName, nil
-    } else {
-      iter += 1
     }
   }
 }
@@ -426,24 +412,18 @@ func tableName(documentStructure string) (string, error) {
 
 
 func newApprovalTableName(documentStructure, role string) (string, error) {
-  iter := 0
   for {
-    newName := "qf" + abbreviateName(fmt.Sprintf("%s %s Approvals", documentStructure, role))
-    if iter != 0 {
-      newName += strconv.Itoa(iter)
-    }
+    newName := "qfatbl_" + untestedRandomString(4)
 
     var count int
-    err := SQLDB.QueryRow(`select count(*) as count from information_schema.tables
-      where table_schema=? and table_name=?`, SiteDB, newName).Scan(&count)
+    err := SQLDB.QueryRow(`select count(*) as count from qf_approvals_tables where tbl_name = ?`,
+      newName).Scan(&count)
     if err != nil {
       return "", err
     }
 
     if count == 0 {
       return newName, nil
-    } else {
-      iter += 1
     }
   }
 }
