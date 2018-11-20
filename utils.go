@@ -313,9 +313,15 @@ func errorPage(w http.ResponseWriter, msg string) {
     Message string
     SourceFn string
     SourceLine int
+    QF_DEVELOPER bool
   }
 
-  ctx := Context{msg, fn, line}
+  var ctx Context
+  if os.Getenv("QF_DEVELOPER") == "true" {
+    ctx = Context{msg, fn, line, true}
+  } else {
+    ctx = Context{msg, fn, line, false}
+  }
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/error-page.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
