@@ -150,12 +150,22 @@
             <input type="file" name="{{.Name}}" accept=".png, .jpg, .jpeg">
           {{end}}
 
-        {{else if or (eq .Type "Int") (eq .Type "Link")}}
+        {{else if eq .Type "Int"}}
           {{if .Required}}
             <input type="number" name="{{.Name}}" value="{{.Data}}" required>
           {{else}}
             <input type="number" name="{{.Name}}" value="{{.Data}}">
           {{end}}
+
+        {{else if eq .Type "Link"}}
+          {{if .Required}}
+            <input type="number" name="{{.Name}}" value="{{.Data}}" required>
+          {{else}}
+            <input type="number" name="{{.Name}}" value="{{.Data}}">
+          {{end}}
+          <button class="open-linked-document" data-ldds="{{index .OtherOptions 0}}">
+            Open Linked Document
+          </button>
 
         {{else if eq .Type "Read Only" }}
           <input type="text" name="{{.Name}}" value="{{.Data}}" disabled/>
@@ -243,6 +253,23 @@
                       {{else}}
                         <input type="number" name="{{.Name}}-{{call $.Add $index 1}}" value="{{.Data}}">
                       {{end}}
+
+                    {{else if eq .Type "Int"}}
+                      {{if .Required}}
+                        <input type="number" name="{{.Name}}-{{call $.Add $index 1}}" value="{{.Data}}" required>
+                      {{else}}
+                        <input type="number" name="{{.Name}}-{{call $.Add $index 1}}" value="{{.Data}}">
+                      {{end}}
+
+                    {{else if eq .Type "Link"}}
+                      {{if .Required}}
+                        <input type="number" name="{{.Name}}-{{call $.Add $index 1}}" value="{{.Data}}" required>
+                      {{else}}
+                        <input type="number" name="{{.Name}}-{{call $.Add $index 1}}" value="{{.Data}}">
+                      {{end}}
+                      <button class="open-linked-document" data-ldds="{{index .OtherOptions 0}}">
+                        Open Linked Document
+                      </button>
 
                     {{else if eq .Type "Read Only" }}
                       <input type="text" name="{{.Name}}-{{call $.Add $index 1}}" value="{{.Data}}" disabled/>
@@ -382,6 +409,16 @@
       setRowsCount(table);
     });
 
+    $('.open-linked-document').click(function(e) {
+      e.preventDefault();
+
+      var inputEl = $(e.target).prev();
+      if ( $(inputEl).val() != "") {
+        window.open("/doc/" + $(e.target).data("ldds") + "/update/" + $(inputEl).val() + "/", "_blank");
+      }
+
+    });
+    
   });
   </script>
 {{end}}
