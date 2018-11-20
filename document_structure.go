@@ -36,12 +36,12 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     }
 
     var ctdsl sql.NullString
-    err = SQLDB.QueryRow("select group_concat(fullname separator ',') from qf_document_structures where child_table = 't'").Scan(&ctdsl)
+    err = SQLDB.QueryRow("select group_concat(fullname separator ',,,') from qf_document_structures where child_table = 't'").Scan(&ctdsl)
     if err != nil {
       errorPage(w, err.Error())
       return
     }
-    ctx := Context{strings.Join(dsList, ","), ctdsl.String }
+    ctx := Context{strings.Join(dsList, ",,,"), ctdsl.String }
 
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/new-document-structure.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
@@ -366,7 +366,7 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     errorPage(w, err.Error())
     return
   }
-  
+
   http.Redirect(w, r, "/list-document-structures/", 307)
 }
 

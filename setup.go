@@ -214,6 +214,9 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/delete-document-structure/{document-structure}/", deleteDocumentStructure)
   r.HandleFunc("/view-document-structure/{document-structure}/", viewDocumentStructure)
   r.HandleFunc("/edit-document-structure-permissions/{document-structure}/", editDocumentStructurePermissions)
+  r.HandleFunc("/edit-document-structure/{document-structure}/", editDocumentStructure)
+  r.HandleFunc("/change-document-structure-name/{document-structure}/", changeDocumentStructureName)
+
 
   // roles links
   r.HandleFunc("/roles-view/", rolesView)

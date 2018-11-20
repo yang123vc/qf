@@ -1,0 +1,56 @@
+{{define "title"}}Edit Document Structure of {{.DocumentStructure}}{{end}}
+
+
+{{define "styles"}}
+<style>
+#change-name-error {
+  display: none;
+  color: red;
+}
+</style>
+{{end}}
+
+
+{{define "main"}}
+  <h2>Edit Document Structure of {{.DocumentStructure}}</h2>
+
+  <h3>Change Name Form</h3>
+  <p id="change-name-error"></p>
+  <form id="change-name-form" method='post' action='/change-document-structure-name/{{.DocumentStructure}}/'>
+    <div>
+      <label>New Name</label>
+      <input type="text" value="{{.DocumentStructure}}" name="new-name" />
+    </div>
+    <div>
+      <input type="submit" value="Update" id="change-name-btn" />
+    </div>
+  </form>
+
+
+{{end}}
+
+{{define "scripts"}}
+<script>
+var docNames = "{{.DocumentStructures}}";
+
+$(document).ready(function() {
+
+  $('#change-name-btn').click(function(e) {
+    e.preventDefault()
+
+    docNamesList = docNames.split(',,,');
+    if ( docNamesList.indexOf( $('input[name=new-name]').val() ) != -1 ) {
+      $('#change-name-error').text('The document name is already taken.');
+      $('#change-name-error').show();
+      $('input[name=new-name]').css('border', '1px solid red');
+      return;
+    } else {
+      $('#change-name-error').hide();
+    }
+
+    $('#change-name-form').submit();
+  });
+
+});
+</script>
+{{end}}
