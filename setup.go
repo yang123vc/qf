@@ -215,7 +215,8 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/view-document-structure/{document-structure}/", viewDocumentStructure)
   r.HandleFunc("/edit-document-structure-permissions/{document-structure}/", editDocumentStructurePermissions)
   r.HandleFunc("/edit-document-structure/{document-structure}/", editDocumentStructure)
-  r.HandleFunc("/change-document-structure-name/{document-structure}/", changeDocumentStructureName)
+  r.HandleFunc("/update-document-structure-name/{document-structure}/", updateDocumentStructureName)
+  r.HandleFunc("/update-field-labels/{document-structure}/", updateFieldLabels)
 
 
   // roles links

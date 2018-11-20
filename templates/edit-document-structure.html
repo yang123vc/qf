@@ -3,7 +3,7 @@
 
 {{define "styles"}}
 <style>
-#change-name-error {
+#change-name-error, #change-field-names-error {
   display: none;
   color: red;
 }
@@ -16,7 +16,7 @@
 
   <h3>Change Name Form</h3>
   <p id="change-name-error"></p>
-  <form id="change-name-form" method='post' action='/change-document-structure-name/{{.DocumentStructure}}/'>
+  <form id="change-name-form" method='post' action='/update-document-structure-name/{{.DocumentStructure}}/'>
     <div>
       <label>New Name</label>
       <input type="text" value="{{.DocumentStructure}}" name="new-name" />
@@ -26,12 +26,51 @@
     </div>
   </form>
 
+  <h3>Change Field Label(s)</h3>
+  <p id="change-field-labels-error"></p>
+  <form id="change-field-labels-form" method="post" action='/update-field-labels/{{.DocumentStructure}}/'>
+    <table id="new-field-labels-tbl">
+      <thead>
+        <tr>
+          <td>No</td>
+          <td>Old Label Name</td>
+          <td>New Label Name</td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>
+            <select name='old-field-label-1' class='old-field-label'>
+              {{range $.OldLabels}}
+                <option>{{.}}</option>
+              {{end}}
+            </select>
+          </td>
+          <td>
+            <input type="text" name="new-field-label-1" class="new-field-label" required />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <div>
+      <button type="button" id='add-field-btn'>Add Field</button>
+    </div>
+    <br>
+    <div>
+      <input type="submit" value="Update" id="update-field-labels-btn" />
+    </div>
+  </form>
+
 
 {{end}}
 
 {{define "scripts"}}
 <script>
 var docNames = "{{.DocumentStructures}}";
+var numberOfFields = {{.NumberofFields}};
+var oldLabels = "{{.OldLabelsStr}}";
 
 $(document).ready(function() {
 
@@ -49,6 +88,23 @@ $(document).ready(function() {
     }
 
     $('#change-name-form').submit();
+  });
+
+  $('#add-field-btn').click(function(e) {
+    if ($('#new-field-labels-tbl tbody tr').length >= 2) {
+      return
+    }
+
+    var currentNo = parseInt($('#new-field-labels-tbl tr:last td:first').text());
+    var newNo = currentNo + 1;
+    var html = $('#new-field-labels-tbl tr:last').html();
+    var re = new RegExp(currentNo.toString(), 'g');
+    html = html.replace(re, newNo.toString());
+
+    html = "<tr>" + html + "</tr>";
+    $('#new-field-labels-tbl tbody').append(html);
+
+    $('html, body').scrollTop($(document).height());
   });
 
 });
