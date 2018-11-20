@@ -132,10 +132,10 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
   myRows := make([]Row, 0)
   for _, id := range ids {
     colAndDatas := make([]ColAndData, 0)
-    for col, label := range colNames {
+    for _, colLabel := range colNames {
       var data string
       var dataFromDB sql.NullString
-      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", col, tblName, id)
+      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", colLabel.Col, tblName, id)
       err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
       if err != nil {
         errorPage(w, err.Error())
@@ -146,7 +146,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
       } else {
         data = ""
       }
-      colAndDatas = append(colAndDatas, ColAndData{label, data})
+      colAndDatas = append(colAndDatas, ColAndData{colLabel.Label, data})
     }
 
     var createdBy uint64
@@ -230,8 +230,8 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
   }
 
   colNamesList := make([]string, 0)
-  for _, label := range colNames {
-    colNamesList = append(colNamesList, label)
+  for _, colLabel := range colNames {
+    colNamesList = append(colNamesList, colLabel.Label)
   }
   ctx := Context{ds, colNamesList, myRows, pageI, pages, tv1, tv2, tv3, hasApprovals,
     approver, listType, date}

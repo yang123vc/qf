@@ -337,8 +337,13 @@ func getEC(documentStructure string) (ExtraCode, bool) {
 }
 
 
-func getColumnNames(ds string) (map[string]string, error){
-  returnMap := make(map[string]string)
+type ColLabel struct {
+  Col string
+  Label string
+}
+
+func getColumnNames(ds string) ([]ColLabel, error){
+  returnList := make([]ColLabel, 0)
   var dsid int
   err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&dsid)
   if err != nil {
@@ -358,15 +363,14 @@ func getColumnNames(ds string) (map[string]string, error){
     if err != nil {
       return nil, err
     }
-    returnMap[colName] = label
+    returnList = append(returnList, ColLabel{colName, label})
   }
   if err = rows.Err(); err != nil {
     return nil, err
   }
-  returnMap["created"] = "Date of Creation"
-  returnMap["created_by"] = "Created By"
+  returnList = append(returnList, ColLabel{"created", "Creation DateTime"}, ColLabel{"created_by", "Created By"})
 
-  return returnMap, nil
+  return returnList, nil
 }
 
 
