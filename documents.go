@@ -127,6 +127,12 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
       }
     }
 
+    tblName, err := tableName(ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
     colNames := make([]string, 0)
     formData := make([]string, 0)
     for _, dd := range dds {
@@ -232,7 +238,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
             extension = filepath.Ext(handle.Filename)
           }
 
-          randomFileName := filepath.Join(ds, untestedRandomString(100) + extension)
+          randomFileName := filepath.Join(tblName, untestedRandomString(100) + extension)
           objHandle := client.Bucket(QFBucketName).Object(randomFileName)
           _, err := objHandle.NewReader(ctx)
           if err == nil {
@@ -262,12 +268,6 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
         }
         formData = append(formData, data)
       }
-    }
-
-    tblName, err := tableName(ds)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
     }
 
     colNamesStr := strings.Join(colNames, ", ")
@@ -692,7 +692,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
             extension = filepath.Ext(handle.Filename)
           }
 
-          randomFileName := filepath.Join(ds, untestedRandomString(100) + extension)
+          randomFileName := filepath.Join(tblName, untestedRandomString(100) + extension)
           objHandle := client.Bucket(QFBucketName).Object(randomFileName)
           _, err := objHandle.NewReader(ctx)
           if err == nil {

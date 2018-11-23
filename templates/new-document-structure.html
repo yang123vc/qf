@@ -251,6 +251,18 @@
 
         }
 
+        if ( $(el).val() == "File" || $(el).val() == "Image" || $(el).val() == "Section Break") {
+          if ( $('#id-child-table').is(":checked")) {
+            $('#error-box').text("A child table cannot have a File or Image or Section Break field.")
+            $('#error-box').show();
+            $(el).css('border', '1px solid red');
+            passedValidations = false;
+          } else {
+            $('#error-box').hide();
+            $(el).css('border', '1px solid gray');
+          }
+        }
+
         if ( $(el).val() == "Table") {
           if ( $('#id-child-table').is(":checked")) {
             $('#error-box').text("A child table document cannot have a table has field.");
