@@ -91,7 +91,7 @@ $(document).ready(function() {
   });
 
   $('#add-field-btn').click(function(e) {
-    if ($('#new-field-labels-tbl tbody tr').length >= 2) {
+    if ($('#new-field-labels-tbl tbody tr').length >= numberOfFields) {
       return
     }
 
