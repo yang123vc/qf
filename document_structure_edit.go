@@ -161,3 +161,67 @@ func updateFieldLabels(w http.ResponseWriter, r *http.Request) {
   redirectURL := fmt.Sprintf("/view-document-structure/%s/", ds)
   http.Redirect(w, r, redirectURL, 307)
 }
+
+
+func deleteFields(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  detv, err := docExists(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if detv == false {
+    errorPage(w, fmt.Sprintf("The document structure %s does not exist.", ds))
+    return
+  }
+
+  dsid, err := getDocumentStructureID(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  r.ParseForm()
+  for _, field := range r.Form["delete-fields-checkbox"] {
+    var mysqlName string
+    err = SQLDB.QueryRow("select name from qf_fields where label = ? and dsid = ?", field, dsid).Scan(&mysqlName)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    sqlStmt := fmt.Sprintf("alter table `%s` drop column %s", tblName, mysqlName)
+    _, err = SQLDB.Exec(sqlStmt)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    _, err = SQLDB.Exec("delete from qf_fields where label = ? and dsid = ?", field, dsid)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  }
+
+  redirectURL := fmt.Sprintf("/view-document-structure/%s/", ds)
+  http.Redirect(w, r, redirectURL, 307)
+}

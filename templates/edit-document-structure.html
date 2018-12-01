@@ -63,6 +63,19 @@
     </div>
   </form>
 
+  <h3>Delete Fields</h3>
+  <p id="delete-fields-error"></p>
+  <form id="delete-fields-form" action="/delete-fields/{{.DocumentStructure}}/" method="post">
+    {{range $.OldLabels}}
+      <div>
+        <label> <input type="checkbox" name="delete-fields-checkbox" value="{{.}}" /> {{.}} </label>
+      </div>
+    {{end}}
+    <br>
+    <div>
+      <input type="submit" value="Delete Selected Fields" />
+    </div>
+  </form>
 
 {{end}}
 
