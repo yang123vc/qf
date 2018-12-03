@@ -105,6 +105,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     if err != nil {
       tx.Rollback()
       errorPage(w, err.Error())
+      return
     }
     for i, o := range(qffs) {
       _, err := stmt.Exec(dsid, o.label, o.name, o.type_, o.options, o.other_options, i + 1)

@@ -221,6 +221,7 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/update-field-labels/{document-structure}/", updateFieldLabels)
   r.HandleFunc("/delete-fields/{document-structure}/", deleteFields)
   r.HandleFunc("/change-fields-order/{document-structure}/", changeFieldsOrder)
+  r.HandleFunc("/add-fields/{document-structure}/", addFields)
 
 
   // roles links

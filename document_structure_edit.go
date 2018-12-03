@@ -9,6 +9,7 @@ import (
   "html/template"
   "path/filepath"
   "strconv"
+  "database/sql"
 )
 
 
@@ -43,6 +44,25 @@ func editDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  docDatas, err := GetDocData(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  var childTableStr string
+  err = SQLDB.QueryRow("select child_table from qf_document_structures where fullname = ?", ds).Scan(&childTableStr)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  var childTableBool bool
+  if childTableStr == "t" {
+    childTableBool = true
+  } else {
+    childTableBool = false
+  }
+
   type Context struct {
     DocumentStructure string
     DocumentStructures string
@@ -50,6 +70,9 @@ func editDocumentStructure(w http.ResponseWriter, r *http.Request) {
     NumberofFields int
     OldLabelsStr string
     Add func(x, y int) int
+    DocDatas []DocData
+    ChildTableDocumentStructures string
+    IsChildTable bool
   }
 
   add := func(x, y int) int {
@@ -69,8 +92,16 @@ func editDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  var ctdsl sql.NullString
+  err = SQLDB.QueryRow("select group_concat(fullname separator ',,,') from qf_document_structures where child_table = 't'").Scan(&ctdsl)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
   labelsList := strings.Split(labels, ",,,")
-  ctx := Context{ds, strings.Join(dsList, ",,,"), labelsList, len(labelsList), labels, add}
+  ctx := Context{ds, strings.Join(dsList, ",,,"), labelsList, len(labelsList), labels, add, docDatas, ctdsl.String,
+    childTableBool}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-document-structure.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
@@ -261,13 +292,160 @@ func changeFieldsOrder(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-
   for j, label := range newFieldsOrder {
     sqlStmt := "update `qf_fields` set view_order = ? where dsid = ? and label = ?"
     _, err = SQLDB.Exec(sqlStmt, j+1, dsid, label)
     if err != nil {
       errorPage(w, err.Error())
       return
+    }
+  }
+
+  redirectURL := fmt.Sprintf("/view-document-structure/%s/", ds)
+  http.Redirect(w, r, redirectURL, 307)
+}
+
+
+func addFields(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  dsid, err := getDocumentStructureID(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  type QFField struct {
+    label string
+    name string
+    type_ string
+    options string
+    other_options string
+  }
+
+  var count int
+  err = SQLDB.QueryRow("select count(*) from qf_fields where dsid = ?", dsid).Scan(&count)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  qffs := make([]QFField, 0)
+  r.ParseForm()
+  for i := count + 1; i < 100; i++ {
+    iStr := strconv.Itoa(i)
+    if r.FormValue("label-" + iStr) == "" {
+      break
+    } else {
+      qff := QFField{
+        label: r.FormValue("label-" + iStr),
+        name: r.FormValue("name-" + iStr),
+        type_: r.FormValue("type-" + iStr),
+        options: strings.Join(r.PostForm["options-" + iStr], ","),
+        other_options: r.FormValue("other-options-" + iStr),
+      }
+      qffs = append(qffs, qff)
+    }
+  }
+
+  stmt, err := SQLDB.Prepare(`insert into qf_fields(dsid, label, name, type, options, other_options, view_order)
+    values(?, ?, ?, ?, ?, ?, ?)`)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  for i, qff := range(qffs) {
+    viewOrder := i + count + 1
+    _, err := stmt.Exec(dsid, qff.label, qff.name, qff.type_, qff.options, qff.other_options, viewOrder)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    if qff.type_ == "Section Break" {
+      continue
+    }
+
+    sqlStmt := fmt.Sprintf("alter table `%s` add column %s ", tblName, qff.name)
+    if qff.type_ == "Big Number" {
+      sqlStmt += "bigint unsigned"
+    } else if qff.type_ == "Check" {
+      sqlStmt += "char(1) default 'f'"
+    } else if qff.type_ == "Date" {
+      sqlStmt += "date"
+    } else if qff.type_ == "Date and Time" {
+      sqlStmt += "datetime"
+    } else if qff.type_ == "Float" {
+      sqlStmt += "float"
+    } else if qff.type_ == "Int" {
+      sqlStmt += "int"
+    } else if qff.type_ == "Link" {
+      sqlStmt += "bigint unsigned"
+    } else if qff.type_ == "Data" || qff.type_ == "Email" || qff.type_ == "URL" || qff.type_ == "Select" || qff.type_ == "Read Only" {
+      sqlStmt += "varchar(255)"
+    } else if qff.type_ == "Text" || qff.type_ == "Table" {
+      sqlStmt += "text"
+    } else if qff.type_ == "File" || qff.type_ == "Image" {
+      sqlStmt += "varchar(255)"
+    }
+
+    if optionSearch(qff.options, "required") {
+      sqlStmt += " not null"
+    }
+
+    _, err = SQLDB.Exec(sqlStmt)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    if optionSearch(qff.options, "unique") {
+      sqlStmt = fmt.Sprintf("alter table `%s` add unique index (%s)", tblName, qff.name)
+      _, err = SQLDB.Exec(sqlStmt)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+    }
+
+    if optionSearch(qff.options, "index") && ! optionSearch(qff.options, "unique") {
+      indexSql := fmt.Sprintf("create index idx_%s on `%s`(%s)", qff.name, tblName, qff.name)
+      _, err := SQLDB.Exec(indexSql)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+    }
+
+    if qff.type_ == "Link" {
+      ottblName, err := tableName(qff.other_options)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+      sqlStmt = fmt.Sprintf("alter table `%s` add foreign key (%s) references `%s`(id)", tblName, qff.name, ottblName)
+      _, err = SQLDB.Exec(sqlStmt)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
     }
   }
 
