@@ -189,7 +189,7 @@ func GetDocData(documentStructure string) ([]DocData, error) {
   }
   var label, name, type_, options, otherOptions string
 
-  rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where dsid = ? order by id asc", dsid)
+  rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where dsid = ? order by view_order asc", dsid)
   if err != nil {
     return dds, err
   }
@@ -359,7 +359,7 @@ func getColumnNames(ds string) ([]ColLabel, error){
   var colName string
   var label string
   rows, err := SQLDB.Query(`select name, label from qf_fields where dsid = ? and  type != "Table"
-    and type != "Section Break" and type != "File" and type != "Image" order by id asc limit 3`, dsid)
+    and type != "Section Break" and type != "File" and type != "Image" order by view_order asc limit 3`, dsid)
   if err != nil {
     return nil, err
   }

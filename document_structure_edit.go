@@ -49,6 +49,11 @@ func editDocumentStructure(w http.ResponseWriter, r *http.Request) {
     OldLabels []string
     NumberofFields int
     OldLabelsStr string
+    Add func(x, y int) int
+  }
+
+  add := func(x, y int) int {
+    return x + y
   }
 
   dsid, err := getDocumentStructureID(ds)
@@ -65,7 +70,7 @@ func editDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   labelsList := strings.Split(labels, ",,,")
-  ctx := Context{ds, strings.Join(dsList, ",,,"), labelsList, len(labelsList), labels}
+  ctx := Context{ds, strings.Join(dsList, ",,,"), labelsList, len(labelsList), labels, add}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-document-structure.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
@@ -216,6 +221,50 @@ func deleteFields(w http.ResponseWriter, r *http.Request) {
     }
 
     _, err = SQLDB.Exec("delete from qf_fields where label = ? and dsid = ?", field, dsid)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  }
+
+  redirectURL := fmt.Sprintf("/view-document-structure/%s/", ds)
+  http.Redirect(w, r, redirectURL, 307)
+}
+
+
+func changeFieldsOrder(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  r.ParseForm()
+  newFieldsOrder := make([]string, 0)
+  for i := 1; i < 100; i ++ {
+    if r.FormValue("el-" + strconv.Itoa(i)) == "" {
+      break
+    }
+    newFieldsOrder = append(newFieldsOrder, r.FormValue("el-" + strconv.Itoa(i)) )
+  }
+
+  dsid, err := getDocumentStructureID(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+
+  for j, label := range newFieldsOrder {
+    sqlStmt := "update `qf_fields` set view_order = ? where dsid = ? and label = ?"
+    _, err = SQLDB.Exec(sqlStmt, j+1, dsid, label)
     if err != nil {
       errorPage(w, err.Error())
       return

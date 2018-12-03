@@ -132,6 +132,7 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       type varchar(100) not null,
       options varchar(255),
       other_options varchar(255),
+      view_order int,
       primary key (id),
       foreign key (dsid) references qf_document_structures(id),
       index (label),
@@ -219,6 +220,7 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/update-document-structure-name/{document-structure}/", updateDocumentStructureName)
   r.HandleFunc("/update-field-labels/{document-structure}/", updateFieldLabels)
   r.HandleFunc("/delete-fields/{document-structure}/", deleteFields)
+  r.HandleFunc("/change-fields-order/{document-structure}/", changeFieldsOrder)
 
 
   // roles links

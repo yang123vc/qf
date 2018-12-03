@@ -100,14 +100,14 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    stmt, err := tx.Prepare(`insert into qf_fields(dsid, label, name, type, options, other_options)
-      values(?, ?, ?, ?, ?, ?)`)
+    stmt, err := tx.Prepare(`insert into qf_fields(dsid, label, name, type, options, other_options, view_order)
+      values(?, ?, ?, ?, ?, ?, ?)`)
     if err != nil {
       tx.Rollback()
       errorPage(w, err.Error())
     }
-    for _, o := range(qffs) {
-      _, err := stmt.Exec(dsid, o.label, o.name, o.type_, o.options, o.other_options)
+    for i, o := range(qffs) {
+      _, err := stmt.Exec(dsid, o.label, o.name, o.type_, o.options, o.other_options, i + 1)
       if err != nil {
         tx.Rollback()
         errorPage(w, err.Error())
