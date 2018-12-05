@@ -132,8 +132,21 @@ func updateDocumentStructureName(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  dsid, err := getDocumentStructureID(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
   sqlStmt := "update `qf_document_structures` set fullname= ? where fullname = ?"
   _, err = SQLDB.Exec(sqlStmt, r.FormValue("new-name"), ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  sqlStmt = "insert into `qf_old_document_structures` (dsid, old_name) values(?, ?)"
+  _, err = SQLDB.Exec(sqlStmt, dsid, ds)
   if err != nil {
     errorPage(w, err.Error())
     return

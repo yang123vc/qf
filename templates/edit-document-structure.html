@@ -25,6 +25,11 @@ tbody {
 
 {{define "main"}}
   <h2>Edit Document Structure of {{.DocumentStructure}}</h2>
+  <h3>Help</h3>
+  <p>
+    After any changes made here, send a mail to all your users of the change.<br>
+    This would help especially when you add columns and need new data from them.
+  </p>
 
   <h3>Change Name Form</h3>
   <p id="change-name-error" class="error-box"></p>
@@ -362,7 +367,7 @@ $(document).ready(function() {
     if (! passedValidations) {
       return
     }
-    
+
     var names = [];
     $('.field-name').each(function(i, el) {
       names.push( $(el).val() );

@@ -248,9 +248,21 @@ func listDocuments(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+
+
   vars := mux.Vars(r)
   ds := vars["document-structure"]
 
+  detv, err := docExists(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if detv == false {
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
+    return
+  }
+  
   tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
     errorPage(w, err.Error())
