@@ -362,6 +362,12 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  _, err = SQLDB.Exec("delete from qf_old_document_structures where dsid = ?", dsid)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
   _, err = SQLDB.Exec("delete from qf_document_structures where fullname = ?", ds)
   if err != nil {
     errorPage(w, err.Error())
