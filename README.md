@@ -44,7 +44,7 @@ There is a sample application which details how to complete the setup. Take a lo
 
 Make sure you look at `main.go` in the sample app, copy and edit it to your own preferences.
 
-Go to `/qf-setup/` to create some tables that the project would need.
+Go to `/qf-setup/` to create some tables /that the project would need.
 
 The links used in the project can be found in the function `AddQFHandlers` in the
 [setup.go](https://github.com/bankole7782/qf/blob/master/setup.go) of this project.
@@ -76,6 +76,10 @@ you would see the links to do so in this page.
 
 The sample project has no design. To add yours copy the template `templates/bad-base.html` to your project.
 Edit it and then point your version to `qf.BaseTemplate` before registering any handlers.
+
+Also if you want to add dynamic contents to any qf page, please use javascript.
+
+First check the address of the page `window.location` before adding it.
 
 
 ### Adding Extra Code to Your Project
