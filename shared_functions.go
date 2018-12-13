@@ -557,3 +557,39 @@ func getRolePermissions(documentStructure string) ([]RolePermissions, error) {
   }
   return rps, nil
 }
+
+
+func isApprover(r *http.Request, documentStructure string) (bool, error) {
+  userRoles, err := GetCurrentUserRoles(r)
+  if err != nil {
+    return false, err
+  }
+  approvers, err := getApprovers(documentStructure)
+  if err != nil {
+    return false, err
+  }
+
+  for _, apr := range approvers {
+    for _, role := range userRoles {
+      if role == apr {
+        return true, nil
+      }
+    }
+  }
+
+  return false, nil
+}
+
+
+func isApprovalFrameworkInstalled(documentStructure string) (bool, error) {
+  approvers, err := getApprovers(documentStructure)
+  if err != nil {
+    return false, err
+  }
+
+  if len(approvers) == 0 {
+    return false, nil
+  } else {
+    return true, nil
+  }
+}

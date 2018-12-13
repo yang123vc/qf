@@ -196,31 +196,16 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     return
   }
 
-  userRoles, err := GetCurrentUserRoles(r)
+  hasApprovals, err := isApprovalFrameworkInstalled(ds)  
   if err != nil {
     errorPage(w, err.Error())
     return
   }
-  approvers, err := getApprovers(ds)
+  approver, err := isApprover(r, ds)
   if err != nil {
     errorPage(w, err.Error())
     return
   }
-  var hasApprovals, approver bool
-  if len(approvers) == 0 {
-    hasApprovals = false
-  } else {
-    hasApprovals = true
-  }
-  outerLoop:
-    for _, apr := range approvers {
-      for _, role := range userRoles {
-        if role == apr {
-          approver = true
-          break outerLoop
-        }
-      }
-    }
 
   var date string
   if listType == "date-list" {
@@ -262,7 +247,7 @@ func listDocuments(w http.ResponseWriter, r *http.Request) {
     errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
     return
   }
-  
+
   tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
     errorPage(w, err.Error())

@@ -506,6 +506,8 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       UndoEscape func(s string) template.HTML
       TableData map[string][][]docAndStructure
       Add func(x,y int) int
+      HasApprovals bool
+      Approver bool
     }
 
     add := func(x, y int) int {
@@ -533,8 +535,21 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         updatePerm = true
       }
     }
+
+    hasApprovals, err := isApprovalFrameworkInstalled(ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    approver, err := isApprover(r, ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
     ctx := Context{created, modified, ds, docAndStructureSlice, docid, firstname, surname,
-      created_by, updatePerm, deletePerm, htStr, ue, tableData, add}
+      created_by, updatePerm, deletePerm, htStr, ue, tableData, add, hasApprovals,
+      approver}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/update-document.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
