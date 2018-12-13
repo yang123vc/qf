@@ -82,7 +82,7 @@
         <tr>
           <td>{{.Id}}</td>
           {{range .ColAndDatas}}
-            {{if eq .ColName "created_by"}}
+            {{if eq .ColName "Created By"}}
               <td><a href="/user-details/{{.Data}}/">{{.Data}}</td>
             {{else}}
               <td>{{.Data }}</td>
