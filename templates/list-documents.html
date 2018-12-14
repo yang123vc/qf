@@ -64,7 +64,9 @@
     <a class="button-look" href="/doc/{{.DocumentStructure}}/approved-list/">Approved</a>
     <a class="button-look" href="/doc/{{.DocumentStructure}}/unapproved-list/">Not Approved</a>
   {{end}}
-
+  {{if ne .ListType "true-list"}}
+    <a class="button-look" href="/doc/{{.DocumentStructure}}/list/">True List</a>
+  {{end}}
   <br><br>
 
   <table>
