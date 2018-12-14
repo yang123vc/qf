@@ -12,8 +12,27 @@
   input, select, textarea {
     width: 300px;
   }
+  input:required {
+    border: 1px solid red;
+    padding: 5px 2px;
+  }
+  input, textarea, select {
+    border: 1px solid gray;
+    padding: 5px 2px;
+  }
   input[type=submit], input[type=checkbox] {
     width:auto;
+  }
+  .button-look {
+    text-decoration: none;
+    background-color: gray;
+    color: white;
+    border: 1px solid #999;
+    border-radius: 3px;
+    padding: 5px;
+  }
+  .button-look:hover {
+    background-color: #ccc;
   }
   #help-text-box {
     margin-bottom: 10px;
@@ -123,7 +142,7 @@
           {{else}}
             <input type="number" name="{{.Name}}">
           {{end}}
-          <button class="open-linked-document" data-ldds="{{index .OtherOptions 0}}">
+          <button class="open-linked-document button-look" data-ldds="{{index .OtherOptions 0}}">
             Open Linked Document
           </button>
 
@@ -213,7 +232,7 @@
                       {{else}}
                         <input type="number" name="{{.Name}}-1">
                       {{end}}
-                      <button class="open-linked-document" data-ldds="{{index .OtherOptions 0}}">
+                      <button class="open-linked-document button-look" data-ldds="{{index .OtherOptions 0}}">
                         Open Linked Document
                       </button>
 
@@ -250,7 +269,7 @@
               </tr>
             </tbody>
           </table>
-          <button type="button" class="add-row">Add Row</button>
+          <button type="button" class="add-row button-look">Add Row</button>
         {{else if eq .Type "Text"}}
           {{if .Required}}
             <textarea name="{{.Name}}" required></textarea>
@@ -270,7 +289,7 @@
     {{end}}
 
     <div>
-      <input type="submit" value="Create" >
+      <input type="submit" class="button-look" value="Create" >
     </div>
   </form>
 

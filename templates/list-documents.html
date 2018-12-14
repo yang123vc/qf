@@ -31,7 +31,7 @@
     color: white;
     border: 1px solid #999;
     border-radius: 3px;
-    padding: 3px;
+    padding: 5px;
   }
   .button-look:hover {
     background-color: #ccc;
@@ -92,7 +92,9 @@
             <a class='button-look' href='/doc/{{$.DocumentStructure}}/update/{{.Id}}/'>
               {{ if or $.UpdatePerm .RowUpdatePerm}} View/Update {{ else }} View {{ end }}
             </a>
-            {{ if or $.DeletePerm .RowDeletePerm }}<a class='button-look' href='/doc/{{$.DocumentStructure}}/delete/{{.Id}}/'>Delete</a> {{end}}
+            {{ if or $.DeletePerm .RowDeletePerm }}
+              <a class='button-look' href='/doc/{{$.DocumentStructure}}/delete/{{.Id}}/'>Delete</a>
+            {{end}}
             {{if $.HasApprovals}}
               <a class="button-look" href="/approvals/{{$.DocumentStructure}}/{{.Id}}/">
                 {{if $.Approver}} View/Update {{else}} View {{end}} Approvals
