@@ -68,15 +68,8 @@ func newDocumentStructureAlias(w http.ResponseWriter, r *http.Request) {
         errorPage(w, err.Error())
         return
       }
-      resT, err := SQLDB.Exec(`insert into qf_table_names(tbl_name) values(?)`, atblName)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
-      tnid, _ := resT.LastInsertId()
-
-      _, err = SQLDB.Exec(`insert into qf_document_structures_aliases(fullname, tnid, dsid) values(?, ?, ?)`,
-        alias, tnid, dsid)
+      _, err = SQLDB.Exec(`insert into qf_document_structures(fullname, tbl_name, dsid) values(?, ?, ?)`,
+        alias, atblName, dsid)
       if err != nil {
         errorPage(w, err.Error())
         return

@@ -79,14 +79,8 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       errorPage(w, err.Error())
       return
     }
-    resT, err := SQLDB.Exec(`insert into qf_table_names(tbl_name) values(?)`, tblName)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-    tnid, _ := resT.LastInsertId()
-    res, err := SQLDB.Exec(`insert into qf_document_structures(fullname, tnid, help_text) values(?, ?, ?)`,
-      r.FormValue("ds-name"), tnid, r.FormValue("help-text"))
+    res, err := SQLDB.Exec(`insert into qf_document_structures(fullname, tbl_name, help_text) values(?, ?, ?)`,
+      r.FormValue("ds-name"), tblName, r.FormValue("help-text"))
     if err != nil {
       errorPage(w, err.Error())
       return
@@ -193,9 +187,9 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
         }
       }
     }
+
     redirectURL := fmt.Sprintf("/edit-document-structure-permissions/%s/", r.FormValue("ds-name"))
     http.Redirect(w, r, redirectURL, 307)
-
   }
 
 }
@@ -401,12 +395,8 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   var id int
   var childTableStr string
-  err = SQLDB.QueryRow("select id, child_table from qf_document_structures where fullname = ?", ds).Scan(&id, &childTableStr)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-  tblName, err := tableName(ds)
+  var tblNameStr string
+  err = SQLDB.QueryRow("select id, child_table, tbl_name from qf_document_structures where fullname = ?", ds).Scan(&id, &childTableStr, &tblNameStr)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -423,6 +413,19 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     errorPage(w, err.Error())
     return
   }
+
+  var aliasesNS sql.NullString
+  err = SQLDB.QueryRow("select group_concat(fullname separator ',,,') from qf_document_structures where dsid = ?", id).Scan(&aliasesNS)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  var aliases []string
+  if aliasesNS.Valid {
+    aliases = strings.Split(aliasesNS.String, ",,,")
+  }
+
+
   type Context struct {
     DocumentStructure string
     DocDatas []DocData
@@ -433,6 +436,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     HasApprovers bool
     ChildTable bool
     TableName string
+    Aliases []string
   }
 
   add := func(x, y int) int {
@@ -458,7 +462,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   ctx := Context{ds, docDatas, id, add, rps, strings.Join(approvers, ", "), hasApprovers,
-    childTableBool, tblName}
+    childTableBool, tblNameStr, aliases}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/view-document-structure.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)

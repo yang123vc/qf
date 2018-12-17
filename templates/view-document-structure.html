@@ -38,6 +38,16 @@
   <span>Database Table Name: <b>{{.TableName}}</b></span><br>
   <span>Is Child Table: <b>{{.ChildTable}}</b></span><br>
 
+  {{$l := len $.Aliases}}
+  {{ if $l }}
+  <h3>Aliases</h3>
+    <ol>
+    {{range .Aliases}}
+      <li> {{.}} </li>
+    {{end}}
+    </ol>
+  {{end}}
+
   <h3>Field Data</h3>
 
   <table>

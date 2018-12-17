@@ -48,7 +48,21 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  var aliasName string
+  isAlias, ptdsid, err := DSIdAliasPointsTo(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
 
+  if isAlias {
+    aliasName = ds
+    err = SQLDB.QueryRow("select fullname from qf_document_structures where id = ?", ptdsid).Scan(&ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  }
   var helpText sql.NullString
   err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", ds).Scan(&helpText)
   if err != nil {
@@ -95,7 +109,12 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
       TableFields map[string][]DocData
     }
 
-    ctx := Context{ds, dds, htStr, ue, tableFields}
+    var ctx Context
+    if isAlias {
+      ctx = Context{aliasName, dds, htStr, ue, tableFields}
+    } else {
+      ctx = Context{ds, dds, htStr, ue, tableFields}
+    }
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/create-document.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
@@ -127,10 +146,19 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    tblName, err := tableName(ds)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
+    var tblName string
+    if isAlias {
+      tblName, err = tableName(aliasName)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+    } else {
+      tblName, err = tableName(ds)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
     }
 
     colNames := make([]string, 0)
@@ -291,7 +319,12 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
       ec.AfterCreateFn(uint64(lastid))
     }
 
-    redirectURL := fmt.Sprintf("/doc/%s/list/", ds)
+    var redirectURL string
+    if isAlias {
+      redirectURL = fmt.Sprintf("/doc/%s/list/", aliasName)
+    } else {
+      redirectURL = fmt.Sprintf("/doc/%s/list/", ds)
+    }
     http.Redirect(w, r, redirectURL, 307)
   }
 

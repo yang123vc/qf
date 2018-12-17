@@ -123,14 +123,14 @@ func DoesCurrentUserHavePerm(r *http.Request, documentStructure, permission stri
   }
 
   var roles sql.NullString
-  err = SQLDB.QueryRow("select group_concat(roleid separator ',') from qf_user_roles where userid = ?", userid).Scan(&roles)
+  err = SQLDB.QueryRow("select group_concat(roleid separator ',,,') from qf_user_roles where userid = ?", userid).Scan(&roles)
   if err != nil {
     return false, err
   }
   if ! roles.Valid {
     return false, nil
   }
-  rids := strings.Split(roles.String, ",")
+  rids := strings.Split(roles.String, ",,,")
 
   dsid, err := getDocumentStructureID(documentStructure)
   if err != nil {
@@ -258,14 +258,14 @@ func GetCurrentUserRoles(r *http.Request) ([]string, error) {
   }
 
   var roles sql.NullString
-  err = SQLDB.QueryRow("select group_concat(roleid separator ',') from qf_user_roles where userid = ?", userid).Scan(&roles)
+  err = SQLDB.QueryRow("select group_concat(roleid separator ',,,') from qf_user_roles where userid = ?", userid).Scan(&roles)
   if err != nil {
     return userRoles, err
   }
   if ! roles.Valid {
     return userRoles, nil
   }
-  rids := strings.Split(roles.String, ",")
+  rids := strings.Split(roles.String, ",,,")
 
   for _, rid := range rids {
     var roleName string
@@ -399,7 +399,7 @@ func newTableName() (string, error) {
   for {
     newName := "qftbl_" + untestedRandomString(3)
     var count int
-    err := SQLDB.QueryRow("select count(*) from qf_table_names where tbl_name = ?", newName).Scan(&count)
+    err := SQLDB.QueryRow("select count(*) from qf_document_structures where tbl_name = ?", newName).Scan(&count)
     if err != nil {
       return "", err
     }
@@ -412,10 +412,7 @@ func newTableName() (string, error) {
 
 func tableName(documentStructure string) (string, error) {
   var name sql.NullString
-
-  sqlStmt := `select t2.tbl_name from qf_document_structures as t1 join qf_table_names as t2 on t1.tnid=t2.id
-  where t1.fullname = ?`
-  err := SQLDB.QueryRow(sqlStmt, documentStructure).Scan(&name)
+  err := SQLDB.QueryRow("select tbl_name from qf_document_structures where fullname = ?", documentStructure).Scan(&name)
   if err != nil {
     return "", err
   }
@@ -595,4 +592,22 @@ func isApprovalFrameworkInstalled(documentStructure string) (bool, error) {
   } else {
     return true, nil
   }
+}
+
+
+func DSIdAliasPointsTo(documentStructure string) (bool, uint64, error) {
+  sqlStmt := "select dsid from qf_document_structures where fullname = ?"
+  var dsidStr sql.NullString
+  err := SQLDB.QueryRow(sqlStmt, documentStructure).Scan(&dsidStr)
+  if err != nil {
+    return false, 0, err
+  }
+  if ! dsidStr.Valid {
+    return false, 0, err
+  }
+  dsid, err := strconv.ParseUint(dsidStr.String, 10, 64)
+  if err != nil {
+    return false, 0, err
+  }
+  return true, dsid, nil
 }
