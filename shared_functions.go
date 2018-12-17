@@ -355,9 +355,18 @@ type ColLabel struct {
 func getColumnNames(ds string) ([]ColLabel, error){
   returnList := make([]ColLabel, 0)
   var dsid int
-  err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&dsid)
+  isAlias, ptdsid, err := DSIdAliasPointsTo(ds)
   if err != nil {
     return nil, err
+  }
+
+  if isAlias {
+    dsid = ptdsid
+  } else {
+    err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&dsid)
+    if err != nil {
+      return nil, err
+    }
   }
 
   var colName string
@@ -595,7 +604,7 @@ func isApprovalFrameworkInstalled(documentStructure string) (bool, error) {
 }
 
 
-func DSIdAliasPointsTo(documentStructure string) (bool, uint64, error) {
+func DSIdAliasPointsTo(documentStructure string) (bool, int, error) {
   sqlStmt := "select dsid from qf_document_structures where fullname = ?"
   var dsidStr sql.NullString
   err := SQLDB.QueryRow(sqlStmt, documentStructure).Scan(&dsidStr)
@@ -605,7 +614,7 @@ func DSIdAliasPointsTo(documentStructure string) (bool, uint64, error) {
   if ! dsidStr.Valid {
     return false, 0, err
   }
-  dsid, err := strconv.ParseUint(dsidStr.String, 10, 64)
+  dsid, err := strconv.Atoi(dsidStr.String)
   if err != nil {
     return false, 0, err
   }

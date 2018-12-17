@@ -75,7 +75,7 @@ func newDocumentStructureAlias(w http.ResponseWriter, r *http.Request) {
         return
       }
 
-      sqlStmt := fmt.Sprintf("create table `%s` select * from `%s`", atblName, dstblName)
+      sqlStmt := fmt.Sprintf("create table `%s` like `%s`", atblName, dstblName)
       _, err = SQLDB.Exec(sqlStmt)
       if err != nil {
         errorPage(w, err.Error())
