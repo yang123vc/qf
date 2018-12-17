@@ -63,6 +63,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
       return
     }
   }
+
   var helpText sql.NullString
   err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", ds).Scan(&helpText)
   if err != nil {
@@ -367,10 +368,51 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  tblName, err := tableName(ds)
+  updatePerm, err := DoesCurrentUserHavePerm(r, ds, "update")
   if err != nil {
     errorPage(w, err.Error())
     return
+  }
+  deletePerm, err := DoesCurrentUserHavePerm(r, ds, "delete")
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  uocPerm, err := DoesCurrentUserHavePerm(r, ds, "update-only-created")
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  var aliasName string
+  isAlias, ptdsid, err := DSIdAliasPointsTo(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  if isAlias {
+    aliasName = ds
+    err = SQLDB.QueryRow("select fullname from qf_document_structures where id = ?", ptdsid).Scan(&ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  }
+
+  var tblName string
+  if isAlias {
+    tblName, err = tableName(aliasName)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  } else {
+    tblName, err = tableName(ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
   }
 
   var createdBy uint64
@@ -379,6 +421,12 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   if err != nil {
     errorPage(w, err.Error())
     return
+  }
+
+  if ! updatePerm {
+    if uocPerm && createdBy == useridUint64 {
+      updatePerm = true
+    }
   }
 
   if ! readPerm {
@@ -402,10 +450,18 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   var helpText sql.NullString
-  err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", ds).Scan(&helpText)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
+  if isAlias {
+    err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", aliasName).Scan(&helpText)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  } else {
+    err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", ds).Scan(&helpText)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
   }
 
   var htStr string
@@ -547,27 +603,27 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       return x + y
     }
 
-    updatePerm, err := DoesCurrentUserHavePerm(r, ds, "update")
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-    deletePerm, err := DoesCurrentUserHavePerm(r, ds, "delete")
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-    uocPerm, err := DoesCurrentUserHavePerm(r, ds, "update-only-created")
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-
-    if ! updatePerm {
-      if uocPerm && createdBy == useridUint64 {
-        updatePerm = true
-      }
-    }
+    // updatePerm, err := DoesCurrentUserHavePerm(r, ds, "update")
+    // if err != nil {
+    //   errorPage(w, err.Error())
+    //   return
+    // }
+    // deletePerm, err := DoesCurrentUserHavePerm(r, ds, "delete")
+    // if err != nil {
+    //   errorPage(w, err.Error())
+    //   return
+    // }
+    // uocPerm, err := DoesCurrentUserHavePerm(r, ds, "update-only-created")
+    // if err != nil {
+    //   errorPage(w, err.Error())
+    //   return
+    // }
+    //
+    // if ! updatePerm {
+    //   if uocPerm && createdBy == useridUint64 {
+    //     updatePerm = true
+    //   }
+    // }
 
     hasApprovals, err := isApprovalFrameworkInstalled(ds)
     if err != nil {
@@ -588,25 +644,9 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
-    tv2, err2 := DoesCurrentUserHavePerm(r, ds, "update")
-    if err2 != nil {
-      errorPage(w, err.Error())
+    if ! updatePerm {
+      errorPage(w, "You don't have permissions to update this document.")
       return
-    }
-    uocPerm, err := DoesCurrentUserHavePerm(r, ds, "update-only-created")
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-
-    if ! tv2 {
-      if uocPerm && createdBy != useridUint64 {
-        errorPage(w, "You are not the owner of this document. So can't update it.")
-        return
-      } else if ! uocPerm {
-        errorPage(w, "You don't have permissions to update this document.")
-        return
-      }
     }
 
     r.FormValue("email")
@@ -810,7 +850,12 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       ec.AfterUpdateFn(docidUint64)
     }
 
-    redirectURL := fmt.Sprintf("/doc/%s/list/", ds)
+    var redirectURL string
+    if isAlias {
+      redirectURL = fmt.Sprintf("/doc/%s/list/", aliasName)
+    } else {
+      redirectURL = fmt.Sprintf("/doc/%s/list/", ds)
+    }
     http.Redirect(w, r, redirectURL, 307)
   }
 
