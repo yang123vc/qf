@@ -140,11 +140,21 @@
             <br>
           {{end}}
 
-          {{if .Required}}
-            <input type="file" name="{{.Name}}" required>
+          {{ $lengthOtherOptions := len .OtherOptions}}
+          {{if gt $lengthOtherOptions 1}}
+            {{if .Required}}
+            <input type="file" name="{{.Name}}" accept="{{range .OtherOptions}}.{{.}}, {{end}}" required>
+            {{else}}
+            <input type="file" name="{{.Name}}" accept="{{range .OtherOptions}}.{{.}}, {{end}}">
+            {{end}}
           {{else}}
-            <input type="file" name="{{.Name}}">
+            {{if .Required}}
+              <input type="file" name="{{.Name}}" required>
+            {{else}}
+              <input type="file" name="{{.Name}}">
+            {{end}}
           {{end}}
+
 
         {{else if eq .Type "Float"}}
           {{if .Required}}

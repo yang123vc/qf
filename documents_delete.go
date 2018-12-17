@@ -168,11 +168,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
       }
 
       if dd.Type == "File" || dd.Type == "Image" {
-        err = client.Bucket(QFBucketName).Object(fData[dd.Name]).Delete(ctx)
-        if err != nil {
-          errorPage(w, err.Error())
-          return
-        }
+        client.Bucket(QFBucketName).Object(fData[dd.Name]).Delete(ctx)
       }
 
     }
