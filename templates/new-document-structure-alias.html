@@ -1,0 +1,129 @@
+{{define "title"}}New Document Structure Alias{{end}}
+
+
+{{define "styles"}}
+<style>
+input[type=text] {
+  width: 300px;
+}
+#error-box {
+  display: none;
+  color: red;
+}
+</style>
+{{end}}
+
+
+{{define "main"}}
+
+  <h3>New Document Structure Alias </h3>
+  {{$l := len .DocumentStructureList}}
+  {{if eq $l 0 }}
+    <p>You have not created any document structure.</p>
+  {{else}}
+    <form method="post" action="" id="new-aliases-form">
+      <div>
+        <label>Select template document structure</label>
+        <select name="template-document-structure">
+          {{range .DocumentStructureList }}
+            <option>{{.}}</option>
+          {{end}}
+        </select>
+      </div>
+      <div>
+        <label>Name(s) of Aliases</label>
+      </div>
+      <div>
+        <p id="error-box"></p>
+        <table id="aliases">
+          <thead>
+            <tr>
+              <td>No</td>
+              <td>Alias Name </td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>
+                <input type="text" name="alias-1" class="alias-texts" />
+              </td>
+        </table>
+      </div>
+      <div>
+        <br><button type="button" id="new-alias-btn">New Alias</button><br><br>
+      </div>
+      <div>
+        <input type="submit" value="Create Aliases" />
+      </div>
+    </form>
+  {{end}}
+
+{{end}}
+
+
+
+{{define "scripts"}}
+<script>
+
+  $(document).ready(function() {
+    var docNames = "{{.DocumentStructures}}";
+
+    $('#new-alias-btn').click(function(e) {
+      var currentNo = parseInt($('tr:last td:first').text());
+      var newNo = currentNo + 1;
+      var html = $('tr:last').html();
+      var re = new RegExp(currentNo.toString(), 'g');
+      html = html.replace(re, newNo.toString());
+
+      html = "<tr>" + html + "</tr>";
+      $('#aliases tbody').append(html);
+
+      $('html, body').scrollTop($(document).height());
+    });
+
+
+    $('#new-aliases-form input[type=submit]').click(function(e) {
+      e.preventDefault();
+
+      // validation
+      $('input.alias-texts').css('border', '1px solid gray');
+
+      if ( $('input[name=alias-1]').val() == "") {
+        $('input[name=alias-1]').css("border", "1px solid red");
+        return
+      }
+
+      var names = [];
+      $('.alias-texts').each(function(i, el) {
+        names.push( $(el).val() );
+      });
+      var names_set = new Set(names);
+      if (names_set.size != names.length) {
+        $('#error-box').text('Duplicate field names.');
+        $('#error-box').show();
+        return;
+      }
+
+      for (var i = 2; i < 100; i++) {
+        var currentElName = "input[name=alias-" + i.toString() + "]"
+        if ( $(currentElName).val() == "" ) {
+          break
+        }
+
+        if ( docNames.indexOf( $(currentElName).val() ) != -1) {
+          $('#error-box').text("Alias Name is already in use.")
+          $(currentElName).css('border', '1px solid red')
+          $('#error-box').show()
+          return
+        }
+      }
+
+      $('#new-aliases-form').submit();
+    });
+
+  });
+
+</script>
+
+{{end}}

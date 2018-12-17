@@ -107,17 +107,42 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
   } else {
     // do setup
 
+    _, err = SQLDB.Exec(`create table qf_table_names (
+      id int not null auto_increment,
+      tbl_name varchar(64) not null,
+      primary key (id),
+      unique (tbl_name)
+      )`)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
     // create forms general table
     _, err = SQLDB.Exec(`create table qf_document_structures (
       id int not null auto_increment,
       fullname varchar(255) not null,
-      tbl_name varchar(64) not null,
+      tnid int not null,
       child_table varchar(1) default 'f',
       approval_steps varchar(255),
       help_text text,
       primary key (id),
+      unique (fullname)
+      )`)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    _, err = SQLDB.Exec(`create table qf_document_structures_aliases (
+      id int not null auto_increment,
+      fullname varchar(255) not null,
+      tnid int not null,
+      dsid int not null,
+      primary key (id),
       unique (fullname),
-      unique (tbl_name)
+      foreign key (dsid) references qf_document_structures(id),
+      foreign key (tnid) references qf_table_names (id)
       )`)
     if err != nil {
       errorPage(w, err.Error())
@@ -311,4 +336,7 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/add-approvals-to-document-structure/{document-structure}/", addApprovals)
   r.HandleFunc("/remove-approvals-from-document-structure/{document-structure}/", removeApprovals)
   r.HandleFunc("/approvals/{document-structure}/{id:[0-9]+}/", viewOrUpdateApprovals)
+
+  // Document Structure Alias
+  r.HandleFunc("/new-document-structure-alias/", newDocumentStructureAlias)
 }

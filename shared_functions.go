@@ -395,11 +395,11 @@ func getMentionedUserColumn(ds string) (string, error) {
 }
 
 
-func newTableName(documentStructure string) (string, error) {
+func newTableName() (string, error) {
   for {
     newName := "qftbl_" + untestedRandomString(3)
     var count int
-    err := SQLDB.QueryRow("select count(*) from qf_document_structures where tbl_name = ?", newName).Scan(&count)
+    err := SQLDB.QueryRow("select count(*) from qf_table_names where tbl_name = ?", newName).Scan(&count)
     if err != nil {
       return "", err
     }
@@ -412,7 +412,10 @@ func newTableName(documentStructure string) (string, error) {
 
 func tableName(documentStructure string) (string, error) {
   var name sql.NullString
-  err := SQLDB.QueryRow("select tbl_name from qf_document_structures where fullname = ?", documentStructure).Scan(&name)
+
+  sqlStmt := `select t2.tbl_name from qf_document_structures as t1 join qf_table_names as t2 on t1.tnid=t2.id
+  where t1.fullname = ?`
+  err := SQLDB.QueryRow(sqlStmt, documentStructure).Scan(&name)
   if err != nil {
     return "", err
   }

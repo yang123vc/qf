@@ -1,0 +1,98 @@
+package qf
+
+import (
+  "net/http"
+  "html/template"
+  "path/filepath"
+  "strings"
+  "strconv"
+  "fmt"
+)
+
+func newDocumentStructureAlias(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  dsList, err := GetDocumentStructureList()
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  if r.Method == http.MethodGet {
+    type Context struct {
+      DocumentStructureList []string
+      DocumentStructures string
+    }
+    ctx := Context{dsList, strings.Join(dsList, ",,,") }
+
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/new-document-structure-alias.html")
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl.Execute(w, ctx)
+
+
+  } else {
+
+    ds := r.FormValue("template-document-structure")
+    aliases := make([]string, 0)
+    for i:= 1; i < 100; i++ {
+      iStr := strconv.Itoa(i)
+      if r.FormValue("alias-" + iStr) == "" {
+        break
+      }
+      aliases = append(aliases, r.FormValue("alias-" + iStr))
+    }
+
+    dsid, err := getDocumentStructureID(ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    dstblName, err := tableName(ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    for _, alias := range aliases {
+
+      atblName, err := newTableName()
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+      resT, err := SQLDB.Exec(`insert into qf_table_names(tbl_name) values(?)`, atblName)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+      tnid, _ := resT.LastInsertId()
+
+      _, err = SQLDB.Exec(`insert into qf_document_structures_aliases(fullname, tnid, dsid) values(?, ?, ?)`,
+        alias, tnid, dsid)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+
+      sqlStmt := fmt.Sprintf("create table `%s` select * from `%s`", atblName, dstblName)
+      _, err = SQLDB.Exec(sqlStmt)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+    }
+
+    redirectURL := fmt.Sprintf("/view-document-structure/%s/", ds)
+    http.Redirect(w, r, redirectURL, 307)
+  }
+
+
+}

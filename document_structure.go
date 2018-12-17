@@ -74,17 +74,20 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    tx, _ := SQLDB.Begin()
-
-    tblName, err := newTableName(r.FormValue("ds-name"))
+    tblName, err := newTableName()
     if err != nil {
       errorPage(w, err.Error())
       return
     }
-    res, err := tx.Exec(`insert into qf_document_structures(fullname, tbl_name, help_text) values(?, ?, ?)`,
-      r.FormValue("ds-name"), tblName, r.FormValue("help-text"))
+    resT, err := SQLDB.Exec(`insert into qf_table_names(tbl_name) values(?)`, tblName)
     if err != nil {
-      tx.Rollback()
+      errorPage(w, err.Error())
+      return
+    }
+    tnid, _ := resT.LastInsertId()
+    res, err := SQLDB.Exec(`insert into qf_document_structures(fullname, tnid, help_text) values(?, ?, ?)`,
+      r.FormValue("ds-name"), tnid, r.FormValue("help-text"))
+    if err != nil {
       errorPage(w, err.Error())
       return
     }
@@ -92,25 +95,22 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     dsid, _:= res.LastInsertId()
 
     if r.FormValue("child-table") == "on" {
-      _, err = tx.Exec("update qf_document_structures set child_table = 't' where id = ?", dsid)
+      _, err = SQLDB.Exec("update qf_document_structures set child_table = 't' where id = ?", dsid)
       if err != nil {
-        tx.Rollback()
         errorPage(w, err.Error())
         return
       }
     }
 
-    stmt, err := tx.Prepare(`insert into qf_fields(dsid, label, name, type, options, other_options, view_order)
+    stmt, err := SQLDB.Prepare(`insert into qf_fields(dsid, label, name, type, options, other_options, view_order)
       values(?, ?, ?, ?, ?, ?, ?)`)
     if err != nil {
-      tx.Rollback()
       errorPage(w, err.Error())
       return
     }
     for i, o := range(qffs) {
       _, err := stmt.Exec(dsid, o.label, o.name, o.type_, o.options, o.other_options, i + 1)
       if err != nil {
-        tx.Rollback()
         errorPage(w, err.Error())
         return
       }
@@ -177,9 +177,8 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       sql += "," + fmt.Sprintf("foreign key (created_by) references `%s`(id)", UsersTable) + sqlEnding + ")"
     }
 
-    _, err1 := tx.Exec(sql)
+    _, err1 := SQLDB.Exec(sql)
     if err1 != nil {
-      tx.Rollback()
       errorPage(w, err1.Error())
       return
     }
@@ -187,15 +186,13 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     for _, qff := range qffs {
       if optionSearch(qff.options, "index") && ! optionSearch(qff.options, "unique") {
         indexSql := fmt.Sprintf("create index idx_%s on `%s`(%s)", qff.name, tblName, qff.name)
-        _, err := tx.Exec(indexSql)
+        _, err := SQLDB.Exec(indexSql)
         if err != nil {
-          tx.Rollback()
           errorPage(w, err.Error())
           return
         }
       }
     }
-    tx.Commit()
     redirectURL := fmt.Sprintf("/edit-document-structure-permissions/%s/", r.FormValue("ds-name"))
     http.Redirect(w, r, redirectURL, 307)
 
@@ -331,7 +328,7 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     errorPage(w, err.Error())
     return
   }
-  
+
   _, err = SQLDB.Exec("delete from qf_fields where dsid = ?", dsid)
   if err != nil {
     errorPage(w, err.Error())
@@ -404,8 +401,12 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   var id int
   var childTableStr string
-  var tblNameStr string
-  err = SQLDB.QueryRow("select id, child_table, tbl_name from qf_document_structures where fullname = ?", ds).Scan(&id, &childTableStr, &tblNameStr)
+  err = SQLDB.QueryRow("select id, child_table from qf_document_structures where fullname = ?", ds).Scan(&id, &childTableStr)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  tblName, err := tableName(ds)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -457,7 +458,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   ctx := Context{ds, docDatas, id, add, rps, strings.Join(approvers, ", "), hasApprovers,
-    childTableBool, tblNameStr}
+    childTableBool, tblName}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/view-document-structure.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
