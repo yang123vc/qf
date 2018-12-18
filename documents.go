@@ -603,28 +603,6 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       return x + y
     }
 
-    // updatePerm, err := DoesCurrentUserHavePerm(r, ds, "update")
-    // if err != nil {
-    //   errorPage(w, err.Error())
-    //   return
-    // }
-    // deletePerm, err := DoesCurrentUserHavePerm(r, ds, "delete")
-    // if err != nil {
-    //   errorPage(w, err.Error())
-    //   return
-    // }
-    // uocPerm, err := DoesCurrentUserHavePerm(r, ds, "update-only-created")
-    // if err != nil {
-    //   errorPage(w, err.Error())
-    //   return
-    // }
-    //
-    // if ! updatePerm {
-    //   if uocPerm && createdBy == useridUint64 {
-    //     updatePerm = true
-    //   }
-    // }
-
     hasApprovals, err := isApprovalFrameworkInstalled(ds)
     if err != nil {
       errorPage(w, err.Error())
