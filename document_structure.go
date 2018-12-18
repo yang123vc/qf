@@ -224,19 +224,33 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
   }
 
   structDSList := make([]DS, 0)
-  var str string
-  var ct string
-  rows, err := SQLDB.Query("select fullname, child_table from qf_document_structures")
+
+  dsList, err := GetDocumentStructureList()
   if err != nil {
     errorPage(w, err.Error())
     return
   }
-  defer rows.Close()
-  for rows.Next() {
-    err := rows.Scan(&str, &ct)
+
+  for _, ds := range dsList {
+    isAlias, ptdsid, err := DSIdAliasPointsTo(ds)
     if err != nil {
       errorPage(w, err.Error())
       return
+    }
+
+    var ct string
+    if isAlias {
+      err = SQLDB.QueryRow("select child_table from qf_document_structures where id = ?", ptdsid).Scan(&ct)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+    } else {
+      err = SQLDB.QueryRow("select child_table from qf_document_structures where fullname = ?", ds).Scan(&ct)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
     }
 
     var b bool
@@ -245,12 +259,8 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
     } else {
       b = false
     }
-    structDSList = append(structDSList, DS{str,b})
-  }
-  err = rows.Err()
-  if err != nil {
-    errorPage(w, err.Error())
-    return
+
+    structDSList = append(structDSList, DS{ds,b})
   }
 
   type Context struct {
