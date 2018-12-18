@@ -68,13 +68,18 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var columns string
-  err = SQLDB.QueryRow("select group_concat(name separator ',') from qf_fields where dsid = ?", id).Scan(&columns)
+  ec, ectv := getEC(ds)
+
+  dds, err := GetDocData(ds)
   if err != nil {
     errorPage(w, err.Error())
     return
   }
-  colNames := strings.Split(columns, ",")
+
+  var colNames []string
+  for _, dd := range dds {
+    colNames = append(colNames, dd.Name)
+  }
 
   fData := make(map[string]string)
   for _, colName := range colNames {
@@ -92,14 +97,6 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
       data = ""
     }
     fData[colName] = data
-  }
-
-  ec, ectv := getEC(ds)
-
-  dds, err := GetDocData(ds)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
   }
 
   var createdBy uint64

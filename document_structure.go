@@ -425,6 +425,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
   var aliasOf string
+  var childTableStr string
   if isAlias {
     alias = true
     err = SQLDB.QueryRow("select fullname, child_table from qf_document_structures where id = ?", ptdsid).Scan(&aliasOf, &childTableStr)
@@ -433,7 +434,6 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
       return
     }
   } else {
-    var childTableStr string
     err = SQLDB.QueryRow("select child_table from qf_document_structures where fullname = ?", ds).Scan(&childTableStr)
     if err != nil {
       errorPage(w, err.Error())
