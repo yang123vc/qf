@@ -415,15 +415,10 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var aliasesNS sql.NullString
-  err = SQLDB.QueryRow("select group_concat(fullname separator ',,,') from qf_document_structures where dsid = ?", id).Scan(&aliasesNS)
+  aliases, err := getAliases(ds)
   if err != nil {
     errorPage(w, err.Error())
     return
-  }
-  var aliases []string
-  if aliasesNS.Valid {
-    aliases = strings.Split(aliasesNS.String, ",,,")
   }
 
   var alias bool

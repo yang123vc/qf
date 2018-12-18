@@ -79,7 +79,7 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
 
     atns := make([]string, 0)
     for _, step := range steps {
-      atn, err := newApprovalTableName(ds, step)
+      atn, err := newApprovalTableName()
       if err != nil {
         errorPage(w, err.Error())
         return

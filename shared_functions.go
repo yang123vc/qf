@@ -444,7 +444,7 @@ func tableName(documentStructure string) (string, error) {
 }
 
 
-func newApprovalTableName(documentStructure, role string) (string, error) {
+func newApprovalTableName() (string, error) {
   for {
     newName := "qfatbl_" + untestedRandomString(4)
 
@@ -629,4 +629,22 @@ func DSIdAliasPointsTo(documentStructure string) (bool, int, error) {
     return false, 0, err
   }
   return true, dsid, nil
+}
+
+
+func getAliases(documentStructure string) ([]string, error) {
+  dsid, err := getDocumentStructureID(documentStructure)
+  if err != nil {
+    return nil, err
+  }
+  var aliasesNS sql.NullString
+  err = SQLDB.QueryRow("select group_concat(fullname separator ',,,') from qf_document_structures where dsid = ?", dsid).Scan(&aliasesNS)
+  if err != nil {
+    return nil, err
+  }
+  var aliases []string
+  if aliasesNS.Valid {
+    aliases = strings.Split(aliasesNS.String, ",,,")
+  }
+  return aliases, nil
 }

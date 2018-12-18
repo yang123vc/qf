@@ -257,6 +257,26 @@ func deleteFields(w http.ResponseWriter, r *http.Request) {
       return
     }
 
+    aliases, err := getAliases(ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    for _, alias := range aliases {
+      atblName, err := tableName(alias)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+
+      sqlStmt := fmt.Sprintf("alter table `%s` drop column %s", atblName, mysqlName)
+      _, err = SQLDB.Exec(sqlStmt)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }      
+    }
+
     sqlStmt := fmt.Sprintf("alter table `%s` drop column %s", tblName, mysqlName)
     _, err = SQLDB.Exec(sqlStmt)
     if err != nil {
