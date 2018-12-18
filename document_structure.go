@@ -299,6 +299,16 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  aliases, err := getAliases(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if len(aliases) > 0 {
+    errorPage(w, "Some aliases exists for this document structure. Delete them first.")
+    return
+  }
+
   approvers, err := getApprovers(ds)
   if err != nil {
     errorPage(w, err.Error())
