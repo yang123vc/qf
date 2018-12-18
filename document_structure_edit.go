@@ -274,7 +274,7 @@ func deleteFields(w http.ResponseWriter, r *http.Request) {
       if err != nil {
         errorPage(w, err.Error())
         return
-      }      
+      }
     }
 
     sqlStmt := fmt.Sprintf("alter table `%s` drop column %s", tblName, mysqlName)
@@ -365,6 +365,12 @@ func addFields(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  aliases, err := getAliases(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
   type QFField struct {
     label string
     name string
@@ -417,36 +423,55 @@ func addFields(w http.ResponseWriter, r *http.Request) {
     }
 
     sqlStmt := fmt.Sprintf("alter table `%s` add column %s ", tblName, qff.name)
+    var brokenStmt string
     if qff.type_ == "Big Number" {
-      sqlStmt += "bigint unsigned"
+      brokenStmt += "bigint unsigned"
     } else if qff.type_ == "Check" {
-      sqlStmt += "char(1) default 'f'"
+      brokenStmt += "char(1) default 'f'"
     } else if qff.type_ == "Date" {
-      sqlStmt += "date"
+      brokenStmt += "date"
     } else if qff.type_ == "Date and Time" {
-      sqlStmt += "datetime"
+      brokenStmt += "datetime"
     } else if qff.type_ == "Float" {
-      sqlStmt += "float"
+      brokenStmt += "float"
     } else if qff.type_ == "Int" {
-      sqlStmt += "int"
+      brokenStmt += "int"
     } else if qff.type_ == "Link" {
-      sqlStmt += "bigint unsigned"
+      brokenStmt += "bigint unsigned"
     } else if qff.type_ == "Data" || qff.type_ == "Email" || qff.type_ == "URL" || qff.type_ == "Select" || qff.type_ == "Read Only" {
-      sqlStmt += "varchar(255)"
+      brokenStmt += "varchar(255)"
     } else if qff.type_ == "Text" || qff.type_ == "Table" {
-      sqlStmt += "text"
+      brokenStmt += "text"
     } else if qff.type_ == "File" || qff.type_ == "Image" {
-      sqlStmt += "varchar(255)"
+      brokenStmt += "varchar(255)"
     }
 
     if optionSearch(qff.options, "required") {
-      sqlStmt += " not null"
+      brokenStmt += " not null"
     }
 
-    _, err = SQLDB.Exec(sqlStmt)
+    _, err = SQLDB.Exec(sqlStmt + brokenStmt)
     if err != nil {
       errorPage(w, err.Error())
       return
+    }
+
+    aliasTableNames := make(map[string]string)
+    for _, alias := range aliases {
+      atblName, err := tableName(alias)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+      aliasTableNames[alias] = atblName
+
+      sqlStmt = fmt.Sprintf("alter table `%s` add column %s ", atblName, qff.name)
+
+      _, err = SQLDB.Exec(sqlStmt + brokenStmt)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
     }
 
     if optionSearch(qff.options, "unique") {
@@ -456,6 +481,15 @@ func addFields(w http.ResponseWriter, r *http.Request) {
         errorPage(w, err.Error())
         return
       }
+
+      for _, alias := range aliases {
+        sqlStmt = fmt.Sprintf("alter table `%s` add unique index (%s)", aliasTableNames[alias], qff.name)
+        _, err = SQLDB.Exec(sqlStmt)
+        if err != nil {
+          errorPage(w, err.Error())
+          return
+        }
+      }
     }
 
     if optionSearch(qff.options, "index") && ! optionSearch(qff.options, "unique") {
@@ -464,6 +498,15 @@ func addFields(w http.ResponseWriter, r *http.Request) {
       if err != nil {
         errorPage(w, err.Error())
         return
+      }
+
+      for _, alias := range aliases {
+        indexSql := fmt.Sprintf("create index idx_%s on `%s`(%s)", qff.name, aliasTableNames[alias], qff.name)
+        _, err := SQLDB.Exec(indexSql)
+        if err != nil {
+          errorPage(w, err.Error())
+          return
+        }
       }
     }
 
@@ -478,6 +521,15 @@ func addFields(w http.ResponseWriter, r *http.Request) {
       if err != nil {
         errorPage(w, err.Error())
         return
+      }
+
+      for _, alias := range aliases {
+        sqlStmt = fmt.Sprintf("alter table `%s` add foreign key (%s) references `%s`(id)", aliasTableNames[alias], qff.name, ottblName)
+        _, err = SQLDB.Exec(sqlStmt)
+        if err != nil {
+          errorPage(w, err.Error())
+          return
+        }
       }
     }
   }
