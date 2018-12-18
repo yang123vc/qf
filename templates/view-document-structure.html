@@ -31,19 +31,26 @@
 {{define "main"}}
   <h2>View Document Structure of {{.DocumentStructure}}</h2>
 
-  <a href='/edit-document-structure/{{.DocumentStructure}}/'>Edit this Document Structure</a>
-  <br><br>
+  {{ if .Alias }}
+    <p>Alias are not editable. They must share the same structure with their parent.</p>
+  {{ else }}
+    <a href='/edit-document-structure/{{.DocumentStructure}}/'>Edit this Document Structure</a>
+    <br><br>
+  {{end}}
 
   <span>ID : <b>{{.Id}}</b></span><br>
   <span>Database Table Name: <b>{{.TableName}}</b></span><br>
   <span>Is Child Table: <b>{{.ChildTable}}</b></span><br>
+  {{if .Alias}}
+    <span>Is Alias Of: <b><a href="/view-document-structure/{{.AliasOf}}/">{{.AliasOf}}</a></b></span><br>
+  {{end}}
 
   {{$l := len $.Aliases}}
   {{ if $l }}
   <h3>Aliases</h3>
     <ol>
     {{range .Aliases}}
-      <li> {{.}} </li>
+      <li> <a href="/view-document-structure/{{.}}/">{{.}}</a> </li>
     {{end}}
     </ol>
   {{end}}

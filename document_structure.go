@@ -394,18 +394,11 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   var id int
-  var childTableStr string
   var tblNameStr string
-  err = SQLDB.QueryRow("select id, child_table, tbl_name from qf_document_structures where fullname = ?", ds).Scan(&id, &childTableStr, &tblNameStr)
+  err = SQLDB.QueryRow("select id, child_table, tbl_name from qf_document_structures where fullname = ?", ds).Scan(&id, &tblNameStr)
   if err != nil {
     errorPage(w, err.Error())
     return
-  }
-  var childTableBool bool
-  if childTableStr == "t" {
-    childTableBool = true
-  } else {
-    childTableBool = false
   }
 
   docDatas, err := GetDocData(ds)
@@ -425,6 +418,35 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     aliases = strings.Split(aliasesNS.String, ",,,")
   }
 
+  var alias bool
+  isAlias, ptdsid, err := DSIdAliasPointsTo(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  var aliasOf string
+  if isAlias {
+    alias = true
+    err = SQLDB.QueryRow("select fullname, child_table from qf_document_structures where id = ?", ptdsid).Scan(&aliasOf, &childTableStr)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  } else {
+    var childTableStr string
+    err = SQLDB.QueryRow("select child_table from qf_document_structures where fullname = ?", ds).Scan(&childTableStr)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  }
+  var childTableBool bool
+  if childTableStr == "t" {
+    childTableBool = true
+  } else {
+    childTableBool = false
+  }
+
 
   type Context struct {
     DocumentStructure string
@@ -437,6 +459,8 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     ChildTable bool
     TableName string
     Aliases []string
+    Alias bool
+    AliasOf string
   }
 
   add := func(x, y int) int {
@@ -462,7 +486,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   ctx := Context{ds, docDatas, id, add, rps, strings.Join(approvers, ", "), hasApprovers,
-    childTableBool, tblNameStr, aliases}
+    childTableBool, tblNameStr, aliases, alias, aliasOf}
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/view-document-structure.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)

@@ -184,10 +184,20 @@ func GetDocData(documentStructure string) ([]DocData, error) {
   dds := make([]DocData, 0)
 
   var dsid int
-  err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", documentStructure).Scan(&dsid)
+
+  isAlias, ptdsid, err := DSIdAliasPointsTo(documentStructure)
   if err != nil {
-    return dds, err
+    return nil, err
   }
+  if isAlias {
+    dsid = ptdsid
+  } else {
+    err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", documentStructure).Scan(&dsid)
+    if err != nil {
+      return nil, err
+    }
+  }
+
   var label, name, type_, options, otherOptions string
 
   rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where dsid = ? order by view_order asc", dsid)
