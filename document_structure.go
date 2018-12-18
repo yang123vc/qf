@@ -403,7 +403,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   var id int
   var tblNameStr string
-  err = SQLDB.QueryRow("select id, child_table, tbl_name from qf_document_structures where fullname = ?", ds).Scan(&id, &tblNameStr)
+  err = SQLDB.QueryRow("select id, tbl_name from qf_document_structures where fullname = ?", ds).Scan(&id, &tblNameStr)
   if err != nil {
     errorPage(w, err.Error())
     return
