@@ -316,4 +316,5 @@ func AddQFHandlers(r *mux.Router) {
 
   // Document Structure Alias
   r.HandleFunc("/new-document-structure-alias/", newDocumentStructureAlias)
+  r.HandleFunc("/create-multiple-aliases/", createMultipleAliases)
 }

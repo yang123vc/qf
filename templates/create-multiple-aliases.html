@@ -1,0 +1,36 @@
+{{define "title"}}Create Multiple Aliases{{end}}
+
+
+{{define "main"}}
+  <h3>Create Multiple Aliases</h3>
+  {{$l := len .DocumentStructureList}}
+  {{if eq $l 0 }}
+    <p>You have not created any document structure.</p>
+  {{else}}
+    <form method="post" action="" id="multiple-aliases-form">
+      <div>
+        <label>Enter Additional Text </label>
+        <input type="text" name="additional-text" required />
+      </div>
+      <div>
+        <label>Prefix <input type="radio" name="position" value="prefix" checked/> </label>
+        <label>Suffix <input type="radio" name="position" value="suffix" /> </label>
+      </div>
+      <div>
+        <label>Select Document Structures</label><br>
+        <ol>
+          {{range .DocumentStructureList }}
+            <li><label> {{.}} <input type="checkbox" name="ds" value="{{.}}" /> </label></li>
+          {{end}}
+        </ol>
+      </div>
+      <div>
+        <input type="submit" value="Create" />
+      </div>
+    </form>
+  {{end}}
+
+
+
+
+{{end}}
