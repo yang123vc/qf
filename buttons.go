@@ -4,6 +4,7 @@ import (
   "net/http"
   "path/filepath"
   "html/template"
+  "github.com/gorilla/mux"
 )
 
 
@@ -116,4 +117,28 @@ func listButtons(w http.ResponseWriter, r *http.Request) {
   fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-buttons.html")
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
   tmpl.Execute(w, ctx)
+}
+
+
+func deleteButton(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  vars := mux.Vars(r)
+  bid := vars["id"]
+
+  _, err = SQLDB.Exec("delete from qf_buttons where id = ?", bid)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  http.Redirect(w, r, "/list-buttons/", 307)
 }

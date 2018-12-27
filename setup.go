@@ -335,4 +335,5 @@ func AddQFHandlers(r *mux.Router) {
   // Buttons
   r.HandleFunc("/create-button/", createButton)
   r.HandleFunc("/list-buttons/", listButtons)
+  r.HandleFunc("/delete-button/{id}/", deleteButton)
 }
