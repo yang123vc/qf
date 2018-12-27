@@ -216,6 +216,7 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       dsid int not null,
       url_prefix varchar(255) not null,
       primary key(id),
+      unique(name, dsid),
       foreign key (dsid) references qf_document_structures (id)
       )`)
     if err != nil {
@@ -333,4 +334,5 @@ func AddQFHandlers(r *mux.Router) {
 
   // Buttons
   r.HandleFunc("/create-button/", createButton)
+  r.HandleFunc("/list-buttons/", listButtons)
 }

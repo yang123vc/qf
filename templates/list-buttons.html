@@ -1,0 +1,17 @@
+{{define "title"}} List Buttons {{end}}
+
+
+{{define "main"}}
+  <h3>List Buttons</h3>
+
+  <ol>
+    {{range .QFBS}}
+      <li>
+        Name: <b>{{.Name}}</b><br>
+        Document Structure : <b>{{.DocumentStructure}}</b><br>
+        URL Prefix: <b>{{.URLPrefix}}</b><br>
+        <a href="/delete-button/{{.ButtonId}}/">Delete Button</a><br><br>
+    {{end}}
+  </ol>
+
+{{end}}
