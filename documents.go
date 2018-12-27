@@ -578,8 +578,45 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-
   if r.Method == http.MethodGet {
+
+    dsid, err := getDocumentStructureID(ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    type QFButton struct {
+      Name string
+      URLPrefix string
+    }
+    qfbs := make([]QFButton, 0)
+
+    var (
+      name string
+      urlPrefix string
+    )
+    rows, err := SQLDB.Query("select name, url_prefix from qf_buttons where dsid = ?", dsid)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    defer rows.Close()
+    for rows.Next() {
+      err := rows.Scan(&name, &urlPrefix)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+
+      qfbs = append(qfbs, QFButton{name, urlPrefix})
+    }
+    err = rows.Err()
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
     type Context struct {
       Created string
       Modified string
@@ -597,6 +634,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       Add func(x,y int) int
       HasApprovals bool
       Approver bool
+      QFBS []QFButton
     }
 
     add := func(x, y int) int {
@@ -614,9 +652,15 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    ctx := Context{created, modified, ds, docAndStructureSlice, docid, firstname, surname,
+    var trueDS string
+    if isAlias {
+      trueDS = aliasName
+    } else {
+      trueDS = ds
+    }
+    ctx := Context{created, modified, trueDS, docAndStructureSlice, docid, firstname, surname,
       created_by, updatePerm, deletePerm, htStr, ue, tableData, add, hasApprovals,
-      approver}
+      approver, qfbs}
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/update-document.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)

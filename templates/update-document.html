@@ -50,6 +50,9 @@
   img {
     width: 300px;
   }
+  form {
+    margin-top: 20px;
+  }
   </style>
 {{end}}
 
@@ -69,15 +72,21 @@
   {{end}}
 
   {{ if $.DeletePerm }}
-    <a class='button-look' href='/doc/{{.DocumentStructure}}/delete/{{.Id}}/'>Delete</a>
+    <a class='button-look' href='/doc/{{.DocumentStructure}}/delete/{{.Id}}/'>Delete</a><br><br>
   {{end}}
 
   {{if $.HasApprovals}}
     <a class="button-look" href="/approvals/{{$.DocumentStructure}}/{{.Id}}/">
       {{if $.Approver}} View/Update {{else}} View {{end}} Approvals
-    </a><br><br>
-  {{else}}
-  <br><br>
+    </a><br>
+  {{end}}
+
+  {{ $l := len .QFBS}}
+  {{if gt $l 0}}
+    {{range .QFBS}}
+      <a class="button-look" href="{{.URLPrefix}}{{$.DocumentStructure}}/{{$.Id}}/">{{.Name}}</a> &nbsp;&nbsp;
+    {{end}}
+    <br>
   {{end}}
 
   <form method="post" action="" enctype="multipart/form-data">
