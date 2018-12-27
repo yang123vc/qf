@@ -1,0 +1,58 @@
+package qf
+
+import (
+  "net/http"
+  "path/filepath"
+  "html/template"
+  "fmt"
+)
+
+func createButton(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  ndsList, err := notAliasDocumentStructureList()
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  if r.Method == http.MethodGet {
+    type Context struct {
+      DocumentStructureList []string
+    }
+    ctx := Context{ndsList}
+
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/create-button.html")
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl.Execute(w, ctx)
+
+
+  } else {
+    ds := r.FormValue("ds")
+    dsid, err := getDocumentStructureID(ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    _, err = SQLDB.Exec("insert into qf_buttons (name, dsid, url_prefix) values (?,?,?)",
+      r.FormValue("button_name"), dsid, r.FormValue("url_prefix"))
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    redirectURL := fmt.Sprintf("/buttons-list/%s/", ds)
+    http.Redirect(w, r, redirectURL, 307)
+
+  }
+
+}

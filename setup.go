@@ -210,6 +210,19 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
 
+    _, err = SQLDB.Exec(`create table qf_buttons (
+      id int not null auto_increment,
+      name varchar(100) not null,
+      dsid int not null,
+      url_prefix varchar(255) not null,
+      primary key(id),
+      foreign key (dsid) references qf_document_structures (id)
+      )`)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
     fmt.Fprintf(w, "Setup Completed.")
 
   }
@@ -317,4 +330,7 @@ func AddQFHandlers(r *mux.Router) {
   // Document Structure Alias
   r.HandleFunc("/new-document-structure-alias/", newDocumentStructureAlias)
   r.HandleFunc("/create-multiple-aliases/", createMultipleAliases)
+
+  // Buttons
+  r.HandleFunc("/create-button/", createButton)
 }

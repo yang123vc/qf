@@ -7,7 +7,6 @@ import (
   "strings"
   "strconv"
   "fmt"
-  "database/sql"
 )
 
 func newDocumentStructureAlias(w http.ResponseWriter, r *http.Request) {
@@ -21,8 +20,7 @@ func newDocumentStructureAlias(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var notAliasDSList sql.NullString
-  err = SQLDB.QueryRow("select group_concat(fullname separator ',,,') from qf_document_structures where dsid is null").Scan(&notAliasDSList)
+  ndsList, err := notAliasDocumentStructureList()
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -39,7 +37,7 @@ func newDocumentStructureAlias(w http.ResponseWriter, r *http.Request) {
       DocumentStructureList []string
       DocumentStructures string
     }
-    ctx := Context{strings.Split(notAliasDSList.String, ",,,"), strings.Join(dsList, ",,,") }
+    ctx := Context{ndsList, strings.Join(dsList, ",,,") }
 
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/new-document-structure-alias.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
@@ -110,8 +108,7 @@ func createMultipleAliases(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var notAliasDSList sql.NullString
-  err = SQLDB.QueryRow("select group_concat(fullname separator ',,,') from qf_document_structures where dsid is null").Scan(&notAliasDSList)
+  ndsList, err := notAliasDocumentStructureList()
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -128,7 +125,7 @@ func createMultipleAliases(w http.ResponseWriter, r *http.Request) {
       DocumentStructureList []string
       DocumentStructures string
     }
-    ctx := Context{strings.Split(notAliasDSList.String, ",,,"), strings.Join(dsList, ",,,") }
+    ctx := Context{ndsList, strings.Join(dsList, ",,,") }
 
     fullTemplatePath := filepath.Join(getProjectPath(), "templates/create-multiple-aliases.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))

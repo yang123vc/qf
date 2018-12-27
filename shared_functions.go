@@ -648,3 +648,19 @@ func getAliases(documentStructure string) ([]string, error) {
   }
   return aliases, nil
 }
+
+
+func notAliasDocumentStructureList() ([]string, error) {
+  var notAliasDSList sql.NullString
+  err := SQLDB.QueryRow("select group_concat(fullname separator ',,,') from qf_document_structures where dsid is null").Scan(&notAliasDSList)
+  if err != nil {
+    return nil, err
+  }
+
+  ndsList := strings.Split(notAliasDSList.String, ",,,")
+  if len(ndsList) == 1 && ndsList[0] == "" {
+    ndsList = make([]string, 0)
+  }
+
+  return ndsList, nil
+}
