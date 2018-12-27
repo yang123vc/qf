@@ -9,7 +9,7 @@ import (
   "fmt"
 )
 
-func newDocumentStructureAlias(w http.ResponseWriter, r *http.Request) {
+func aliasesOne(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     errorPage(w, err.Error())
@@ -39,7 +39,7 @@ func newDocumentStructureAlias(w http.ResponseWriter, r *http.Request) {
     }
     ctx := Context{ndsList, strings.Join(dsList, ",,,") }
 
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/new-document-structure-alias.html")
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/aliases-one.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
 
@@ -97,7 +97,7 @@ func newDocumentStructureAlias(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func createMultipleAliases(w http.ResponseWriter, r *http.Request) {
+func aliasesTwo(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
     errorPage(w, err.Error())
@@ -127,7 +127,7 @@ func createMultipleAliases(w http.ResponseWriter, r *http.Request) {
     }
     ctx := Context{ndsList, strings.Join(dsList, ",,,") }
 
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/create-multiple-aliases.html")
+    fullTemplatePath := filepath.Join(getProjectPath(), "templates/aliases-two.html")
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
     tmpl.Execute(w, ctx)
 

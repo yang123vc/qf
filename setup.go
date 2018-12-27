@@ -8,6 +8,8 @@ import (
   "github.com/gorilla/mux"
   "net/url"
   "strings"
+  "path/filepath"
+  "html/template"
 )
 
 
@@ -277,8 +279,7 @@ func AddQFHandlers(r *mux.Router) {
 
   // Please call this link first to do your setup.
   r.HandleFunc("/qf-setup/", qfSetup)
-
-  // r.HandleFunc("/jquery/", qf.JQuery)
+  r.HandleFunc("/qf-page/", qfPage)
   r.HandleFunc("/serve-js/{library}/", serveJS)
 
   // document structure links
@@ -329,11 +330,28 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/approvals/{document-structure}/{id:[0-9]+}/", viewOrUpdateApprovals)
 
   // Document Structure Alias
-  r.HandleFunc("/new-document-structure-alias/", newDocumentStructureAlias)
-  r.HandleFunc("/create-multiple-aliases/", createMultipleAliases)
+  r.HandleFunc("/aliases-one/", aliasesOne)
+  r.HandleFunc("/aliases-two/", aliasesTwo)
 
   // Buttons
   r.HandleFunc("/create-button/", createButton)
   r.HandleFunc("/list-buttons/", listButtons)
   r.HandleFunc("/delete-button/{id}/", deleteButton)
+}
+
+
+func qfPage(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  fullTemplatePath := filepath.Join(getProjectPath(), "templates/qf-page.html")
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl.Execute(w, nil)
 }
