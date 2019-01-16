@@ -4,7 +4,6 @@ import (
   "github.com/gorilla/mux"
   "net/http"
   "fmt"
-  "path/filepath"
   "html/template"
   "database/sql"
   "strconv"
@@ -34,8 +33,7 @@ func rolesView(w http.ResponseWriter, r *http.Request) {
     NumberOfRoles int
   }
   ctx := Context{roles, len(roles)}
-  fullTemplatePath := filepath.Join(getProjectPath(), "templates/roles-view.html")
-  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/roles-view.html"))
   tmpl.Execute(w, ctx)
 }
 
@@ -194,8 +192,7 @@ func usersToRolesList(w http.ResponseWriter, r *http.Request) {
     UserDatas []UserData
   }
   ctx := Context{udsNoDuplicates}
-  fullTemplatePath := filepath.Join(getProjectPath(), "templates/users-to-roles-list.html")
-  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/users-to-roles-list.html"))
   tmpl.Execute(w, ctx)
 }
 
@@ -272,8 +269,7 @@ func editUserRoles(w http.ResponseWriter, r *http.Request) {
     }
 
     ctx := Context{userid, userRoles, roles, firstname + " " + surname}
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-user-roles.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/edit-user-roles.html"))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
@@ -458,7 +454,6 @@ func userDetails(w http.ResponseWriter, r * http.Request) {
   }
 
   ctx := Context{useridToView, userRoles, firstname + " " + surname}
-  fullTemplatePath := filepath.Join(getProjectPath(), "templates/user-details.html")
-  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/user-details.html"))
   tmpl.Execute(w, ctx)
 }

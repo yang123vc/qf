@@ -7,7 +7,6 @@ import (
   "fmt"
   "strings"
   "html/template"
-  "path/filepath"
   "strconv"
   "database/sql"
 )
@@ -102,8 +101,7 @@ func editDocumentStructure(w http.ResponseWriter, r *http.Request) {
   labelsList := strings.Split(labels, ",,,")
   ctx := Context{ds, strings.Join(dsList, ",,,"), labelsList, len(labelsList), labels, add, docDatas, ctdsl.String,
     childTableBool}
-  fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-document-structure.html")
-  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/edit-document-structure.html"))
   tmpl.Execute(w, ctx)
 }
 

@@ -2,7 +2,6 @@ package qf
 
 import (
   "net/http"
-  "path/filepath"
   "html/template"
   "github.com/gorilla/mux"
 )
@@ -31,8 +30,7 @@ func createButton(w http.ResponseWriter, r *http.Request) {
     }
     ctx := Context{ndsList}
 
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/create-button.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/create-button.html"))
     tmpl.Execute(w, ctx)
 
 
@@ -114,8 +112,7 @@ func listButtons(w http.ResponseWriter, r *http.Request) {
   }
 
   ctx := Context{qfbs}
-  fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-buttons.html")
-  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/list-buttons.html"))
   tmpl.Execute(w, ctx)
 }
 

@@ -4,7 +4,6 @@ import (
   "net/http"
   "html/template"
   "fmt"
-  "path/filepath"
   "strconv"
   "strings"
   "github.com/gorilla/mux"
@@ -61,8 +60,7 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
     }
 
     ctx := Context{roles, ds}
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/add-approvals.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/add-approvals.html"))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
@@ -364,10 +362,8 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
       DocID string
     }
 
-
     ctx := Context{ads, ds, docid}
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/view-update-approvals.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/view-update-approvals.html"))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {

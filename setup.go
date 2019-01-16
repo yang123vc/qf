@@ -8,7 +8,6 @@ import (
   "github.com/gorilla/mux"
   "net/url"
   "strings"
-  "path/filepath"
   "html/template"
 )
 
@@ -351,7 +350,6 @@ func qfPage(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  fullTemplatePath := filepath.Join(getProjectPath(), "templates/qf-page.html")
-  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/qf-page.html"))
   tmpl.Execute(w, nil)
 }

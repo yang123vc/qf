@@ -1,8 +1,6 @@
 package qf
 
 import (
-  "os/user"
-  "path/filepath"
   "strings"
   "net/http"
   "fmt"
@@ -16,21 +14,6 @@ import (
   "time"
   "runtime"
 )
-
-
-func getProjectPath() string {
-  gp := os.Getenv("GOPATH")
-  if gp == "" {
-    userStruct, err := user.Current()
-    if err != nil && gp == "" {
-      panic(err)
-    }
-    gp = filepath.Join(userStruct.HomeDir, "go")
-  }
-
-  projectPath := filepath.Join(gp, "src/github.com/bankole7782/qf")
-  return projectPath
-}
 
 
 func optionSearch(commaSeperatedOptions, option string) bool {
@@ -163,8 +146,7 @@ func getBaseTemplate() string {
   if BaseTemplate != "" {
     return BaseTemplate
   } else {
-    badBasePath := filepath.Join(getProjectPath(), "templates/bad-base.html")
-    return badBasePath
+    return "qffiles/bad-base.html"
   }
 }
 
@@ -336,8 +318,7 @@ func errorPage(w http.ResponseWriter, msg string) {
   } else {
     ctx = Context{msg, fn, line, false}
   }
-  fullTemplatePath := filepath.Join(getProjectPath(), "templates/error-page.html")
-  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/error-page.html"))
   tmpl.Execute(w, ctx)
 }
 

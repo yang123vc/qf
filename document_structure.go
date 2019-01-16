@@ -3,7 +3,6 @@ package qf
 import (
   "net/http"
   "fmt"
-  "path/filepath"
   "strconv"
   "strings"
   "html/template"
@@ -43,8 +42,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     }
     ctx := Context{strings.Join(dsList, ",,,"), ctdsl.String }
 
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/new-document-structure.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/new-document-structure.html"))
     tmpl.Execute(w, ctx)
 
   } else {
@@ -200,9 +198,9 @@ func serveJS(w http.ResponseWriter, r *http.Request) {
   lib := vars["library"]
 
   if lib == "jquery" {
-    http.ServeFile(w, r, filepath.Join(getProjectPath(), "statics/jquery-3.3.1.min.js"))
+    http.ServeFile(w, r, "qffiles/jquery-3.3.1.min.js")
   } else if lib == "autosize" {
-    http.ServeFile(w, r, filepath.Join(getProjectPath(), "statics/autosize.min.js"))
+    http.ServeFile(w, r, "qffiles/autosize.min.js")
   }
 }
 
@@ -269,8 +267,7 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
 
   ctx := Context{DocumentStructures: structDSList}
 
-  fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-document-structures.html")
-  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/list-document-structures.html"))
   tmpl.Execute(w, ctx)
 }
 
@@ -510,8 +507,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   ctx := Context{ds, docDatas, id, add, rps, strings.Join(approvers, ", "), hasApprovers,
     childTableBool, tblNameStr, aliases, alias, aliasOf}
-  fullTemplatePath := filepath.Join(getProjectPath(), "templates/view-document-structure.html")
-  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/view-document-structure.html"))
   tmpl.Execute(w, ctx)
 }
 
@@ -562,8 +558,7 @@ func editDocumentStructurePermissions(w http.ResponseWriter, r *http.Request) {
     }
 
     ctx := Context{ds, rps, len(rps), roles}
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/edit-document-structure-permissions.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/edit-document-structure-permissions.html"))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {

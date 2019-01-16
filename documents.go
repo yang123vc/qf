@@ -116,8 +116,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     } else {
       ctx = Context{ds, dds, htStr, ue, tableFields}
     }
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/create-document.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/create-document.html"))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {
@@ -661,8 +660,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     ctx := Context{created, modified, trueDS, docAndStructureSlice, docid, firstname, surname,
       created_by, updatePerm, deletePerm, htStr, ue, tableData, add, hasApprovals,
       approver, qfbs}
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/update-document.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/update-document.html"))
     tmpl.Execute(w, ctx)
 
   } else if r.Method == http.MethodPost {

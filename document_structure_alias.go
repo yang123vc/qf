@@ -3,7 +3,6 @@ package qf
 import (
   "net/http"
   "html/template"
-  "path/filepath"
   "strings"
   "strconv"
   "fmt"
@@ -37,12 +36,10 @@ func aliasesOne(w http.ResponseWriter, r *http.Request) {
       DocumentStructureList []string
       DocumentStructures string
     }
+
     ctx := Context{ndsList, strings.Join(dsList, ",,,") }
-
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/aliases-one.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/aliases-one.html"))
     tmpl.Execute(w, ctx)
-
 
   } else {
 
@@ -127,8 +124,7 @@ func aliasesTwo(w http.ResponseWriter, r *http.Request) {
     }
     ctx := Context{ndsList, strings.Join(dsList, ",,,") }
 
-    fullTemplatePath := filepath.Join(getProjectPath(), "templates/aliases-two.html")
-    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/aliases-two.html"))
     tmpl.Execute(w, ctx)
 
   } else {

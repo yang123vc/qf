@@ -4,7 +4,6 @@ import (
   "net/http"
   "fmt"
   "github.com/gorilla/mux"
-  "path/filepath"
   "html/template"
   "strings"
   "database/sql"
@@ -196,7 +195,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     return
   }
 
-  hasApprovals, err := isApprovalFrameworkInstalled(ds)  
+  hasApprovals, err := isApprovalFrameworkInstalled(ds)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -220,8 +219,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
   }
   ctx := Context{ds, colNamesList, myRows, pageI, pages, tv1, tv2, tv3, hasApprovals,
     approver, listType, date}
-  fullTemplatePath := filepath.Join(getProjectPath(), "templates/list-documents.html")
-  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/list-documents.html"))
   tmpl.Execute(w, ctx)
 }
 
@@ -232,8 +230,6 @@ func listDocuments(w http.ResponseWriter, r *http.Request) {
     errorPage(w, err.Error())
     return
   }
-
-
 
   vars := mux.Vars(r)
   ds := vars["document-structure"]
@@ -344,10 +340,8 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
     UserHasLimitedReadPermission bool
   }
   ctx := Context{ds, dds, tv2 || tv3}
-  fullTemplatePath := filepath.Join(getProjectPath(), "templates/search-documents.html")
-  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/search-documents.html"))
   tmpl.Execute(w, ctx)
-
 }
 
 
@@ -603,8 +597,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
   }
 
   ctx := Context{dacs, ds}
-  fullTemplatePath := filepath.Join(getProjectPath(), "templates/date-lists.html")
-  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), fullTemplatePath))
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/date-lists.html"))
   tmpl.Execute(w, ctx)
 }
 
