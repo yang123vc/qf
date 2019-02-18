@@ -369,7 +369,7 @@
 
       var inputEl = $(e.target).prev();
       if ( $(inputEl).val() != "") {
-        window.open("/doc/" + $(e.target).data("ldds") + "/update/" + $(inputEl).val() + "/", "_blank");
+        window.open("/update/" + $(e.target).data("ldds") + "/" + $(inputEl).val() + "/", "_blank");
       }
 
     });

@@ -72,7 +72,7 @@
   {{end}}
 
   {{ if $.DeletePerm }}
-    <a class='button-look' href='/doc/{{.DocumentStructure}}/delete/{{.Id}}/'>Delete</a><br><br>
+    <a class='button-look' href='/delete/{{.DocumentStructure}}/{{.Id}}/'>Delete</a><br><br>
   {{end}}
 
   {{if $.HasApprovals}}
@@ -453,7 +453,7 @@
 
       var inputEl = $(e.target).prev();
       if ( $(inputEl).val() != "") {
-        window.open("/doc/" + $(e.target).data("ldds") + "/update/" + $(inputEl).val() + "/", "_blank");
+        window.open("/update/" + $(e.target).data("ldds") + "/" + $(inputEl).val() + "/", "_blank");
       }
 
     });

@@ -56,16 +56,16 @@
   </h3>
 
   {{ if eq $.CreatePerm true}}
-    <a class="button-look" href="/doc/{{.DocumentStructure}}/create/">Create</a>
+    <a class="button-look" href="/create/{{.DocumentStructure}}/">Create</a>
   {{ end}}
-  <a class="button-look" href="/doc/{{.DocumentStructure}}/date-lists/">Date Lists</a>
-  <a class="button-look" href="/doc/{{.DocumentStructure}}/search/">Search</a>
+  <a class="button-look" href="/date-lists/{{.DocumentStructure}}/">Date Lists</a>
+  <a class="button-look" href="/search/{{.DocumentStructure}}/">Search</a>
   {{if $.HasApprovals}}
-    <a class="button-look" href="/doc/{{.DocumentStructure}}/approved-list/">Approved</a>
-    <a class="button-look" href="/doc/{{.DocumentStructure}}/unapproved-list/">Not Approved</a>
+    <a class="button-look" href="/approved-list/{{.DocumentStructure}}/">Approved</a>
+    <a class="button-look" href="/unapproved-list/{{.DocumentStructure}}/">Not Approved</a>
   {{end}}
   {{if ne .ListType "true-list"}}
-    <a class="button-look" href="/doc/{{.DocumentStructure}}/list/">True List</a>
+    <a class="button-look" href="/list/{{.DocumentStructure}}/">True List</a>
   {{end}}
   <br><br>
 
@@ -91,11 +91,11 @@
             {{end}}
           {{end}}
           <td>
-            <a class='button-look' href='/doc/{{$.DocumentStructure}}/update/{{.Id}}/'>
+            <a class='button-look' href='/update/{{$.DocumentStructure}}/{{.Id}}/'>
               {{ if or $.UpdatePerm .RowUpdatePerm}} View/Update {{ else }} View {{ end }}
             </a>
             {{ if or $.DeletePerm .RowDeletePerm }}
-              <a class='button-look' href='/doc/{{$.DocumentStructure}}/delete/{{.Id}}/'>Delete</a>
+              <a class='button-look' href='/delete/{{$.DocumentStructure}}/{{.Id}}/'>Delete</a>
             {{end}}
             {{if $.HasApprovals}}
               <a class="button-look" href="/approvals/{{$.DocumentStructure}}/{{.Id}}/">
@@ -113,15 +113,15 @@
       Pages:
       {{range .Pages}}
         {{if eq $.ListType "true-list"}}
-          <a href='/doc/{{$.DocumentStructure}}/list/{{.}}/'>{{.}}</a>
+          <a href='/list/{{$.DocumentStructure}}/{{.}}/'>{{.}}</a>
         {{else if eq $.ListType "date-list"}}
-          <a href='/doc/{{$.DocumentStructure}}/date-list/{{$.OptionalDate}}/{{.}}/'>{{.}}</a>
+          <a href='/date-list/{{$.DocumentStructure}}/{{$.OptionalDate}}/{{.}}/'>{{.}}</a>
         {{else if eq $.ListType "approved-list"}}
-          <a href="/doc/{{$.DocumentStructure}}/approved-list/{{.}}/">{{.}}</a>
+          <a href="/approved-list/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
         {{else if eq $.ListType "unapproved-list"}}
-          <a href="/doc/{{$.DocumentStructure}}/unapproved-list/{{.}}/">{{.}}</a>
+          <a href="/unapproved-list/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
         {{else if eq $.ListType "search-list"}}
-          <a class="search-href" href="/doc/{{$.DocumentStructure}}/search-results/{{.}}/">{{.}}</a>
+          <a class="search-href" href="/search-results/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
         {{end}}
       {{end}}
   </div>

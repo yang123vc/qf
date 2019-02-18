@@ -22,7 +22,7 @@
 {{define "main"}}
   <h3>Search {{.DocumentStructure}} Documents</h3>
 
-  <form method="get" action="/doc/{{.DocumentStructure}}/search-results/">
+  <form method="get" action="/search-results/{{.DocumentStructure}}/">
     {{if .UserHasLimitedReadPermission}}
       <div>
         <label>Created By (User ID)</label>

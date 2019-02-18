@@ -182,7 +182,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  redirectURL := fmt.Sprintf("/doc/%s/list/", ds)
+  redirectURL := fmt.Sprintf("/list/%s/", ds)
   http.Redirect(w, r, redirectURL, 307)
 }
 
@@ -273,6 +273,6 @@ func deleteFile(w http.ResponseWriter, r *http.Request) {
     }
   }
 
-  redirectURL := fmt.Sprintf("/doc/%s/update/%s/", ds, docid)
+  redirectURL := fmt.Sprintf("/update/%s/%s/", ds, docid)
   http.Redirect(w, r, redirectURL, 307)
 }

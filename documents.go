@@ -321,9 +321,9 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 
     var redirectURL string
     if isAlias {
-      redirectURL = fmt.Sprintf("/doc/%s/list/", aliasName)
+      redirectURL = fmt.Sprintf("/list/%s/", aliasName)
     } else {
-      redirectURL = fmt.Sprintf("/doc/%s/list/", ds)
+      redirectURL = fmt.Sprintf("/list/%s/", ds)
     }
     http.Redirect(w, r, redirectURL, 307)
   }
@@ -872,9 +872,9 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 
     var redirectURL string
     if isAlias {
-      redirectURL = fmt.Sprintf("/doc/%s/list/", aliasName)
+      redirectURL = fmt.Sprintf("/list/%s/", aliasName)
     } else {
-      redirectURL = fmt.Sprintf("/doc/%s/list/", ds)
+      redirectURL = fmt.Sprintf("/list/%s/", ds)
     }
     http.Redirect(w, r, redirectURL, 307)
   }
