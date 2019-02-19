@@ -130,7 +130,7 @@ func usersToRolesList(w http.ResponseWriter, r *http.Request) {
   sqlStmt := fmt.Sprintf("select users.id, `%s`.firstname, `%s`.surname, qf_roles.role ", UsersTable, UsersTable)
   sqlStmt += fmt.Sprintf("from (qf_user_roles right join `%s` on qf_user_roles.userid = `%s`.id)", UsersTable, UsersTable)
   sqlStmt += fmt.Sprintf("left join qf_roles on qf_user_roles.roleid = qf_roles.id ")
-  sqlStmt += "order by users.id asc limit 100"
+  sqlStmt += "order by users.id asc"
 
   uds := make([]UserData, 0)
   var userid uint64

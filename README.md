@@ -1,8 +1,10 @@
-# qf
+# qf : quick forms
 
 ![alt text](https://github.com/bankole7782/qf/raw/master/qf-logo.png "QF logo")
 
-**qf : quick forms**
+A website builder for forms. Could be used to write ERPs, CRMs and other record softwares.
+
+## Project Design
 
 The method in use here is to mix it with complicated forms. This provides the
 benefits of one installation ( reducing server maintenance works) and also using
@@ -42,7 +44,7 @@ Get the framework through the following command
 
 There is a sample application which details how to complete the setup. Take a look at it [here](https://github.com/bankole7782/qf_example)
 
-Copy the folder `qffiles` from the main repo into the same path as your `main.go` like in the sample application.
+Copy the folder `qffiles` from the main repo into the same path as your `main.go`.
 
 Make sure you look at `main.go` in the sample app, copy and edit it to your own preferences.
 
