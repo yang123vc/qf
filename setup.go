@@ -7,7 +7,6 @@ import (
   _ "github.com/go-sql-driver/mysql"
   "github.com/gorilla/mux"
   "net/url"
-  "strings"
   "html/template"
 )
 
@@ -201,18 +200,6 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    _, err = SQLDB.Exec(`create table qf_old_document_structures (
-      id bigint unsigned not null auto_increment,
-      dsid int not null,
-      old_name varchar(255) not null,
-      primary key(id), unique (old_name),
-      foreign key (dsid) references qf_document_structures (id)
-      )`)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-
     _, err = SQLDB.Exec(`create table qf_buttons (
       id int not null auto_increment,
       name varchar(100) not null,
@@ -233,48 +220,7 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func oldNamesRedirectMiddleware(next http.Handler) http.Handler {
-  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    // Do stuff here
-    vars := mux.Vars(r)
-    ds := vars["document-structure"]
-
-    if ds != "" {
-
-      detv, err := docExists(ds)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
-      if ! detv {
-        var dsid uint64
-        sqlStmt := "select dsid from qf_old_document_structures where old_name = ?"
-        err = SQLDB.QueryRow(sqlStmt, ds).Scan(&dsid)
-        if err != nil {
-          next.ServeHTTP(w, r)
-          return
-        }
-
-        var newDS string
-        err = SQLDB.QueryRow("select fullname from qf_document_structures where id = ?", dsid).Scan(&newDS)
-        if err != nil {
-          errorPage(w, err.Error())
-          return
-        }
-
-        newURL := strings.Replace(r.URL.Path, ds, newDS, 1)
-        http.Redirect(w, r, newURL, 301)
-      }
-    }
-
-    // Call the next handler, which can be another middleware in the chain, or the final handler.
-    next.ServeHTTP(w, r)
-  })
-}
-
-
 func AddQFHandlers(r *mux.Router) {
-  r.Use(oldNamesRedirectMiddleware)
 
   // Please don't change the paths.
 
