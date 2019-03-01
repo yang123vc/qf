@@ -23,7 +23,6 @@ func editDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-
   vars := mux.Vars(r)
   ds := vars["document-structure"]
 

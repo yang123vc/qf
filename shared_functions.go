@@ -444,9 +444,17 @@ func newApprovalTableName() (string, error) {
 
 
 func getApprovalTable(documentStructure, role string) (string, error) {
+  dsid, err := getDocumentStructureID(documentStructure)
+  if err != nil {
+    return "", err
+  }
+  roleid, err := getRoleId(role)
+  if err != nil {
+    return "", err
+  }
+
   var name sql.NullString
-  err := SQLDB.QueryRow("select tbl_name from qf_approvals_tables where document_structure = ? and role = ?",
-    documentStructure, role).Scan(&name)
+  err = SQLDB.QueryRow("select tbl_name from qf_approvals_tables where dsid = ? and roleid = ?", dsid, roleid).Scan(&name)
   if err != nil {
     return "", err
   }

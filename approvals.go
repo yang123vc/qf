@@ -75,6 +75,13 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
       }
     }
 
+    var dsid int
+    err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&dsid)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
     atns := make([]string, 0)
     for _, step := range steps {
       atn, err := newApprovalTableName()
@@ -107,20 +114,20 @@ func addApprovals(w http.ResponseWriter, r *http.Request) {
         return
       }
 
-      _, err = SQLDB.Exec("insert into qf_approvals_tables(document_structure, role, tbl_name) values (?,?,?)",
-        ds, step, atn)
+      roleid, err := getRoleId(step)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+
+      _, err = SQLDB.Exec("insert into qf_approvals_tables(dsid, roleid, tbl_name) values (?,?,?)",
+        dsid, roleid, atn)
       if err != nil {
         errorPage(w, err.Error())
         return
       }
     }
 
-    var dsid int
-    err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&dsid)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
     _, err := SQLDB.Exec("update qf_document_structures set approval_steps = ? where id = ?", strings.Join(steps, ","), dsid)
     if err != nil {
       errorPage(w, err.Error())
