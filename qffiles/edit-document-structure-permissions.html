@@ -49,10 +49,6 @@
   <span>Help:</span>
   <ol>
     <li>Administrator users have all the permissions for any document schema</li>
-    <li>Permissions can be one or more of create, read, update, delete</li>
-    <li>Set the permissions field to any/some of the above values seperated by comma eg. create, read, update</li>
-    <li>All your permissions must be in lower case.</li>
-    <li>Any role must not have more than one of read, read-only-created or read-only-mentioned. This applies to other permissions too.</li>
   </ol>
 
   <p id='error-box'></p>
@@ -80,11 +76,6 @@
           <label>Create <input type="checkbox" class="perms-checkbox" name="perms-1" value="create" /> </label>
           <label>Update <input type="checkbox" class="perms-checkbox" name="perms-1" value="update" /> </label>
           <label>Delete <input type="checkbox" class="perms-checkbox" name="perms-1" value="delete" /> </label>
-          <br>
-          <label>
-            Read Only Documents created by this Role
-            <input type="checkbox" class="perms-checkbox" name="perms-1" value="read-only-created" />
-          </label>
           <br>
           <label>
             Update Only Documents created by this Role

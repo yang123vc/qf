@@ -44,18 +44,12 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     return
   }
 
-  tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
+  rperm, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
     errorPage(w, err.Error())
     return
   }
-  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
-  if ! tv1 && ! tv2 {
+  if ! rperm {
     errorPage(w, "You don't have the read permission for this document structure.")
     return
   }
@@ -182,8 +176,8 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     pages = append(pages, i+1)
   }
 
-  tv1, err1 = DoesCurrentUserHavePerm(r, ds, "create")
-  tv2, err2 = DoesCurrentUserHavePerm(r, ds, "update")
+  tv1, err1 := DoesCurrentUserHavePerm(r, ds, "create")
+  tv2, err2 := DoesCurrentUserHavePerm(r, ds, "update")
   tv3, err3 := DoesCurrentUserHavePerm(r, ds, "delete")
   if err1 != nil || err2 != nil || err3 != nil {
     errorPage(w, "An error occurred when getting permissions of this document structure for this user.")
@@ -220,7 +214,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
 
 
 func listDocuments(w http.ResponseWriter, r *http.Request) {
-  useridUint64, err := GetCurrentUser(r)
+  _, err := GetCurrentUser(r)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -243,9 +237,8 @@ func listDocuments(w http.ResponseWriter, r *http.Request) {
   if err != nil {
     errorPage(w, err.Error())
   }
-  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
-  if err != nil {
-    errorPage(w, err.Error())
+  if ! tv1 {
+    errorPage(w, "You don't have read permission for this document structure.")
   }
 
   tblName, err := tableName(ds)
@@ -254,17 +247,8 @@ func listDocuments(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var readSqlStmt string
-  var totalSqlStmt string
-
-  if tv1 {
-    readSqlStmt = fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tblName)
-    totalSqlStmt = fmt.Sprintf("select count(*) from `%s`", tblName)
-  } else if tv2 {
-    readSqlStmt = fmt.Sprintf("select id from `%s` where created_by = %d order by created desc limit ?, ?", tblName, useridUint64 )
-    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where created_by = %d", tblName, useridUint64)
-  }
-
+  readSqlStmt := fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tblName)
+  totalSqlStmt := fmt.Sprintf("select count(*) from `%s`", tblName)
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "true-list")
   return
 }
@@ -295,13 +279,8 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
     errorPage(w, err.Error())
     return
   }
-  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
 
-  if ! tv1 && ! tv2 {
+  if ! tv1 {
     errorPage(w, "You don't have the read permission for this document structure.")
     return
   }
@@ -315,16 +294,15 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
   type Context struct {
     DocumentStructure string
     DDs []DocData
-    UserHasLimitedReadPermission bool
   }
-  ctx := Context{ds, dds, tv2 }
+  ctx := Context{ds, dds}
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/search-documents.html"))
   tmpl.Execute(w, ctx)
 }
 
 
 func searchResults(w http.ResponseWriter, r *http.Request) {
-  useridUint64, err := GetCurrentUser(r)
+  _, err := GetCurrentUser(r)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -348,13 +326,7 @@ func searchResults(w http.ResponseWriter, r *http.Request) {
     errorPage(w, err.Error())
     return
   }
-  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
-  if ! tv1 && ! tv2 {
+  if ! tv1 {
     errorPage(w, "You don't have the read permission for this document structure.")
     return
   }
@@ -408,34 +380,24 @@ func searchResults(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var readSqlStmt string
-  var totalSqlStmt string
-
-  if tv1 {
-    if r.FormValue("created_by") != "" {
-      endSqlStmt = append(endSqlStmt, "created_by = " + html.EscapeString(r.FormValue("created_by")))
-    }
-    if len(endSqlStmt) == 0 {
-      errorPage(w, "Your query is empty.")
-      return
-    } else {
-      readSqlStmt = fmt.Sprintf("select id from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
-      readSqlStmt += " order by created desc limit ?, ?"
-      totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
-    }
-  } else if tv2 {
-    endSqlStmt = append(endSqlStmt, fmt.Sprintf("created_by = %d", useridUint64))
-    readSqlStmt = fmt.Sprintf("select id from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
-    readSqlStmt += " order by created desc limit ?, ?"
-    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
+  if r.FormValue("created_by") != "" {
+    endSqlStmt = append(endSqlStmt, "created_by = " + html.EscapeString(r.FormValue("created_by")))
   }
+  if len(endSqlStmt) == 0 {
+    errorPage(w, "Your query is empty.")
+    return
+  }
+
+  readSqlStmt := fmt.Sprintf("select id from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
+  readSqlStmt += " order by created desc limit ?, ?"
+  totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
 
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "search-list")
   return
 }
 
 func dateLists(w http.ResponseWriter, r *http.Request) {
-  useridUint64, err := GetCurrentUser(r)
+  _, err := GetCurrentUser(r)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -459,13 +421,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
     errorPage(w, err.Error())
     return
   }
-  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
-  if ! tv1 && ! tv2 {
+  if ! tv1 {
     errorPage(w, "You don't have the read permission for this document structure.")
     return
   }
@@ -484,12 +440,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  if tv1 {
-    sqlStmt = fmt.Sprintf("select distinct date(created) as dc from `%s` order by dc desc", tblName)
-  } else if tv2 {
-    sqlStmt = fmt.Sprintf("select distinct date(created) as dc from `%s` where created_by = %d order by dc desc",
-      tblName, useridUint64)
-  }
+  sqlStmt = fmt.Sprintf("select distinct date(created) as dc from `%s` order by dc desc", tblName)
 
   dates := make([]string, 0)
   var date string
@@ -519,12 +470,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
   dacs := make([]DateAndCount, 0)
   for _, date := range dates {
     var count uint64
-    if tv1 {
-      sqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = ?", tblName)
-    } else if tv2 {
-      sqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = ? and created_by = %d",
-        tblName, useridUint64)
-    }
+    sqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = ?", tblName)
 
     err = SQLDB.QueryRow(sqlStmt, date).Scan(&count)
     if err != nil {
@@ -546,7 +492,7 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
 
 
 func dateList(w http.ResponseWriter, r *http.Request) {
-  useridUint64, err := GetCurrentUser(r)
+  _, err := GetCurrentUser(r)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -561,9 +507,9 @@ func dateList(w http.ResponseWriter, r *http.Request) {
   if err != nil {
     errorPage(w, err.Error())
   }
-  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
-  if err != nil {
-    errorPage(w, err.Error())
+  if ! tv1 {
+    errorPage(w, "You don't have the read permission for this document structure.")
+    return
   }
 
   tblName, err := tableName(ds)
@@ -572,20 +518,10 @@ func dateList(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var readSqlStmt string
-  var totalSqlStmt string
-
-  if tv1 {
-    readSqlStmt = fmt.Sprintf("select id from `%s` where date(created) = '%s' order by created desc limit ?, ?",
-      tblName, html.EscapeString(date))
-    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = '%s'",
-      tblName, html.EscapeString(date))
-  } else if tv2 {
-    readSqlStmt = fmt.Sprintf("select id from `%s` where date(created) = '%s' and created_by = %d order by created desc limit ?, ?",
-      tblName, html.EscapeString(date), useridUint64)
-    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where date(created) = '%s' and created_by = %d",
-      tblName, html.EscapeString(date), useridUint64)
-  }
+  readSqlStmt := fmt.Sprintf("select id from `%s` where date(created) = '%s' order by created desc limit ?, ?",
+    tblName, html.EscapeString(date))
+  totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where date(created) = '%s'",
+    tblName, html.EscapeString(date))
 
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "date-list")
   return

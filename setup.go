@@ -147,25 +147,27 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    _, err = SQLDB.Exec(`create table qf_approvals_tables (
+    _, err = SQLDB.Exec(`create table qf_roles (
       id int not null auto_increment,
-      document_structure varchar(255) not null,
-      role varchar(255) not null,
-      tbl_name varchar(64) not null,
-      primary key (id),
-      unique(tbl_name),
-      index (document_structure, role)
+      role varchar(50) not null,
+      primary key(id),
+      unique (role)
       )`)
     if err != nil {
       errorPage(w, err.Error())
       return
     }
 
-    _, err = SQLDB.Exec(`create table qf_roles (
+    _, err = SQLDB.Exec(`create table qf_approvals_tables (
       id int not null auto_increment,
-      role varchar(50) not null,
-      primary key(id),
-      unique (role)
+      dsid int not null,
+      roleid int not null,
+      tbl_name varchar(64) not null,
+      primary key (id),
+      foreign key (dsid) references qf_document_structures(id),
+      foreign key (roleid) references qf_roles (id),
+      unique(tbl_name),
+      index (dsid, roleid)
       )`)
     if err != nil {
       errorPage(w, err.Error())

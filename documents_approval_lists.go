@@ -8,7 +8,7 @@ import (
 
 
 func approvedList(w http.ResponseWriter, r *http.Request) {
-  useridUint64, err := GetCurrentUser(r)
+  _, err := GetCurrentUser(r)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -21,9 +21,9 @@ func approvedList(w http.ResponseWriter, r *http.Request) {
   if err != nil {
     errorPage(w, err.Error())
   }
-  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
-  if err != nil {
-    errorPage(w, err.Error())
+  if ! tv1 {
+    errorPage(w, "You don't have the read permission for this document structure.")
+    return
   }
 
   tblName, err := tableName(ds)
@@ -32,16 +32,8 @@ func approvedList(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var readSqlStmt string
-  var totalSqlStmt string
-
-  if tv1 {
-    readSqlStmt = fmt.Sprintf("select id from `%s` where fully_approved = 't' order by created desc limit ?, ?", tblName)
-    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where fully_approved = 't' ", tblName)
-  } else if tv2 {
-    readSqlStmt = fmt.Sprintf("select id from `%s` where created_by = %d and fully_approved = 't' order by created desc limit ?, ?", tblName, useridUint64 )
-    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where created_by = %d and fully_approved = 't' ", tblName, useridUint64)
-  }
+  readSqlStmt := fmt.Sprintf("select id from `%s` where fully_approved = 't' order by created desc limit ?, ?", tblName)
+  totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where fully_approved = 't' ", tblName)
 
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "approved-list")
   return
@@ -49,7 +41,7 @@ func approvedList(w http.ResponseWriter, r *http.Request) {
 
 
 func unapprovedList(w http.ResponseWriter, r *http.Request) {
-  useridUint64, err := GetCurrentUser(r)
+  _, err := GetCurrentUser(r)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -62,9 +54,9 @@ func unapprovedList(w http.ResponseWriter, r *http.Request) {
   if err != nil {
     errorPage(w, err.Error())
   }
-  tv2, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
-  if err != nil {
-    errorPage(w, err.Error())
+  if ! tv1 {
+    errorPage(w, "You don't have the read permission for this document structure.")
+    return
   }
 
   tblName, err := tableName(ds)
@@ -73,16 +65,8 @@ func unapprovedList(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var readSqlStmt string
-  var totalSqlStmt string
-
-  if tv1 {
-    readSqlStmt = fmt.Sprintf("select id from `%s` where fully_approved = 'f' order by created desc limit ?, ?", tblName)
-    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where fully_approved = 'f' ", tblName)
-  } else if tv2 {
-    readSqlStmt = fmt.Sprintf("select id from `%s` where created_by = %d and fully_approved = 'f' order by created desc limit ?, ?", tblName, useridUint64 )
-    totalSqlStmt = fmt.Sprintf("select count(*) from `%s` where created_by = %d and fully_approved = 'f' ", tblName, useridUint64)
-  }
+  readSqlStmt := fmt.Sprintf("select id from `%s` where fully_approved = 'f' order by created desc limit ?, ?", tblName)
+  totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where fully_approved = 'f' ", tblName)
 
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "unapproved-list")
   return
