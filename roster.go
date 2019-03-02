@@ -6,6 +6,7 @@ import (
   "database/sql"
   "fmt"
   "github.com/gorilla/mux"
+  "time"
 )
 
 
@@ -251,4 +252,139 @@ func deleteRoster(w http.ResponseWriter, r *http.Request) {
 
   redirectURL := "/list-rosters/"
   http.Redirect(w, r, redirectURL, 307)
+}
+
+
+func fillRoster(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  vars := mux.Vars(r)
+  roster_name := vars["roster"]
+
+  retv, err := rosterExists(roster_name)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if retv == false {
+    errorPage(w, fmt.Sprintf("The roster %s does not exists.", roster_name))
+    return
+  }
+
+  sqlStmt := "select qf_document_structures.fullname, qf_roster.sheet_tbl, qf_roster.details_tbl, qf_roster.frequency "
+  sqlStmt += "from qf_document_structures inner join qf_roster on "
+  sqlStmt += "qf_document_structures.id = qf_roster.dsid where qf_roster.name = ?"
+  var ds, sheetTable, detailsTable, frequency string
+  err = SQLDB.QueryRow(sqlStmt, roster_name).Scan(&ds, &sheetTable, &detailsTable, &frequency)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  truthValue, err := DoesCurrentUserHavePerm(r, ds, "create")
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, fmt.Sprintf("You don't have the create permission for the underlying document structure of this roster: %s.", roster_name))
+    return
+  }
+
+  var endPeriod, startPeriod time.Time
+  todaysDate := time.Now()
+  if frequency == "daily" {
+    startPeriod = time.Date( todaysDate.Year(), todaysDate.Month(), todaysDate.Day() ,0,0,0,0, todaysDate.Location())
+    endPeriod = time.Date( todaysDate.Year(), todaysDate.Month(), todaysDate.Day(), 23, 59, 59, 0, todaysDate.Location())
+  } else if frequency == "weekly" {
+    tmpPeriod := todaysDate
+    for tmpPeriod.Weekday() != time.Monday {
+      tmpPeriod = tmpPeriod.AddDate(0, 0, -1)
+    }
+    startPeriod = time.Date( tmpPeriod.Year(), tmpPeriod.Month(), tmpPeriod.Day(), 0, 0, 0, 0, todaysDate.Location())
+
+    tmpPeriod = todaysDate
+    for tmpPeriod.Weekday() != time.Sunday {
+      tmpPeriod = tmpPeriod.AddDate(0, 0, 1)
+    }
+    endPeriod = time.Date( tmpPeriod.Year(), tmpPeriod.Month(), tmpPeriod.Day(), 23, 59, 59, 0, tmpPeriod.Location())
+  } else if frequency == "monthly" {
+    startPeriod = time.Date( todaysDate.Year(), todaysDate.Month(), 1, 0, 0, 0, 0, todaysDate.Location())
+    tmpPeriod := startPeriod.AddDate(0, 1, -1)
+    endPeriod = time.Date( tmpPeriod.Year(), tmpPeriod.Month(), tmpPeriod.Day(), 23, 59, 59, 0, tmpPeriod.Location())
+  }
+
+  sqlStmt = fmt.Sprintf("select count(*) from %s where start_period = ? and end_period = ?", sheetTable)
+  var count uint64
+  err = SQLDB.QueryRow(sqlStmt, startPeriod, endPeriod).Scan(&count)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if count == 0 {
+    sqlStmt = fmt.Sprintf("insert into %s(start_period, end_period) values(?, ?)", sheetTable)
+    _, err = SQLDB.Exec(sqlStmt, startPeriod, endPeriod)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  }
+
+  if r.Method == http.MethodGet {
+    type Context struct {
+      DocumentStructure string
+      Roster string
+      TodaysDate time.Time
+      StartPeriod time.Time
+      EndPeriod time.Time
+    }
+
+    ctx := Context{ds, roster_name, todaysDate, startPeriod, endPeriod}
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/fill-roster.html"))
+    tmpl.Execute(w, ctx)
+  } else {
+    tblName, err := tableName(ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    docid := r.FormValue("docid")
+    var count uint64
+    sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = %s", tblName, docid)
+    err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    if count == 0 {
+      errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid))
+      return
+    }
+
+    sqlStmt = fmt.Sprintf("select count(*) from %s where id = ? and created < ? and created > ?", detailsTable)
+    err = SQLDB.QueryRow(sqlStmt, docid, startPeriod, endPeriod).Scan(&count)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    if count != 0 {
+      errorPage(w, "There is an entry for the current period.")
+      return
+    }
+
+    sqlStmt = fmt.Sprintf("insert into %s(created, created_by, docid, status, comment) values(now(),?,?,?,?)", detailsTable)
+    _, err = SQLDB.Exec(sqlStmt, useridUint64, docid, r.FormValue("status"), r.FormValue("comment"))
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    redirectURL := fmt.Sprintf("/view-roster-fillings/%s/", roster_name)
+    http.Redirect(w, r, redirectURL, 307)
+  }
 }

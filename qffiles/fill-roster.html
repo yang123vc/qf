@@ -1,0 +1,32 @@
+{{define "title"}} Fill Roster "{{.Roster}}" {{end}}
+
+
+{{define "main"}}
+<h3> Fill Roster "{{.Roster}}" </h3>
+<p>This entry is for {{.StartPeriod}} to {{.EndPeriod}}</p>
+
+<form method="post" action="">
+  <div>
+    <label for="id_docid">Enter the id of the document from {{.DocumentStructure}} </label>
+    <input type="number" id="id_docid" name="docid" required />
+  </div>
+  <div>
+    <label for="id_status">Status </label>
+    <select name="status" id="id_status">
+      <option>undone</option>
+      <option>halfdone</option>
+      <option>done</option>
+    </select>
+  </div>
+  <div>
+    <label for="id_comment">Comment </label><br>
+    <textarea id="id_comment" name="comment"></textarea>
+  </div>
+
+  <div>
+    <input type="submit" value="Fill Roster" />
+  </div>
+
+</form>
+
+{{end}}

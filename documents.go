@@ -361,11 +361,6 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     errorPage(w, err.Error())
     return
   }
-  rocPerm, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
 
   updatePerm, err := DoesCurrentUserHavePerm(r, ds, "update")
   if err != nil {
@@ -429,20 +424,17 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   if ! readPerm {
-    if rocPerm {
-      if createdBy != useridUint64 {
-        errorPage(w, "You are not the owner of this document so can't read it.")
-        return
-      }
-    } else {
-      errorPage(w, "You don't have the read permission for this document structure.")
-      return
-    }
+    errorPage(w, "You don't have the read permission for this document structure.")
+    return
   }
 
   var count uint64
   sqlStmt = fmt.Sprintf("select count(*) from `%s` where id = %s", tblName, docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
   if count == 0 {
     errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid))
     return
