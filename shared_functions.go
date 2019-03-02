@@ -653,3 +653,18 @@ func notAliasDocumentStructureList() ([]string, error) {
 
   return ndsList, nil
 }
+
+
+func newRosterSheetTableName() (string, error) {
+  for {
+    newName := "qfrstbl_" + untestedRandomString(3)
+    var count int
+    err := SQLDB.QueryRow("select count(*) from qf_roster where tbl_name = ?", newName).Scan(&count)
+    if err != nil {
+      return "", err
+    }
+    if count == 0 {
+      return newName, nil
+    }
+  }
+}

@@ -1,0 +1,80 @@
+{{define "title"}}New Roster{{end}}
+
+{{define "styles"}}
+<style>
+  form div {
+    margin-bottom: 10px;
+  }
+  #error-box {
+    display: none;
+    color: red;
+  }
+</style>
+{{end}}
+
+
+{{define "main"}}
+<h3>New Roster</h3>
+<p id="error-box"></p>
+<form method="post" action="" >
+  <div>
+    <label for="id_roster_name">Roster Name</label>
+    <input type="text" name="roster_name" id="id_roster_name" required/>
+  </div>
+  <div>
+    <label for="id_roster_description">Roster Description</label>
+    <textarea id="id_roster_description" name="roster_description"></textarea>
+  </div>
+  <div>
+    <label for="id_document_structure">Document Structure</label>
+    <select id="id_document_structure" name="document_structure">
+      {{range .DocumentStructureList}}
+        <option>{{.}}</option>
+      {{end}}
+    </select>
+  </div>
+  <div>
+    <label for="id_frequency">Frequency</label>
+    <select id="id_frequency" name="frequency">
+      <option>daily</option>
+      <option>weekly</option>
+      <option>monthly</option>
+    </select>
+  </div>
+
+  <div>
+    <input type="submit" value="Save" />
+  </div>
+</form>
+
+{{end}}
+
+
+{{define "scripts"}}
+<script>
+var oldRostersStr = "{{.RosterListStr}}"
+
+$(document).ready(function() {
+
+  $('form input[type=submit]').click(function(e) {
+    e.preventDefault()
+
+    if ($('#id_roster_name').val() == "") {
+      $('#id_roster_name').css('border', "1px solid red");
+      $('#error-box').text("The roster name cannot be empty.").show();
+      return
+    }
+
+    var oldRosters = oldRostersStr.split(",,,")
+    if (oldRosters.indexOf($('#id_roster_name').val()) != -1) {
+      $('#id_roster_name').css('border', "1px solid red");
+      $('#error-box').text("That roster name is already used.").show();
+      return
+    }
+
+    $("form").submit();
+  })
+})
+
+</script>
+{{end}}
