@@ -384,17 +384,6 @@ func getColumnNames(ds string) ([]ColLabel, error){
 }
 
 
-func getMentionedUserColumn(ds string) (string, error) {
-  var col string
-
-  err := SQLDB.QueryRow("select name from qf_fields where other_options = 'MentionedUser'").Scan(&col)
-  if err != nil {
-    return col, err
-  }
-  return col, nil
-}
-
-
 func newTableName() (string, error) {
   for {
     newName := "qftbl_" + untestedRandomString(3)
@@ -536,6 +525,11 @@ func documentStructureHasForm(documentStructure string) (bool, error) {
 }
 
 
+type RolePermissions struct {
+  Role string
+  Permissions string
+}
+
 
 func getRolePermissions(documentStructure string) ([]RolePermissions, error) {
   rps := make([]RolePermissions, 0)
@@ -655,11 +649,23 @@ func notAliasDocumentStructureList() ([]string, error) {
 }
 
 
-func newRosterSheetTableName() (string, error) {
+func newRosterObjectTableName(rosterObject string) (string, error) {
+  if rosterObject != "sheet" && rosterObject != "details" {
+    return "", errors.New("Invalid rosterObject.")
+  }
+
   for {
-    newName := "qfrstbl_" + untestedRandomString(3)
+    var newName, sqlStmt string
+    if rosterObject == "sheet" {
+      newName = "qfrstbl_" + untestedRandomString(3)
+      sqlStmt = "select count(*) from qf_roster where sheet_tbl = ?"
+    } else {
+      newName = "qfrdtbl_" + untestedRandomString(3)
+      sqlStmt = "select count(*) from qf_roster where details_tbl = ?"
+    }
     var count int
-    err := SQLDB.QueryRow("select count(*) from qf_roster where tbl_name = ?", newName).Scan(&count)
+
+    err := SQLDB.QueryRow(sqlStmt, newName).Scan(&count)
     if err != nil {
       return "", err
     }
@@ -667,4 +673,65 @@ func newRosterSheetTableName() (string, error) {
       return newName, nil
     }
   }
+}
+
+
+func rosterExists(roster string) (bool, error) {
+  var count int
+  err := SQLDB.QueryRow("select count(*) from qf_roster where name = ?", roster).Scan(&count)
+  if err != nil {
+    return false, err
+  }
+
+  if count != 0 {
+    return true, nil
+  } else {
+    return false, nil
+  }
+}
+
+
+func getRosterID(roster string) (int, error) {
+  var rosterid int
+  err := SQLDB.QueryRow("select id from qf_roster where name = ?", roster).Scan(&rosterid)
+  if err != nil {
+    return 0, err
+  }
+  return rosterid, nil
+}
+
+
+type RosterPermissions struct {
+  Roster string
+  Permissions string
+}
+
+
+func getRosterPermissions(roster string) ([]RosterPermissions, error) {
+  rps := make([]RosterPermissions, 0)
+
+  rosterid, err := getRosterID(roster)
+  if err != nil {
+    return rps, err
+  }
+
+  var role, permissions string
+  rows, err := SQLDB.Query(`select qf_roles.role, qf_roster_permissions.permissions
+    from qf_roles inner join qf_roster_permissions on qf_roles.id = qf_roster_permissions.roleid
+    where qf_roster_permissions.rosterid = ?`, rosterid)
+  if err != nil {
+    return rps, err
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&role, &permissions)
+    if err != nil {
+      return rps, err
+    }
+    rps = append(rps, RosterPermissions{role, permissions})
+  }
+  if err = rows.Err(); err != nil {
+    return rps, err
+  }
+  return rps, nil
 }

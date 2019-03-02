@@ -220,10 +220,12 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       dsid int not null,
       frequency varchar(20) not null default "daily",
       description text,
-      tbl_name varchar(64) not null,
+      sheet_tbl varchar(64) not null,
+      details_tbl varchar(64) not null,
       primary key(id),
       unique(name),
-      unique(tbl_name),
+      unique(sheet_tbl),
+      unique(details_tbl),
       foreign key (dsid) references qf_document_structures (id)
       )`)
     if err != nil {
@@ -231,19 +233,20 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    // _, err = SQLDB.Exec(`create table qf_roster_sheets (
-    //   id int not null auto_increment,
-    //   dsid int not null,
-    //   roleid int not null,
-    //   frequency varchar(50),
-    //   primary key(id),
-    //   unique(name),
-    //   foreign key (dsid) references qf_document_structures (id)
-    //   )`)
-    // if err != nil {
-    //   errorPage(w, err.Error())
-    //   return
-    // }
+    _, err = SQLDB.Exec(`create table qf_roster_permissions (
+      id int not null auto_increment,
+      roleid int not null,
+      rosterid int not null,
+      permissions varchar(255) not null,
+      primary key (id),
+      unique(roleid, rosterid),
+      foreign key (roleid) references qf_roles (id),
+      foreign key (rosterid) references qf_roster (id)
+      )`)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
 
     fmt.Fprintf(w, "Setup Completed.")
 
@@ -318,6 +321,10 @@ func AddQFHandlers(r *mux.Router) {
 
   // Roster Links
   r.HandleFunc("/new-roster/", newRoster)
+  r.HandleFunc("/list-rosters/", listRosters)
+  r.HandleFunc("/view-roster/{roster}/", viewRoster)
+  r.HandleFunc("/delete-roster/{roster}/", deleteRoster)
+
 }
 
 

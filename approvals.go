@@ -247,16 +247,6 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
     errorPage(w, err.Error())
     return
   }
-  rocPerm, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-  romPerm, err := DoesCurrentUserHavePerm(r, ds, "read-only-mentioned")
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
 
   var createdBy uint64
   sqlStmt = fmt.Sprintf("select created_by from `%s` where id = %s", tblName, docid)
@@ -267,34 +257,8 @@ func viewOrUpdateApprovals(w http.ResponseWriter, r *http.Request) {
   }
 
   if ! readPerm {
-    if rocPerm {
-      if createdBy != useridUint64 {
-        errorPage(w, "You are not the owner of this document so can't read it.")
-        return
-      }
-    } else if romPerm {
-      muColumn, err := getMentionedUserColumn(ds)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
-
-      var muColumnData uint64
-      sqlStmt = fmt.Sprintf("select %s from `%s` where id = %s", muColumn, tblName, docid)
-      err = SQLDB.QueryRow(sqlStmt).Scan(&muColumnData)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
-
-      if muColumnData != useridUint64 {
-        errorPage(w, "You are not mentioned in this document so can't read it.")
-        return
-      }
-    } else {
-      errorPage(w, "You don't have the read permission for this document structure.")
-      return
-    }
+    errorPage(w, "You don't have the read permission for this document structure.")
+    return
   }
 
   approvers, err := getApprovers(ds)

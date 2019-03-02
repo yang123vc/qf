@@ -1,0 +1,18 @@
+{{define "title"}}List Rosters{{end}}
+
+{{define "main"}}
+<h3>List Rosters</h3>
+<ol>
+  {{range .RosterNames}}
+    <li>
+      {{.}} <a href="/view-roster/{{.}}/">View Roster Info</a>&nbsp;&nbsp;
+      <a href="/delete-roster/{{.}}/">Delete</a>
+    </li>
+  {{end}}
+</ol>
+
+<br>
+<a href="/new-roster/">New Roster</a>
+<br>
+<br>
+{{end}}

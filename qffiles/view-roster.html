@@ -1,0 +1,13 @@
+{{define "title"}}View Roster {{.Name}} {{end}}
+
+{{define "main"}}
+<h3>View Roster {{.Name}}</h3>
+<p>Frequency : <b>{{.Frequency}}</b></p>
+<p>Description : <b>{{.Description}}</b></p>
+<p>Sheets Table: <b>{{.SheetTable}}</b></p>
+<p>Details Table: <b>{{.DetailsTable}}</b></p>
+
+<br>
+<a href="/delete-roster/{{.Name}}/">Delete Roster</a>
+<br>
+{{end}}
