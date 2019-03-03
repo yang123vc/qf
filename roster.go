@@ -10,6 +10,9 @@ import (
 )
 
 
+var MYSQL_FORMAT = "2006-01-02 15:04:05"
+
+
 func newRoster(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
@@ -75,7 +78,7 @@ func newRoster(w http.ResponseWriter, r *http.Request) {
     sqlStmt += "created_by bigint unsigned not null,"
     sqlStmt += "docid bigint unsigned not null,"
     sqlStmt += "status varchar(10) not null default 'undone',"
-    sqlStmt += "comment text, primary key (id), unique(docid),"
+    sqlStmt += "comment text, primary key (id),"
     sqlStmt += fmt.Sprintf("foreign key (created_by) references `%s`(id),", UsersTable)
 
     tblName, err := tableName(r.FormValue("document_structure"))
@@ -366,8 +369,8 @@ func fillRoster(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    sqlStmt = fmt.Sprintf("select count(*) from %s where id = ? and created < ? and created > ?", detailsTable)
-    err = SQLDB.QueryRow(sqlStmt, docid, startPeriod, endPeriod).Scan(&count)
+    sqlStmt = fmt.Sprintf("select count(*) from %s where docid = ? and created < ? and created > ?", detailsTable)
+    err = SQLDB.QueryRow(sqlStmt, docid, endPeriod.Format(MYSQL_FORMAT), startPeriod.Format(MYSQL_FORMAT)).Scan(&count)
     if err != nil {
       errorPage(w, err.Error())
       return
@@ -384,7 +387,72 @@ func fillRoster(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    redirectURL := fmt.Sprintf("/view-roster-fillings/%s/", roster_name)
+    redirectURL := fmt.Sprintf("/all-roster-fillings/%s/", roster_name)
     http.Redirect(w, r, redirectURL, 307)
   }
+}
+
+
+func allRosterFillings(w http.ResponseWriter, r *http.Request) {
+  // useridUint64, err := GetCurrentUser(r)
+  _, err := GetCurrentUser(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  vars := mux.Vars(r)
+  roster_name := vars["roster"]
+
+  retv, err := rosterExists(roster_name)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if retv == false {
+    errorPage(w, fmt.Sprintf("The roster %s does not exists.", roster_name))
+    return
+  }
+
+  var sheetTable string
+  err = SQLDB.QueryRow("select sheet_tbl from qf_roster where name = ?", roster_name).Scan(&sheetTable)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  type Sheet struct {
+    StartPeriod string
+    EndPeriod string
+  }
+  sheets := make([]Sheet, 0)
+  sqlStmt := fmt.Sprintf("select start_period, end_period from %s order by id desc", sheetTable)
+  var startPeriod, endPeriod string
+  rows, err := SQLDB.Query(sqlStmt)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&startPeriod, &endPeriod)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    sheets = append(sheets, Sheet{startPeriod, endPeriod})
+  }
+  if err = rows.Err(); err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  type Context struct {
+    Roster string
+    Sheets []Sheet
+  }
+
+  ctx := Context{roster_name, sheets}
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/all-roster-fillings.html"))
+  tmpl.Execute(w, ctx)
 }

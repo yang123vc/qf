@@ -325,7 +325,7 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/view-roster/{roster}/", viewRoster)
   r.HandleFunc("/delete-roster/{roster}/", deleteRoster)
   r.HandleFunc("/fill-roster/{roster}/", fillRoster)
-
+  r.HandleFunc("/all-roster-fillings/{roster}/", allRosterFillings)
 }
 
 

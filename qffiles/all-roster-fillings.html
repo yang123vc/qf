@@ -1,0 +1,17 @@
+{{define "title"}} All Roster Fillings for Roster "{{.Roster}}" {{end}}
+
+
+{{define "main"}}
+<h3> All Roster Fillings for Roster "{{.Roster}}" </h3>
+
+<ol>
+  {{range .Sheets}}
+    <li> <a href="/view-roster-fillings/{{$.Roster}}/{{.StartPeriod}}/">{{.StartPeriod}} - {{.EndPeriod}} </a> </li>
+  {{end}}
+</ol>
+
+<br>
+<a href="/fill-roster/{{.Roster}}/">Fill Roster "{{.Roster}}"</a>
+<br>
+
+{{end}}
