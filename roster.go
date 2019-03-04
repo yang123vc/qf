@@ -294,7 +294,7 @@ func fillRoster(w http.ResponseWriter, r *http.Request) {
     return
   }
   if ! truthValue {
-    errorPage(w, fmt.Sprintf("You don't have the create permission for the underlying document structure of this roster: %s.", roster_name))
+    errorPage(w, fmt.Sprintf("You don't have create permission for the underlying document structure of this roster: %s.", roster_name))
     return
   }
 
@@ -369,7 +369,7 @@ func fillRoster(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    sqlStmt = fmt.Sprintf("select count(*) from %s where docid = ? and created < ? and created > ?", detailsTable)
+    sqlStmt = fmt.Sprintf("select count(*) from %s where docid = ? and created <= ? and created >= ?", detailsTable)
     err = SQLDB.QueryRow(sqlStmt, docid, endPeriod.Format(MYSQL_FORMAT), startPeriod.Format(MYSQL_FORMAT)).Scan(&count)
     if err != nil {
       errorPage(w, err.Error())
@@ -414,10 +414,23 @@ func allRosterFillings(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var sheetTable string
-  err = SQLDB.QueryRow("select sheet_tbl from qf_roster where name = ?", roster_name).Scan(&sheetTable)
+  sqlStmt := "select qf_document_structures.fullname, qf_roster.sheet_tbl "
+  sqlStmt += "from qf_document_structures inner join qf_roster on "
+  sqlStmt += "qf_document_structures.id = qf_roster.dsid where qf_roster.name = ?"
+  var ds, sheetTable string
+  err = SQLDB.QueryRow(sqlStmt, roster_name).Scan(&ds, &sheetTable)
   if err != nil {
     errorPage(w, err.Error())
+    return
+  }
+
+  truthValue, err := DoesCurrentUserHavePerm(r, ds, "read")
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, fmt.Sprintf("You don't have read permission for the underlying document structure of this roster: %s.", roster_name))
     return
   }
 
@@ -426,7 +439,7 @@ func allRosterFillings(w http.ResponseWriter, r *http.Request) {
     EndPeriod string
   }
   sheets := make([]Sheet, 0)
-  sqlStmt := fmt.Sprintf("select start_period, end_period from %s order by id desc", sheetTable)
+  sqlStmt = fmt.Sprintf("select start_period, end_period from %s order by id desc", sheetTable)
   var startPeriod, endPeriod string
   rows, err := SQLDB.Query(sqlStmt)
   if err != nil {
@@ -454,5 +467,98 @@ func allRosterFillings(w http.ResponseWriter, r *http.Request) {
 
   ctx := Context{roster_name, sheets}
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/all-roster-fillings.html"))
+  tmpl.Execute(w, ctx)
+}
+
+
+func onePeriod(w http.ResponseWriter, r *http.Request) {
+  _, err := GetCurrentUser(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  vars := mux.Vars(r)
+  roster_name := vars["roster"]
+  startPeriod := vars["start-period"]
+  endPeriod := vars["end-period"]
+
+  retv, err := rosterExists(roster_name)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if retv == false {
+    errorPage(w, fmt.Sprintf("The roster %s does not exists.", roster_name))
+    return
+  }
+
+  sqlStmt := "select qf_document_structures.fullname, qf_roster.details_tbl "
+  sqlStmt += "from qf_document_structures inner join qf_roster on "
+  sqlStmt += "qf_document_structures.id = qf_roster.dsid where qf_roster.name = ?"
+  var ds, detailsTable string
+  err = SQLDB.QueryRow(sqlStmt, roster_name).Scan(&ds, &detailsTable)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  truthValue, err := DoesCurrentUserHavePerm(r, ds, "read")
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, fmt.Sprintf("You don't have read permission for the underlying document structure of this roster: %s.", roster_name))
+    return
+  }
+
+  type Filling struct {
+    DocID string
+    Status string
+    Comment string
+    Created string
+    CreatedBy string
+  }
+
+  fillings := make([]Filling, 0)
+
+  sqlStmt = fmt.Sprintf("select docid, status, comment, created, created_by from %s where created <= ? and created >= ? order by created desc",
+     detailsTable)
+  rows, err := SQLDB.Query(sqlStmt, endPeriod, startPeriod)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  defer rows.Close()
+
+  var docid, status, comment, created, createdBy string
+  for rows.Next() {
+    err := rows.Scan(&docid, &status, &comment, &created, &createdBy)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    fillings = append(fillings, Filling{docid, status, comment, created, createdBy})
+  }
+  if err = rows.Err(); err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  type Context struct {
+    Roster string
+    DocumentStructure string
+    Fillings []Filling
+    StartPeriod string
+    EndPeriod string
+    Add func(x, y int) int
+  }
+
+  add := func(x, y int) int {
+    return x + y
+  }
+  ctx := Context{roster_name, ds, fillings, startPeriod, endPeriod, add}
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/one-period.html"))
   tmpl.Execute(w, ctx)
 }

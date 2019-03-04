@@ -1,0 +1,32 @@
+{{define "title"}} One Period Between {{.StartPeriod}} and {{.EndPeriod}} {{end}}
+
+
+{{define "main"}}
+<h3> One Period Between {{.StartPeriod}} and {{.EndPeriod}} </h3>
+
+<table id="one-period-table">
+  <thead>
+    <tr>
+      <td>S/NO</td>
+      <td>Document ID</td>
+      <td>Status</td>
+      <td>Comment</td>
+      <td>Created</td>
+      <td>Created By</td>
+    </tr>
+  </thead>
+  <tbody>
+    {{$add := .Add}}
+    {{range $index, $element := .Fillings}}
+      <tr>
+        <td>{{call $add $index 1}}</td>
+        <td><a href="/update/{{$.DocumentStructure}}/{{$element.DocID}}/">{{$element.DocID}}</a></td>
+        <td>{{$element.Status}}</td>
+        <td>{{$element.Comment}}</td>
+        <td>{{$element.Created}}</td>
+        <td><a href="/user-details/{{$element.CreatedBy}}/">{{$element.CreatedBy}}</a></td>
+      </tr>
+    {{end}}
+  </tbody>
+</table>
+{{end}}
