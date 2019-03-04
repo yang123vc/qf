@@ -214,7 +214,7 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    _, err = SQLDB.Exec(`create table qf_roster (
+    _, err = SQLDB.Exec(`create table qf_rosters (
       id int not null auto_increment,
       name varchar(100) not null,
       dsid int not null,
@@ -227,21 +227,6 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       unique(sheet_tbl),
       unique(details_tbl),
       foreign key (dsid) references qf_document_structures (id)
-      )`)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-
-    _, err = SQLDB.Exec(`create table qf_roster_permissions (
-      id int not null auto_increment,
-      roleid int not null,
-      rosterid int not null,
-      permissions varchar(255) not null,
-      primary key (id),
-      unique(roleid, rosterid),
-      foreign key (roleid) references qf_roles (id),
-      foreign key (rosterid) references qf_roster (id)
       )`)
     if err != nil {
       errorPage(w, err.Error())

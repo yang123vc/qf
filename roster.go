@@ -31,7 +31,7 @@ func newRoster(w http.ResponseWriter, r *http.Request) {
   }
 
   var rosterListStr sql.NullString
-  err = SQLDB.QueryRow("select group_concat(name separator ',,,') from qf_roster").Scan(&rosterListStr)
+  err = SQLDB.QueryRow("select group_concat(name separator ',,,') from qf_rosters").Scan(&rosterListStr)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -66,7 +66,7 @@ func newRoster(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    _, err = SQLDB.Exec("insert into qf_roster(name, dsid, description, frequency, sheet_tbl,  details_tbl) values(?,?,?,?,?,?)",
+    _, err = SQLDB.Exec("insert into qf_rosters(name, dsid, description, frequency, sheet_tbl,  details_tbl) values(?,?,?,?,?,?)",
       r.FormValue("roster_name"), dsid, r.FormValue("roster_description"), r.FormValue("frequency"), rstn, rdtn)
     if err != nil {
       errorPage(w, err.Error())
@@ -98,7 +98,6 @@ func newRoster(w http.ResponseWriter, r *http.Request) {
     sqlStmt = fmt.Sprintf("create table `%s` ( id bigint unsigned not null auto_increment, ", rstn)
     sqlStmt += "start_period datetime not null, "
     sqlStmt += "end_period datetime not null, "
-    sqlStmt += "details text, "
     sqlStmt += "primary key (id), unique(start_period, end_period) )"
 
     _, err = SQLDB.Exec(sqlStmt)
@@ -128,7 +127,7 @@ func listRosters(w http.ResponseWriter, r *http.Request) {
   rns := make([]string, 0)
   var name string
 
-  rows, err := SQLDB.Query("select name from qf_roster order by name asc")
+  rows, err := SQLDB.Query("select name from qf_rosters order by name asc")
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -191,7 +190,7 @@ func viewRoster(w http.ResponseWriter, r *http.Request) {
   }
 
   var description, frequency, sheetTable, detailsTable string
-  err = SQLDB.QueryRow("select description, frequency, sheet_tbl, details_tbl from qf_roster where name = ? ", roster_name).Scan(&description,
+  err = SQLDB.QueryRow("select description, frequency, sheet_tbl, details_tbl from qf_rosters where name = ? ", roster_name).Scan(&description,
     &frequency, &sheetTable, &detailsTable)
   if err != nil {
     errorPage(w, err.Error())
@@ -229,7 +228,7 @@ func deleteRoster(w http.ResponseWriter, r *http.Request) {
   }
 
   var sheetTable, detailsTable string
-  err = SQLDB.QueryRow("select sheet_tbl, details_tbl from qf_roster where name = ? ", roster_name).Scan(&sheetTable, &detailsTable)
+  err = SQLDB.QueryRow("select sheet_tbl, details_tbl from qf_rosters where name = ? ", roster_name).Scan(&sheetTable, &detailsTable)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -247,7 +246,7 @@ func deleteRoster(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  _, err = SQLDB.Exec("delete from qf_roster where name = ?", roster_name)
+  _, err = SQLDB.Exec("delete from qf_rosters where name = ?", roster_name)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -278,9 +277,9 @@ func fillRoster(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  sqlStmt := "select qf_document_structures.fullname, qf_roster.sheet_tbl, qf_roster.details_tbl, qf_roster.frequency "
-  sqlStmt += "from qf_document_structures inner join qf_roster on "
-  sqlStmt += "qf_document_structures.id = qf_roster.dsid where qf_roster.name = ?"
+  sqlStmt := "select qf_document_structures.fullname, qf_rosters.sheet_tbl, qf_rosters.details_tbl, qf_rosters.frequency "
+  sqlStmt += "from qf_document_structures inner join qf_rosters on "
+  sqlStmt += "qf_document_structures.id = qf_rosters.dsid where qf_rosters.name = ?"
   var ds, sheetTable, detailsTable, frequency string
   err = SQLDB.QueryRow(sqlStmt, roster_name).Scan(&ds, &sheetTable, &detailsTable, &frequency)
   if err != nil {
@@ -414,9 +413,9 @@ func allRosterFillings(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  sqlStmt := "select qf_document_structures.fullname, qf_roster.sheet_tbl "
-  sqlStmt += "from qf_document_structures inner join qf_roster on "
-  sqlStmt += "qf_document_structures.id = qf_roster.dsid where qf_roster.name = ?"
+  sqlStmt := "select qf_document_structures.fullname, qf_rosters.sheet_tbl "
+  sqlStmt += "from qf_document_structures inner join qf_rosters on "
+  sqlStmt += "qf_document_structures.id = qf_rosters.dsid where qf_rosters.name = ?"
   var ds, sheetTable string
   err = SQLDB.QueryRow(sqlStmt, roster_name).Scan(&ds, &sheetTable)
   if err != nil {
@@ -493,9 +492,9 @@ func onePeriod(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  sqlStmt := "select qf_document_structures.fullname, qf_roster.details_tbl "
-  sqlStmt += "from qf_document_structures inner join qf_roster on "
-  sqlStmt += "qf_document_structures.id = qf_roster.dsid where qf_roster.name = ?"
+  sqlStmt := "select qf_document_structures.fullname, qf_rosters.details_tbl "
+  sqlStmt += "from qf_document_structures inner join qf_rosters on "
+  sqlStmt += "qf_document_structures.id = qf_rosters.dsid where qf_rosters.name = ?"
   var ds, detailsTable string
   err = SQLDB.QueryRow(sqlStmt, roster_name).Scan(&ds, &detailsTable)
   if err != nil {

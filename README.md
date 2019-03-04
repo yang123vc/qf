@@ -77,11 +77,10 @@ you would see the links to do so in this page.
 
 ### Theming Your Project
 
-The sample project has no design. To add yours copy the template `templates/bad-base.html` to your project.
-Edit it and then point your version to `qf.BaseTemplate` before registering any handlers.
+The sample project has no design. To make it beautiful make a template from this template :`qffiles/bad-base.html`
+. Save it to your project and then point your version to `qf.BaseTemplate`.
 
 Also if you want to add dynamic contents to any qf page, please use javascript.
-
 First check the address of the page `window.location` before adding it.
 
 
