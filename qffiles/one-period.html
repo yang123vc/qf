@@ -4,7 +4,7 @@
 {{define "main"}}
 <h3> One Period Between {{.StartPeriod}} and {{.EndPeriod}} </h3>
 
-<table id="one-period-table">
+<table>
   <thead>
     <tr>
       <td>S/NO</td>
@@ -20,7 +20,7 @@
     {{range $index, $element := .Fillings}}
       <tr>
         <td>{{call $add $index 1}}</td>
-        <td><a href="/update/{{$.DocumentStructure}}/{{$element.DocID}}/">{{$element.DocID}}</a></td>
+        <td><a href="/update/{{$.DocumentStructure}}/{{$element.DocID}}/" target="_blank">{{$element.DocID}}</a></td>
         <td>{{$element.Status}}</td>
         <td>{{$element.Comment}}</td>
         <td>{{$element.Created}}</td>

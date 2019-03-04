@@ -322,14 +322,14 @@ func fillRoster(w http.ResponseWriter, r *http.Request) {
 
   sqlStmt = fmt.Sprintf("select count(*) from %s where start_period = ? and end_period = ?", sheetTable)
   var count uint64
-  err = SQLDB.QueryRow(sqlStmt, startPeriod, endPeriod).Scan(&count)
+  err = SQLDB.QueryRow(sqlStmt, startPeriod.Format(MYSQL_FORMAT), endPeriod.Format(MYSQL_FORMAT)).Scan(&count)
   if err != nil {
     errorPage(w, err.Error())
     return
   }
   if count == 0 {
     sqlStmt = fmt.Sprintf("insert into %s(start_period, end_period) values(?, ?)", sheetTable)
-    _, err = SQLDB.Exec(sqlStmt, startPeriod, endPeriod)
+    _, err = SQLDB.Exec(sqlStmt, startPeriod.Format(MYSQL_FORMAT), endPeriod.Format(MYSQL_FORMAT))
     if err != nil {
       errorPage(w, err.Error())
       return
@@ -340,12 +340,12 @@ func fillRoster(w http.ResponseWriter, r *http.Request) {
     type Context struct {
       DocumentStructure string
       Roster string
-      TodaysDate time.Time
-      StartPeriod time.Time
-      EndPeriod time.Time
+      TodaysDate string
+      StartPeriod string
+      EndPeriod string
     }
 
-    ctx := Context{ds, roster_name, todaysDate, startPeriod, endPeriod}
+    ctx := Context{ds, roster_name, todaysDate.Format(MYSQL_FORMAT), startPeriod.Format(MYSQL_FORMAT), endPeriod.Format(MYSQL_FORMAT)}
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/fill-roster.html"))
     tmpl.Execute(w, ctx)
   } else {
