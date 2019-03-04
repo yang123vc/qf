@@ -658,10 +658,10 @@ func newRosterObjectTableName(rosterObject string) (string, error) {
     var newName, sqlStmt string
     if rosterObject == "sheet" {
       newName = "qfrstbl_" + untestedRandomString(3)
-      sqlStmt = "select count(*) from qf_roster where sheet_tbl = ?"
+      sqlStmt = "select count(*) from qf_rosters where sheet_tbl = ?"
     } else {
       newName = "qfrdtbl_" + untestedRandomString(3)
-      sqlStmt = "select count(*) from qf_roster where details_tbl = ?"
+      sqlStmt = "select count(*) from qf_rosters where details_tbl = ?"
     }
     var count int
 
@@ -678,7 +678,7 @@ func newRosterObjectTableName(rosterObject string) (string, error) {
 
 func rosterExists(roster string) (bool, error) {
   var count int
-  err := SQLDB.QueryRow("select count(*) from qf_roster where name = ?", roster).Scan(&count)
+  err := SQLDB.QueryRow("select count(*) from qf_rosters where name = ?", roster).Scan(&count)
   if err != nil {
     return false, err
   }
@@ -693,7 +693,7 @@ func rosterExists(roster string) (bool, error) {
 
 func getRosterID(roster string) (int, error) {
   var rosterid int
-  err := SQLDB.QueryRow("select id from qf_roster where name = ?", roster).Scan(&rosterid)
+  err := SQLDB.QueryRow("select id from qf_rosters where name = ?", roster).Scan(&rosterid)
   if err != nil {
     return 0, err
   }
@@ -716,9 +716,9 @@ func getRosterPermissions(roster string) ([]RosterPermissions, error) {
   }
 
   var role, permissions string
-  rows, err := SQLDB.Query(`select qf_roles.role, qf_roster_permissions.permissions
-    from qf_roles inner join qf_roster_permissions on qf_roles.id = qf_roster_permissions.roleid
-    where qf_roster_permissions.rosterid = ?`, rosterid)
+  rows, err := SQLDB.Query(`select qf_roles.role, qf_rosters_permissions.permissions
+    from qf_roles inner join qf_rosters_permissions on qf_roles.id = qf_rosters_permissions.roleid
+    where qf_rosters_permissions.rosterid = ?`, rosterid)
   if err != nil {
     return rps, err
   }
