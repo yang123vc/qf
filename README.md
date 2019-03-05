@@ -99,7 +99,8 @@ seeing only what he uses.
 
 The permissions to test for is `read`.
 
-The link to display to the user is of the form `doc/{documentStructure}/list/`
+The link to display to the user is of the form `/list/{documentStructure}/`. Replace {documentStructure} with
+the name of the document structure.
 
 
 ### Theming Your Project
