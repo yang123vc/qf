@@ -61,7 +61,17 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     return
   }
   if count == 0 {
-    errorPage(w, "There are no documents to display.")
+    cperm, err := DoesCurrentUserHavePerm(r, ds, "create")
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    type Context struct {
+      DocumentStructure string
+      CreatePerm bool
+    }
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/suggest-create-document.html"))
+    tmpl.Execute(w, Context{ds, cperm})
     return
   }
 

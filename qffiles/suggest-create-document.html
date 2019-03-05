@@ -1,0 +1,24 @@
+{{define "title"}} Suggest Create Document of {{.DocumentStructure}} {{end}}
+
+
+{{define "main"}}
+  <h1>Your Page is Empty</h1>
+
+  <p>No document has been created under these Document Structure.</p>
+
+  {{if .CreatePerm}}
+    <p>
+      Visit <a href="/create/{{.DocumentStructure}}/">Document Creation Page</a> to create
+      a document.
+    </p>
+  {{else}}
+    <div>
+      Possible actions are:
+      <ol>
+        <li>Come back later</li>
+        <li>Contact the administrator</li>
+      </ol>
+    </div>
+  {{end}}
+
+{{end}}
