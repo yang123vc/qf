@@ -4,26 +4,39 @@
 
 A website builder for forms. Could be used to write ERPs, CRMs and other record softwares.
 
+
 ## Project Design
 
-The method in use here is to mix it with complicated forms. This provides the
-benefits of one installation ( reducing server maintenance works) and also using
-one authentication system to log on to the system (comfort).
+1.  The method in use here is to mix it with complicated forms. This provides the
+    benefits of one installation ( reducing server maintenance works) and also using
+    one authentication system to log on to the system (comfort).
+
+2.  Document Structures (Forms) are not provided with the installation so as to create only what
+    one needs. Also it is impossible to get forms for every use case for there are differences between
+    organizations.
+
+3.  There is a list of document structures which are accessible to the administrator only.
+    To list document structures to the users you would need to write a custom page.
+    Reasons for this design are:
+
+    * It makes the list of page very configurable. One could achieve dropdowns, menus on the top, menus on
+    the side. With these menus pointing to document structure links.
+
+    * Document Structures pages can be grouped with non-qf pages.
 
 
 ## Projects Used
 
 * Golang
 * MySQL
-* Ubuntu
 
 
 ## Setup
 
 ### Users Table Setup
 
-Note that user creation and updating is not part of this project. You as the admininstrator is to provide this. This is to
-ensure that you can use any form of authentication you want eg. social auth (facebook, google, twitter), passwords,
+Note that user creation and updating is not part of this project. You as the administrator is to provide this. This is to
+ensure that you can use any form of authentication you want eg. social auth (Facebook, google, twitter), passwords,
 fingerprint, keys etc.
 
 Create a users table with the following properties:
@@ -75,12 +88,26 @@ To set up permissions or approvals framework for a document structure, go to `/v
 you would see the links to do so in this page.
 
 
+### Listing of Document Structure Links in your Web App
+
+You would need to call `qf.DoesCurrentUserHavePerm` to check if the current user have read permission
+to the document structure before listing it. This would ensure a clean interface with the user
+seeing only what he uses.
+
+`qf.DoesCurrentUserHavePerm` has the following definition:
+`func(r *http.Request, documentStructure string, permission string) (bool, error)`
+
+The permissions to test for is `read`.
+
+The link to display to the user is of the form `doc/{documentStructure}/list/`
+
+
 ### Theming Your Project
 
 The sample project has no design. To make it beautiful make a template from this template :`qffiles/bad-base.html`
 . Save it to your project and then point your version to `qf.BaseTemplate`.
 
-Also if you want to add dynamic contents to any qf page, please use javascript.
+Also if you want to add dynamic contents to any `qf` page, please use JavaScript.
 First check the address of the page `window.location` before adding it.
 
 
@@ -137,27 +164,6 @@ set the AfterCreateFn and the AfterDeleteFn.
 
 To send mails after approvals set the `qf.ApprovalFrameworkMailsFn`. It's definition is
 `func(docid uint64, role, status, message string)`
-
-
-### Listing of Document Structure Links in your Web App
-
-There is a list of document structures which are accessible to the admininstrator only. It lists
-all the document structures in your installation. To list document structures to the users
-you would need to write a custom page. This is because you might have a category page which mixes
-complicated forms, and forms created with this project.
-
-You would need to call `qf.DoesCurrentUserHavePerm` to check if the current user have read permission
-to the document structure before listing it. This would ensure a clean interface with the user
-seeing only what he uses.
-
-`qf.DoesCurrentUserHavePerm` has the following definition:
-`func(r *http.Request, documentStructure string, permission string) (bool, error)`
-
-The permissions to test for are `read, read-only-created, read-only-mentioned`. These are the three
-types of read permission in this project.
-
-
-The link to display to the user is of the form `doc/{documentStructure}/list/`
 
 
 ## Upgrading
