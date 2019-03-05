@@ -246,9 +246,11 @@ func listDocuments(w http.ResponseWriter, r *http.Request) {
   tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
     errorPage(w, err.Error())
+    return
   }
   if ! tv1 {
     errorPage(w, "You don't have read permission for this document structure.")
+    return
   }
 
   tblName, err := tableName(ds)
