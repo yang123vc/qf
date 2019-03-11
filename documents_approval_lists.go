@@ -8,14 +8,18 @@ import (
 
 
 func approvedList(w http.ResponseWriter, r *http.Request) {
-  _, err := GetCurrentUser(r)
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  detv, err := docExists(ds)
   if err != nil {
     errorPage(w, err.Error())
     return
   }
-
-  vars := mux.Vars(r)
-  ds := vars["document-structure"]
+  if detv == false {
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
+    return
+  }
 
   tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
@@ -32,7 +36,7 @@ func approvedList(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  readSqlStmt := fmt.Sprintf("select id from `%s` where fully_approved = 't' order by created desc limit ?, ?", tblName)
+  readSqlStmt := fmt.Sprintf("select id from `%s` where fully_approved = 't' ", tblName)
   totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where fully_approved = 't' ", tblName)
 
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "approved-list")
@@ -41,14 +45,18 @@ func approvedList(w http.ResponseWriter, r *http.Request) {
 
 
 func unapprovedList(w http.ResponseWriter, r *http.Request) {
-  _, err := GetCurrentUser(r)
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  detv, err := docExists(ds)
   if err != nil {
     errorPage(w, err.Error())
     return
   }
-
-  vars := mux.Vars(r)
-  ds := vars["document-structure"]
+  if detv == false {
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
+    return
+  }
 
   tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
@@ -65,7 +73,7 @@ func unapprovedList(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  readSqlStmt := fmt.Sprintf("select id from `%s` where fully_approved = 'f' order by created desc limit ?, ?", tblName)
+  readSqlStmt := fmt.Sprintf("select id from `%s` where fully_approved = 'f' ", tblName)
   totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where fully_approved = 'f' ", tblName)
 
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "unapproved-list")

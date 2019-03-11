@@ -338,52 +338,6 @@ func getEC(documentStructure string) (ExtraCode, bool) {
 }
 
 
-type ColLabel struct {
-  Col string
-  Label string
-}
-
-func getColumnNames(ds string) ([]ColLabel, error){
-  returnList := make([]ColLabel, 0)
-  var dsid int
-  isAlias, ptdsid, err := DSIdAliasPointsTo(ds)
-  if err != nil {
-    return nil, err
-  }
-
-  if isAlias {
-    dsid = ptdsid
-  } else {
-    err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&dsid)
-    if err != nil {
-      return nil, err
-    }
-  }
-
-  var colName string
-  var label string
-  rows, err := SQLDB.Query(`select name, label from qf_fields where dsid = ? and  type != "Table"
-    and type != "Section Break" and type != "File" and type != "Image" order by view_order asc limit 3`, dsid)
-  if err != nil {
-    return nil, err
-  }
-  defer rows.Close()
-  for rows.Next() {
-    err := rows.Scan(&colName, &label)
-    if err != nil {
-      return nil, err
-    }
-    returnList = append(returnList, ColLabel{colName, label})
-  }
-  if err = rows.Err(); err != nil {
-    return nil, err
-  }
-  returnList = append(returnList, ColLabel{"created", "Creation DateTime"}, ColLabel{"created_by", "Created By"})
-
-  return returnList, nil
-}
-
-
 func newTableName() (string, error) {
   for {
     newName := "qftbl_" + untestedRandomString(3)

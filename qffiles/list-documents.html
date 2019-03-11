@@ -18,24 +18,6 @@
   thead {
     font-weight: bold;
   }
-  td {
-    border-right: 1px solid gray;
-    padding: 5px;
-  }
-  td:last-child {
-    border-right: none;
-  }
-  .button-look {
-    text-decoration: none;
-    background-color: gray;
-    color: white;
-    border: 1px solid #999;
-    border-radius: 3px;
-    padding: 5px;
-  }
-  .button-look:hover {
-    background-color: #ccc;
-  }
   </style>
 {{end}}
 
@@ -67,6 +49,18 @@
   {{if ne .ListType "true-list"}}
     <a class="button-look" href="/list/{{.DocumentStructure}}/">True List</a>
   {{end}}
+
+  Order By: <select id="order-by">
+    {{range $.OrderColumns}}
+      <option>{{.}}</option>
+    {{end}}
+    <option>Created By</option>
+    <option>Creation DateTime</option>
+    <option>Modification DateTime</option>
+  </select>
+  <select id="order-direction"><option>Ascending</option><option>Descending</option></select>
+  <button id="order-btn">Order</button>
+
   <br><br>
 
   <table>
@@ -113,15 +107,15 @@
       Pages:
       {{range .Pages}}
         {{if eq $.ListType "true-list"}}
-          <a href='/list/{{$.DocumentStructure}}/{{.}}/'>{{.}}</a>
+          <a class="pagination-link" href='/list/{{$.DocumentStructure}}/{{.}}/'>{{.}}</a>
         {{else if eq $.ListType "date-list"}}
-          <a href='/date-list/{{$.DocumentStructure}}/{{$.OptionalDate}}/{{.}}/'>{{.}}</a>
+          <a class="pagination-link" href='/date-list/{{$.DocumentStructure}}/{{$.OptionalDate}}/{{.}}/'>{{.}}</a>
         {{else if eq $.ListType "approved-list"}}
-          <a href="/approved-list/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
+          <a class="pagination-link" href="/approved-list/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
         {{else if eq $.ListType "unapproved-list"}}
-          <a href="/unapproved-list/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
+          <a class="pagination-link" href="/unapproved-list/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
         {{else if eq $.ListType "search-list"}}
-          <a class="search-href" href="/search-results/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
+          <a class="pagination-link" href="/search-results/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
         {{end}}
       {{end}}
   </div>
@@ -130,15 +124,30 @@
 
 
 {{define "scripts"}}
-  {{if eq $.ListType "search-list"}}
-    <script>
+  <script>
+    $(document).ready(function() {
+
+      $("#order-btn").click(function(e) {
+        if (location.search == "") {
+          location.href += "?order_by=" + $('#order-by').val() + "&direction=" + $("#order-direction").val()
+        } else {
+          var params = new URLSearchParams(location.search)
+          params.set("order_by", $('#order-by').val())
+          params.set("direction", $('#order-direction').val())
+          location.href = location.origin + location.pathname + "?" + params.toString();
+        }
+      });
+
+      // complete the pagination.
       $(document).ready(function() {
-        $('.search-href').each(function(i, el) {
+        $('.pagination-link').each(function(i, el) {
           var href = $(el).attr('href');
           href += location.search
           $(el).attr("href", href);
         });
       });
-    </script>
-  {{end}}
+
+    });
+
+  </script>
 {{end}}

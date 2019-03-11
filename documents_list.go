@@ -79,13 +79,54 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
   err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
   if err != nil {
     errorPage(w, err.Error())
+    return
   }
 
-  colNames, err := getColumnNames(ds)
+  type ColLabel struct {
+    Col string
+    Label string
+  }
+
+  colNames := make([]ColLabel, 0)
+  var dsid int
+  isAlias, ptdsid, err := DSIdAliasPointsTo(ds)
   if err != nil {
     errorPage(w, err.Error())
     return
   }
+
+  if isAlias {
+    dsid = ptdsid
+  } else {
+    err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&dsid)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  }
+
+  var colName string
+  var label string
+  rows, err := SQLDB.Query(`select name, label from qf_fields where dsid = ? and  type != "Table"
+    and type != "Section Break" and type != "File" and type != "Image" order by view_order asc limit 3`, dsid)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&colName, &label)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    colNames = append(colNames, ColLabel{colName, label})
+  }
+  if err = rows.Err(); err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  colNames = append(colNames, ColLabel{"created", "Creation DateTime"}, ColLabel{"created_by", "Created By"})
 
   var itemsPerPage uint64 = 50
   startIndex := (pageI - 1) * itemsPerPage
@@ -95,7 +136,37 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
   ids := make([]uint64, 0)
   var idd uint64
 
-  rows, err := SQLDB.Query(readSqlStmt, startIndex, itemsPerPage)
+  if r.FormValue("order_by") != "" {
+    // get db name of order_by
+    var dbName string
+    orderBy := html.EscapeString( r.FormValue("order_by") )
+    if orderBy == "Created By" {
+      dbName = "created_by"
+    } else if orderBy == "Creation DateTime" {
+      dbName = "created"
+    } else if orderBy == "Modification DateTime" {
+      dbName = "modified"
+    } else {
+      err = SQLDB.QueryRow("select name from qf_fields where dsid = ? and label = ?", dsid, orderBy).Scan(&dbName)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+    }
+
+    var direction string
+    if r.FormValue("direction") == "Ascending" {
+      direction = "asc"
+    } else {
+      direction = "desc"
+    }
+
+    readSqlStmt += fmt.Sprintf(" order by %s %s limit ?, ?", dbName, direction)
+  } else {
+    readSqlStmt += " order by created desc limit ?, ?"
+  }
+
+  rows, err = SQLDB.Query(readSqlStmt, startIndex, itemsPerPage)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -179,6 +250,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     Approver bool
     ListType string
     OptionalDate string
+    OrderColumns []string
   }
 
   pages := make([]uint64, 0)
@@ -216,20 +288,23 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
   for _, colLabel := range colNames {
     colNamesList = append(colNamesList, colLabel.Label)
   }
+
+  var allColumnLabels sql.NullString
+  err = SQLDB.QueryRow(`select group_concat(label separator ",,,") from qf_fields where dsid = ? and  type != "Table"
+    and type != "Section Break" and type != "File" and type != "Image" order by view_order asc`, dsid).Scan(&allColumnLabels)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
   ctx := Context{ds, colNamesList, myRows, pageI, pages, tv1, tv2, tv3, hasApprovals,
-    approver, listType, date}
+    approver, listType, date, strings.Split(allColumnLabels.String, ",,,")}
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/list-documents.html"))
   tmpl.Execute(w, ctx)
 }
 
 
 func listDocuments(w http.ResponseWriter, r *http.Request) {
-  _, err := GetCurrentUser(r)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
   vars := mux.Vars(r)
   ds := vars["document-structure"]
 
@@ -259,7 +334,7 @@ func listDocuments(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  readSqlStmt := fmt.Sprintf("select id from `%s` order by created desc limit ?, ?", tblName)
+  readSqlStmt := fmt.Sprintf("select id from `%s` ", tblName)
   totalSqlStmt := fmt.Sprintf("select count(*) from `%s`", tblName)
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "true-list")
   return
@@ -267,12 +342,6 @@ func listDocuments(w http.ResponseWriter, r *http.Request) {
 
 
 func searchDocuments(w http.ResponseWriter, r *http.Request) {
-  _, err := GetCurrentUser(r)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
   vars := mux.Vars(r)
   ds := vars["document-structure"]
 
@@ -314,12 +383,6 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
 
 
 func searchResults(w http.ResponseWriter, r *http.Request) {
-  _, err := GetCurrentUser(r)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
   vars := mux.Vars(r)
   ds := vars["document-structure"]
 
@@ -401,20 +464,15 @@ func searchResults(w http.ResponseWriter, r *http.Request) {
   }
 
   readSqlStmt := fmt.Sprintf("select id from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
-  readSqlStmt += " order by created desc limit ?, ?"
+  // readSqlStmt += " order by created desc limit ?, ?"
   totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
 
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "search-list")
   return
 }
 
-func dateLists(w http.ResponseWriter, r *http.Request) {
-  _, err := GetCurrentUser(r)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
 
+func dateLists(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   ds := vars["document-structure"]
 
@@ -504,16 +562,19 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
 
 
 func dateList(w http.ResponseWriter, r *http.Request) {
-  _, err := GetCurrentUser(r)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
   vars := mux.Vars(r)
   ds := vars["document-structure"]
   date := vars["date"]
 
+  detv, err := docExists(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if detv == false {
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
+    return
+  }
 
   tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
   if err != nil {
@@ -530,7 +591,7 @@ func dateList(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  readSqlStmt := fmt.Sprintf("select id from `%s` where date(created) = '%s' order by created desc limit ?, ?",
+  readSqlStmt := fmt.Sprintf("select id from `%s` where date(created) = '%s' ",
     tblName, html.EscapeString(date))
   totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where date(created) = '%s'",
     tblName, html.EscapeString(date))
