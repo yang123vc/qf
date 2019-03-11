@@ -2,7 +2,7 @@
 
 ![alt text](https://github.com/bankole7782/qf/raw/master/qf-logo.png "QF logo")
 
-A website builder for forms. Could be used to write ERPs, CRMs and other record softwares.
+A website builder for forms. Could be used to write ERPs, CRMs and other record web apps.
 
 
 ## Project Design
@@ -12,8 +12,8 @@ A website builder for forms. Could be used to write ERPs, CRMs and other record 
     one authentication system to log on to the system (comfort).
 
 2.  Document Structures (Forms) are not provided with the installation so as to create only what
-    one needs. Also it is impossible to get forms for every use case for there are differences between
-    organizations.
+    one needs. Also it is impossible to get good forms for every use case for there are differences between
+    similar organizations.
 
 3.  There is a list of document structures which are accessible to the administrator only.
     To list document structures to the users you would need to write a custom page.
