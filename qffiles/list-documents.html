@@ -139,12 +139,10 @@
       });
 
       // complete the pagination.
-      $(document).ready(function() {
-        $('.pagination-link').each(function(i, el) {
-          var href = $(el).attr('href');
-          href += location.search
-          $(el).attr("href", href);
-        });
+      $('.pagination-link').each(function(i, el) {
+        var href = $(el).attr('href');
+        href += location.search
+        $(el).attr("href", href);
       });
 
     });
