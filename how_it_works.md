@@ -20,11 +20,7 @@ saved as 'f'.
 
 ## Viewing Documents and Listing Documents
 
-The SQL statements backing viewing documents and listing documents is a bit different. This
-is because we can't tell the fields before hand and create variables for the fields.
-
-It works by getting the column names from `qf_fields` and then looping through the columns and getting
-the data for each column. It also makes use of the theory that every data can be saved as string.
+It makes use of the theory that every piece of data can be stored in a string.
 
 
 ## UI
