@@ -511,6 +511,10 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     }
     break
   }
+  if err = rows.Err(); err != nil {
+    errorPage(w, err.Error())
+    return
+  }
 
   rowMap := make(map[string]string)
   var value string
@@ -598,6 +602,10 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
                 return
               }
               break
+            }
+            if err = rows.Err(); err != nil {
+              errorPage(w, err.Error())
+              return
             }
 
             crowMap := make(map[string]string)

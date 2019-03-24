@@ -289,20 +289,6 @@ func getApprovers(documentStructure string) ([]string, error) {
 }
 
 
-type ColAndData struct {
-  ColName string
-  Data string
-}
-
-
-type Row struct {
-  Id uint64
-  ColAndDatas []ColAndData
-  RowUpdatePerm bool
-  RowDeletePerm bool
-}
-
-
 func errorPage(w http.ResponseWriter, msg string) {
   _, fn, line, _ := runtime.Caller(1)
   type Context struct {

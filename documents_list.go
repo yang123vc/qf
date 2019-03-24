@@ -133,8 +133,6 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
   totalItems := count
   totalPages := math.Ceil( float64(totalItems) / float64(itemsPerPage) )
 
-  ids := make([]uint64, 0)
-  var idd uint64
 
   if r.FormValue("order_by") != "" {
     // get db name of order_by
@@ -166,25 +164,6 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     readSqlStmt += " order by created desc limit ?, ?"
   }
 
-  rows, err = SQLDB.Query(readSqlStmt, startIndex, itemsPerPage)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-  defer rows.Close()
-  for rows.Next() {
-    err := rows.Scan(&idd)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-    ids = append(ids, idd)
-  }
-  if err = rows.Err(); err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
   uocPerm, err1 := DoesCurrentUserHavePerm(r, ds, "update-only-created")
   docPerm, err2 := DoesCurrentUserHavePerm(r, ds, "delete-only-created")
   if err1 != nil || err2 != nil {
@@ -192,48 +171,98 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     return
   }
 
-  tblName, err := tableName(ds)
+
+  type ColAndData struct {
+    ColName string
+    Data string
+  }
+
+  type Row struct {
+    Id uint64
+    ColAndDatas []ColAndData
+    RowUpdatePerm bool
+    RowDeletePerm bool
+  }
+
+  myRows := make([]Row, 0)
+
+  rows, err = SQLDB.Query(readSqlStmt, startIndex, itemsPerPage)
   if err != nil {
     errorPage(w, err.Error())
     return
   }
 
-  myRows := make([]Row, 0)
-  for _, id := range ids {
-    colAndDatas := make([]ColAndData, 0)
-    for _, colLabel := range colNames {
-      var data string
-      var dataFromDB sql.NullString
-      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %d", colLabel.Col, tblName, id)
-      err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
-      if dataFromDB.Valid {
-        data = html.UnescapeString(dataFromDB.String)
-      } else {
-        data = ""
-      }
-      colAndDatas = append(colAndDatas, ColAndData{colLabel.Label, data})
-    }
+  columns, err := rows.Columns()
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
 
-    var createdBy uint64
-    sqlStmt := fmt.Sprintf("select created_by from `%s` where id = %d", tblName, id)
-    err := SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
+  // Make a slice for the values
+  values := make([]sql.RawBytes, len(columns))
+
+  // rows.Scan wants '[]interface{}' as an argument, so we must copy the
+  // references into such a slice
+  // See http://code.google.com/p/go-wiki/wiki/InterfaceSlice for details
+  scanArgs := make([]interface{}, len(values))
+  for i := range values {
+    scanArgs[i] = &values[i]
+  }
+
+  allRowsMap := make([]map[string]string, 0)
+
+  for rows.Next() {
+    err = rows.Scan(scanArgs...)
     if err != nil {
       errorPage(w, err.Error())
       return
     }
+
+    rowMap := make(map[string]string)
+    var value string
+    for i, col := range values {
+      if col == nil {
+        value = ""
+      } else {
+        value = html.UnescapeString(string(col))
+      }
+      rowMap[ columns[i] ] = value
+    }
+
+    allRowsMap = append(allRowsMap, rowMap)
+  }
+  if err = rows.Err(); err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  for _, rowMapItem := range allRowsMap {
+    colAndDatas := make([]ColAndData, 0)
+    for _, colLabel := range colNames {
+      data := rowMapItem[ colLabel.Col ]
+      colAndDatas = append(colAndDatas, ColAndData{colLabel.Label, data})
+    }
+
     rup := false
     rdp := false
+    createdBy, err := strconv.ParseUint(rowMapItem["created_by"], 10, 64)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
     if createdBy == useridUint64 && uocPerm {
       rup = true
     }
     if createdBy == useridUint64 && docPerm {
       rdp = true
     }
-    myRows = append(myRows, Row{id, colAndDatas, rup, rdp})
+    rid, err := strconv.ParseUint(rowMapItem["id"], 10, 64)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    myRows = append(myRows, Row{rid, colAndDatas, rup, rdp})
+
   }
 
 
@@ -334,7 +363,7 @@ func listDocuments(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  readSqlStmt := fmt.Sprintf("select id from `%s` ", tblName)
+  readSqlStmt := fmt.Sprintf("select * from `%s` ", tblName)
   totalSqlStmt := fmt.Sprintf("select count(*) from `%s`", tblName)
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "true-list")
   return
@@ -463,7 +492,7 @@ func searchResults(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  readSqlStmt := fmt.Sprintf("select id from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
+  readSqlStmt := fmt.Sprintf("select * from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
   // readSqlStmt += " order by created desc limit ?, ?"
   totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
 
@@ -601,7 +630,7 @@ func dateList(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  readSqlStmt := fmt.Sprintf("select id from `%s` where date(created) = '%s' ",
+  readSqlStmt := fmt.Sprintf("select * from `%s` where date(created) = '%s' ",
     tblName, html.EscapeString(date))
   totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where date(created) = '%s'",
     tblName, html.EscapeString(date))
