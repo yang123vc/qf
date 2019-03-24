@@ -480,23 +480,54 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   docAndStructureSlice := make([]docAndStructure, 0)
   tableData := make(map[string][][]docAndStructure)
 
+  rows, err := SQLDB.Query(fmt.Sprintf("select * from %s where id = ?", tblName), docid)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  columns, err := rows.Columns()
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  // Make a slice for the values
+  values := make([]sql.RawBytes, len(columns))
+
+  // rows.Scan wants '[]interface{}' as an argument, so we must copy the
+  // references into such a slice
+  // See http://code.google.com/p/go-wiki/wiki/InterfaceSlice for details
+  scanArgs := make([]interface{}, len(values))
+  for i := range values {
+    scanArgs[i] = &values[i]
+  }
+
+  for rows.Next() {
+    err = rows.Scan(scanArgs...)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    break
+  }
+
+  rowMap := make(map[string]string)
+  var value string
+  for i, col := range values {
+    if col == nil {
+      value = ""
+    } else {
+      value = html.UnescapeString(string(col))
+    }
+    rowMap[ columns[i] ] = value
+  }
+
   for _, docData := range docDatas {
     if docData.Type == "Section Break" {
       docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, ""})
     } else {
-      var data string
-      var dataFromDB sql.NullString
-      sqlStmt := fmt.Sprintf("select %s from `%s` where id = %s", docData.Name, tblName, docid)
-      err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
-      if dataFromDB.Valid {
-        data = html.UnescapeString(dataFromDB.String)
-      } else {
-        data = ""
-      }
+      data := rowMap[ docData.Name ]
       if data != "" && (docData.Type == "File" || docData.Type == "Image") {
         pkey, err := ioutil.ReadFile(KeyFilePath)
         if err != nil {
@@ -517,6 +548,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
         data = viewableFilePath
       }
       docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, data})
+
       if docData.Type == "Table" {
         childTable := docData.OtherOptions[0]
         ctdds, err := GetDocData(childTable)
@@ -536,26 +568,56 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
               return
             }
 
-            var data string
-            var dataFromDB sql.NullString
-
-            sqlStmt := fmt.Sprintf("select %s from `%s` where id = ?", ctdd.Name, ctblName)
-            err = SQLDB.QueryRow(sqlStmt, part).Scan(&dataFromDB)
+            crows, err := SQLDB.Query(fmt.Sprintf("select * from %s where id = ?", ctblName), part)
             if err != nil {
               errorPage(w, err.Error())
               return
             }
-            if dataFromDB.Valid {
-              data = html.UnescapeString(dataFromDB.String)
-            } else {
-              data = ""
+
+            ccolumns, err := crows.Columns()
+            if err != nil {
+              errorPage(w, err.Error())
+              return
             }
-            docAndStructureSliceCT = append(docAndStructureSliceCT, docAndStructure{ctdd, data})
+
+            // Make a slice for the values
+            cvalues := make([]sql.RawBytes, len(ccolumns))
+
+            // rows.Scan wants '[]interface{}' as an argument, so we must copy the
+            // references into such a slice
+            // See http://code.google.com/p/go-wiki/wiki/InterfaceSlice for details
+            cscanArgs := make([]interface{}, len(cvalues))
+            for i := range cvalues {
+              cscanArgs[i] = &cvalues[i]
+            }
+
+            for crows.Next() {
+              err = crows.Scan(cscanArgs...)
+              if err != nil {
+                errorPage(w, err.Error())
+                return
+              }
+              break
+            }
+
+            crowMap := make(map[string]string)
+            var cvalue string
+            for i, col := range cvalues {
+              if col == nil {
+                cvalue = ""
+              } else {
+                cvalue = html.UnescapeString(string(col))
+              }
+              crowMap[ ccolumns[i] ] = cvalue
+            }
+
+            docAndStructureSliceCT = append(docAndStructureSliceCT, docAndStructure{ctdd, crowMap[ctdd.Name]})
           }
           dASSuper = append(dASSuper, docAndStructureSliceCT)
         }
         tableData[docData.Name] = dASSuper
       }
+
     }
   }
 
