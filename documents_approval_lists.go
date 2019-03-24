@@ -36,7 +36,7 @@ func approvedList(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  readSqlStmt := fmt.Sprintf("select id from `%s` where fully_approved = 't' ", tblName)
+  readSqlStmt := fmt.Sprintf("select * from `%s` where fully_approved = 't' ", tblName)
   totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where fully_approved = 't' ", tblName)
 
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "approved-list")
@@ -73,7 +73,7 @@ func unapprovedList(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  readSqlStmt := fmt.Sprintf("select id from `%s` where fully_approved = 'f' ", tblName)
+  readSqlStmt := fmt.Sprintf("select * from `%s` where fully_approved = 'f' ", tblName)
   totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where fully_approved = 'f' ", tblName)
 
   innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "unapproved-list")
