@@ -411,34 +411,13 @@ func searchDocuments(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func searchResults(w http.ResponseWriter, r *http.Request) {
+func parseSearchVariables(r *http.Request) ([]string, error) {
   vars := mux.Vars(r)
   ds := vars["document-structure"]
 
-  detv, err := docExists(ds)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-  if detv == false {
-    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
-    return
-  }
-
-  tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-  if ! tv1 {
-    errorPage(w, "You don't have the read permission for this document structure.")
-    return
-  }
-
   dds, err := GetDocData(ds)
   if err != nil {
-    errorPage(w, err.Error())
-    return
+    return nil, err
   }
 
   endSqlStmt := make([]string, 0)
@@ -478,19 +457,55 @@ func searchResults(w http.ResponseWriter, r *http.Request) {
     }
   }
 
+  if r.FormValue("created_by") != "" {
+    endSqlStmt = append(endSqlStmt, "created_by = " + html.EscapeString(r.FormValue("created_by")))
+  }
+
+  return endSqlStmt, nil
+}
+
+
+func searchResults(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  detv, err := docExists(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if detv == false {
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
+    return
+  }
+
+  tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! tv1 {
+    errorPage(w, "You don't have the read permission for this document structure.")
+    return
+  }
+
+  endSqlStmt, err := parseSearchVariables(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  if len(endSqlStmt) == 0 {
+    errorPage(w, "Your query is empty.")
+    return
+  }
+
   tblName, err := tableName(ds)
   if err != nil {
     errorPage(w, err.Error())
     return
   }
 
-  if r.FormValue("created_by") != "" {
-    endSqlStmt = append(endSqlStmt, "created_by = " + html.EscapeString(r.FormValue("created_by")))
-  }
-  if len(endSqlStmt) == 0 {
-    errorPage(w, "Your query is empty.")
-    return
-  }
 
   readSqlStmt := fmt.Sprintf("select * from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
   // readSqlStmt += " order by created desc limit ?, ?"

@@ -276,3 +276,57 @@ func deleteFile(w http.ResponseWriter, r *http.Request) {
   redirectURL := fmt.Sprintf("/update/%s/%s/", ds, docid)
   http.Redirect(w, r, redirectURL, 307)
 }
+
+
+
+func deleteSearchResults(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  detv, err := docExists(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if detv == false {
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
+    return
+  }
+
+  tv1, err := DoesCurrentUserHavePerm(r, ds, "delete")
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! tv1 {
+    errorPage(w, "You don't have the delete permission for this document structure.")
+    return
+  }
+
+  endSqlStmt, err := parseSearchVariables(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  if len(endSqlStmt) == 0 {
+    errorPage(w, "Your query is empty.")
+    return
+  }
+
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  sqlStmt := fmt.Sprintf("delete from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
+  _, err = SQLDB.Exec(sqlStmt)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  redirectURL := fmt.Sprintf("/list/%s/", ds)
+  http.Redirect(w, r, redirectURL, 307)
+}

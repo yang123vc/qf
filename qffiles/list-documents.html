@@ -50,6 +50,7 @@
     <a class="button-look" href="/list/{{.DocumentStructure}}/">True List</a>
   {{end}}
 
+  <br>
   Order By: <select id="order-by">
     {{range $.OrderColumns}}
       <option>{{.}}</option>
@@ -61,6 +62,10 @@
   <select id="order-direction"><option>Ascending</option><option>Descending</option></select>
   <button id="order-btn">Order</button>
 
+  &nbsp;&nbsp;
+  {{if and $.DeletePerm (eq $.ListType "search-list")}}
+    <button id="delete-search-results">Delete Search Results</button>
+  {{end}}
   <br><br>
 
   <table>
@@ -145,6 +150,11 @@
         $(el).attr("href", href);
       });
 
+      {{if and $.DeletePerm (eq $.ListType "search-list")}}
+        $('#delete-search-results').click(function(e) {
+          location.href = "/delete-search-results/{{.DocumentStructure}}/" + location.search;
+        });
+      {{end}}
     });
 
   </script>
