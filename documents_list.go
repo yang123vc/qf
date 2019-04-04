@@ -69,9 +69,10 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     type Context struct {
       DocumentStructure string
       CreatePerm bool
+      ListType string
     }
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/suggest-create-document.html"))
-    tmpl.Execute(w, Context{ds, cperm})
+    tmpl.Execute(w, Context{ds, cperm, listType})
     return
   }
 
