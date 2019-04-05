@@ -447,6 +447,18 @@ func userDetails(w http.ResponseWriter, r * http.Request) {
     return
   }
 
+  useridUint64, err := strconv.ParseUint(useridToView, 10, 64)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  for _, id := range Admins {
+    if useridUint64 == id {
+      userRoles = append(userRoles, "Administrator")
+      break
+    }
+  }
+
   type Context struct {
     UserId string
     UserRoles []string
