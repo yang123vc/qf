@@ -170,6 +170,12 @@ func removeApprovals(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  dsid, err := getDocumentStructureID(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
   for _, step := range approvers {
     atn, err := getApprovalTable(ds, step)
     if err != nil {
@@ -183,10 +189,16 @@ func removeApprovals(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    _, err = SQLDB.Exec("delete from qf_approvals_tables where document_structure = ? and role = ?",
-      ds, step)
+    roleid, err := getRoleId(step)
     if err != nil {
-      errorPage(w, "Error occurred removing record of approval table.")
+      errorPage(w, err.Error())
+      return
+    }
+
+    _, err = SQLDB.Exec("delete from qf_approvals_tables where dsid = ? and roleid = ?",
+      dsid, roleid)
+    if err != nil {
+      errorPage(w, err.Error())
       return
     }
 
