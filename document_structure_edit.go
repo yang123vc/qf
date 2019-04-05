@@ -84,7 +84,7 @@ func editDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   var labels string
-  err = SQLDB.QueryRow("select group_concat(label separator ',,,') from qf_fields where dsid = ?", dsid).Scan(&labels)
+  err = SQLDB.QueryRow("select group_concat(label order by view_order asc separator ',,,') from qf_fields where dsid = ?", dsid).Scan(&labels)
   if err != nil {
     errorPage(w, err.Error())
     return
