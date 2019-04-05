@@ -919,8 +919,28 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       updatePartStmt = append(updatePartStmt, stmt1)
     }
 
-    sqlStmt := fmt.Sprintf("update `%s` set %s where id = %s", tblName, strings.Join(updatePartStmt, ", "), docid)
-    _, err = SQLDB.Exec(sqlStmt)
+    if createdBy != useridUint64 {
+
+      var previousEditLog sql.NullString
+      sqlStmt := fmt.Sprintf("select edit_log from %s where id = ?", tblName)
+      err = SQLDB.QueryRow(sqlStmt, docid).Scan(&previousEditLog)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+
+      var currentEditLog string
+      if previousEditLog.Valid {
+        currentEditLog = previousEditLog.String + ",,," + strconv.FormatUint(useridUint64, 10)
+      } else {
+        currentEditLog = strconv.FormatUint(useridUint64, 10)
+      }
+
+      updatePartStmt = append(updatePartStmt, fmt.Sprintf("edit_log = \"%s\"", currentEditLog))
+    }
+
+    sqlStmt = fmt.Sprintf("update `%s` set %s where id = ?", tblName, strings.Join(updatePartStmt, ", "))
+    _, err = SQLDB.Exec(sqlStmt, docid)
     if err != nil {
       errorPage(w, err.Error())
       return
@@ -941,4 +961,73 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, redirectURL, 307)
   }
 
+}
+
+
+func editLog(w http.ResponseWriter, r *http.Request) {
+  _, err := GetCurrentUser(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+  docid := vars["id"]
+  _, err = strconv.ParseUint(docid, 10, 64)
+  if err != nil {
+    errorPage(w, err.Error())
+  }
+
+  detv, err := docExists(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if detv == false {
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
+    return
+  }
+
+  readPerm, err := DoesCurrentUserHavePerm(r, ds, "read")
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! readPerm {
+    errorPage(w, "You don't have the read permission for this document structure.")
+    return
+  }
+
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  sqlStmt := fmt.Sprintf("select edit_log, created_by from %s where id = ?", tblName)
+  var editLogStr sql.NullString
+  var createdBy string
+  err = SQLDB.QueryRow(sqlStmt, docid).Scan(&editLogStr, &createdBy)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  type Context struct {
+    DocumentStructure string
+    DocId string
+    CreatedBy string
+    Editors []string
+    NoEditor bool
+  }
+
+  var ctx Context
+  if editLogStr.Valid {
+    ctx = Context{ds, docid, createdBy, strings.Split(editLogStr.String, ",,,"), false}
+  } else {
+    ctx = Context{ds, docid, createdBy, nil, true}
+  }
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/edit-log.html"))
+  tmpl.Execute(w, ctx)
 }

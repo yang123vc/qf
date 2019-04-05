@@ -116,6 +116,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       sql += "modified datetime not null,"
       sql += "created_by bigint unsigned not null,"
       sql += "fully_approved varchar(1) default 'f',"
+      sql += "edit_log varchar(255), "
     }
 
     sqlEnding := ""
