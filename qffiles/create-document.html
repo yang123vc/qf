@@ -168,6 +168,7 @@
         {{else if eq .Type "Table"}}
           {{$childTable := index .OtherOptions 0}}
           {{$docData := index $.TableFields $childTable}}
+          {{$tblName := .Name}}
           <input type="hidden" name="rows-count-for-{{.Name}}" value="1" />
           <table id="{{.Name}}">
             <thead>
@@ -273,7 +274,7 @@
                   </td>
                 {{end}}
                 <td>
-                  <button type="button" id="delete-row-{{.Name}}-1" class="delete-row-btn">Delete</button>
+                  <button type="button" id="delete-row-{{$tblName}}-1" class="delete-row-btn">Delete</button>
                 </td>
               </tr>
             </tbody>
@@ -319,7 +320,7 @@
       var newNo = i + 1;
       var strNewNo = newNo.toString()
       $('td:first', el).text(strNewNo);
-      $('.delete-row-btn', el).attr('id', 'delete-row-' + strNewNo);
+      $('.delete-row-btn', el).attr('id', 'delete-row-' + $(parentTable).attr('id') + "-" + strNewNo);
 
       $('input, textarea, select', el).each(function(ii, elel) {
         var elelname = $(elel).attr('name');
@@ -357,6 +358,9 @@
 
       var newDR = '#delete-row-' + $(table).attr('id') + '-' + newNo.toString()
       $(newDR).click(deleteRowHandler);
+
+      // $('.delete-row-btn').show();
+      // $('.delete-row-btn:first').hide();
       $(newDR).show();
       autosize( $("textarea", table));
 
