@@ -8,6 +8,7 @@ import (
   "database/sql"
   "strconv"
   "html"
+  "strings"
 )
 
 
@@ -31,14 +32,25 @@ func rolesView(w http.ResponseWriter, r *http.Request) {
   type Context struct {
     Roles []string
     NumberOfRoles int
+    RolesStr string
   }
-  ctx := Context{roles, len(roles)}
+  ctx := Context{roles, len(roles), strings.Join(roles, ",,,")}
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/roles-view.html"))
   tmpl.Execute(w, ctx)
 }
 
 
 func newRole(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
   roles, err := GetRoles()
   if err != nil {
     errorPage(w, err.Error())
@@ -58,6 +70,30 @@ func newRole(w http.ResponseWriter, r *http.Request) {
     }
 
     _, err := SQLDB.Exec("insert into qf_roles(role) values(?)", role)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    http.Redirect(w, r, "/roles-view/", 307)
+  }
+}
+
+
+func renameRole(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  if r.Method == http.MethodPost {
+    _, err := SQLDB.Exec("update qf_roles set role = ? where role = ?",
+      html.EscapeString(r.FormValue("new-name")), html.EscapeString(r.FormValue("role-to-rename")))
     if err != nil {
       errorPage(w, err.Error())
       return

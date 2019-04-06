@@ -76,6 +76,7 @@
   {{end}}
 
   <a class="button-look" href="/edit-log/{{.DocumentStructure}}/{{.Id}}/">View Edit Log</a><br><br>
+  
   {{if $.HasApprovals}}
     <a class="button-look" href="/approvals/{{$.DocumentStructure}}/{{.Id}}/">
       {{if $.Approver}} View/Update {{else}} View {{end}} Approvals
