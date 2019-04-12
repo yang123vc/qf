@@ -49,7 +49,8 @@ func editDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   var childTableStr string
-  err = SQLDB.QueryRow("select child_table from qf_document_structures where fullname = ?", ds).Scan(&childTableStr)
+  var helpText sql.NullString
+  err = SQLDB.QueryRow("select child_table, help_text from qf_document_structures where fullname = ?", ds).Scan(&childTableStr, &helpText)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -59,6 +60,10 @@ func editDocumentStructure(w http.ResponseWriter, r *http.Request) {
     childTableBool = true
   } else {
     childTableBool = false
+  }
+  var helpTextStr string
+  if helpText.Valid {
+    helpTextStr = helpText.String
   }
 
   type Context struct {
@@ -71,6 +76,7 @@ func editDocumentStructure(w http.ResponseWriter, r *http.Request) {
     DocDatas []DocData
     ChildTableDocumentStructures string
     IsChildTable bool
+    HelpText string
   }
 
   add := func(x, y int) int {
@@ -99,7 +105,7 @@ func editDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   labelsList := strings.Split(labels, ",,,")
   ctx := Context{ds, strings.Join(dsList, ",,,"), labelsList, len(labelsList), labels, add, docDatas, ctdsl.String,
-    childTableBool}
+    childTableBool, helpTextStr}
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/edit-document-structure.html"))
   tmpl.Execute(w, ctx)
 }
@@ -129,12 +135,6 @@ func updateDocumentStructureName(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  dsid, err := getDocumentStructureID(ds)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
   sqlStmt := "update `qf_document_structures` set fullname= ? where fullname = ?"
   _, err = SQLDB.Exec(sqlStmt, r.FormValue("new-name"), ds)
   if err != nil {
@@ -142,14 +142,43 @@ func updateDocumentStructureName(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  sqlStmt = "insert into `qf_old_document_structures` (dsid, old_name) values(?, ?)"
-  _, err = SQLDB.Exec(sqlStmt, dsid, ds)
+  redirectURL := fmt.Sprintf("/view-document-structure/%s/", r.FormValue("new-name"))
+  http.Redirect(w, r, redirectURL, 307)
+}
+
+
+func updateHelpText(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  detv, err := docExists(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if detv == false {
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
+    return
+  }
+
+  sqlStmt := "update `qf_document_structures` set help_text = ? where fullname = ?"
+  _, err = SQLDB.Exec(sqlStmt, r.FormValue("updated-help-text"), ds)
   if err != nil {
     errorPage(w, err.Error())
     return
   }
 
-  redirectURL := fmt.Sprintf("/view-document-structure/%s/", r.FormValue("new-name"))
+  redirectURL := fmt.Sprintf("/view-document-structure/%s/", ds)
   http.Redirect(w, r, redirectURL, 307)
 }
 

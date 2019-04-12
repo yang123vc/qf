@@ -43,6 +43,19 @@ tbody {
     </div>
   </form>
 
+  <h3>Update Help Text</h3>
+  <p id="help-text-error" class="error-box"></p>
+  <form id="update-help-text-form" method='post' action='/update-help-text/{{.DocumentStructure}}/'>
+    <div>
+      <label>Help Text</label><br>
+      <textarea name="updated-help-text">{{.HelpText}}</textarea>
+    </div>
+    <div>
+      <input type="submit" value="Update" />
+    </div>
+  </form>
+
+
   <h3>Change Field Label(s)</h3>
   <p id="change-field-labels-error" class="error-box"></p>
   <form id="change-field-labels-form" method="post" action='/update-field-labels/{{.DocumentStructure}}/'>
