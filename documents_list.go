@@ -461,7 +461,15 @@ func parseSearchVariables(r *http.Request) ([]string, error) {
   if r.FormValue("created_by") != "" {
     endSqlStmt = append(endSqlStmt, "created_by = " + html.EscapeString(r.FormValue("created_by")))
   }
-
+  if r.FormValue("creation-year") != "" {
+    data := fmt.Sprintf("\"%s\"", html.EscapeString(r.FormValue("creation-year")))
+    endSqlStmt = append(endSqlStmt, "extract(year from created) = " + data)
+  }
+  if r.FormValue("creation-month") != "" {
+    data := fmt.Sprintf("\"%s\"", html.EscapeString(r.FormValue("creation-month")))
+    endSqlStmt = append(endSqlStmt, "extract(month from created) = " + data)
+  }
+  
   return endSqlStmt, nil
 }
 

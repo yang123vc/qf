@@ -28,6 +28,16 @@
       <input type="number" name="created_by" />
     </div>
 
+    <div>
+      <label>Creation Year </label>
+      <input type="number" name="creation-year" />
+    </div>
+
+    <div>
+      <label>Creation Month (Number)</label>
+      <input type="number" name="creation-month" />
+    </div>
+
     {{range .DDs}}
       <div>
         {{ if eq .Type "Section Break"}}
