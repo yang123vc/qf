@@ -13,7 +13,7 @@
   <div id="pagination">
       Pages:
       {{range .Pages}}
-        <a class="pagination-link" href="/date-lists/{{.}}/">{{.}}</a>
+        <a class="pagination-link" href="/date-lists/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
       {{end}}
   </div>
 {{end}}
