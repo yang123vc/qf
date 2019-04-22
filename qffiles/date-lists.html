@@ -9,4 +9,11 @@
     </div>
   {{end}}
 
+  <br><br>
+  <div id="pagination">
+      Pages:
+      {{range .Pages}}
+        <a class="pagination-link" href="/date-lists/{{.}}/">{{.}}</a>
+      {{end}}
+  </div>
 {{end}}

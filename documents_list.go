@@ -469,7 +469,7 @@ func parseSearchVariables(r *http.Request) ([]string, error) {
     data := fmt.Sprintf("\"%s\"", html.EscapeString(r.FormValue("creation-month")))
     endSqlStmt = append(endSqlStmt, "extract(month from created) = " + data)
   }
-  
+
   return endSqlStmt, nil
 }
 
@@ -526,8 +526,25 @@ func searchResults(w http.ResponseWriter, r *http.Request) {
 
 
 func dateLists(w http.ResponseWriter, r *http.Request) {
+  _, err := GetCurrentUser(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
   vars := mux.Vars(r)
   ds := vars["document-structure"]
+  page := vars["page"]
+  var pageI uint64
+  if page != "" {
+    pageI, err = strconv.ParseUint(page, 10, 64)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  } else {
+    pageI = 1
+  }
 
   detv, err := docExists(ds)
   if err != nil {
@@ -573,11 +590,16 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  sqlStmt = fmt.Sprintf("select distinct date(created) as dc from `%s` order by dc desc", tblName)
+  var itemsPerPage uint64 = 50
+  startIndex := (pageI - 1) * itemsPerPage
+  totalItems := count
+  totalPages := math.Ceil( float64(totalItems) / float64(itemsPerPage) )
+
+  sqlStmt = fmt.Sprintf("select distinct date(created) as dc from `%s` order by dc desc limit ?, ?", tblName)
 
   dates := make([]string, 0)
   var date string
-  rows, err := SQLDB.Query(sqlStmt)
+  rows, err := SQLDB.Query(sqlStmt, startIndex, itemsPerPage)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -616,9 +638,16 @@ func dateLists(w http.ResponseWriter, r *http.Request) {
   type Context struct {
     DACs []DateAndCount
     DocumentStructure string
+    CurrentPage uint64
+    Pages []uint64
   }
 
-  ctx := Context{dacs, ds}
+  pages := make([]uint64, 0)
+  for i := uint64(0); i < uint64(totalPages); i++ {
+    pages = append(pages, i+1)
+  }
+
+  ctx := Context{dacs, ds, pageI, pages}
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/date-lists.html"))
   tmpl.Execute(w, ctx)
 }
