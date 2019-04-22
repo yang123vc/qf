@@ -27,14 +27,17 @@
     <p>You have not defined any roles </p>
   {{ end }}
 
-  <form method="post" action="/new-role/" >
+  <h3>New Roles Form</h3>
+  <p>Enter each role on one line</p>
+
+  <form method="post" action="/new-roles/" >
     <div>
-      <label for='id-role'>Name of role</label> &nbsp;&nbsp;
-      <input type="text" id="id-role" name="role" required/>
+      <label for='id-role'>Name(s) of role</label><br>
+      <textarea id="id-roles" name="roles" required ></textarea>
     </div>
     <br>
     <div>
-      <input type="submit" value="Create Role" />
+      <input type="submit" value="Create Role(s)" />
     </div>
   </form>
 
@@ -76,7 +79,7 @@
       e.preventDefault();
 
       $('#error-box').hide();
-      
+
       if ($('#id-new-name').val() == "") {
         $('#id-new-name').css("border", "1px solid red");
         return

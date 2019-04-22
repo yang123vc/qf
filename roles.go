@@ -59,20 +59,30 @@ func newRole(w http.ResponseWriter, r *http.Request) {
 
   if r.Method == http.MethodPost {
 
-    role := html.EscapeString(r.FormValue("role"))
-    if len(roles) != 0 {
+    rolesRaw := html.EscapeString(r.FormValue("roles"))
+    newRoles := strings.Split(strings.TrimSpace(rolesRaw), "\n")
+
+    for _, r := range newRoles {
+      r = strings.TrimSpace(r)
+      if len(r) == 0 {
+        continue
+      }
+
+      found := false
       for _, rl := range roles {
-        if role == rl {
-          errorPage(w, fmt.Sprintf("The role \"%s\" already exists.", role))
+        if r == rl {
+          found = true
+          break
+        }
+      }
+
+      if ! found {
+        _, err := SQLDB.Exec("insert into qf_roles(role) values(?)", r)
+        if err != nil {
+          errorPage(w, err.Error())
           return
         }
       }
-    }
-
-    _, err := SQLDB.Exec("insert into qf_roles(role) values(?)", role)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
     }
 
     http.Redirect(w, r, "/roles-view/", 307)
