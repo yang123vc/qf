@@ -106,7 +106,7 @@
           <td>
             <label>Required <input type="checkbox" class="option-required" name="options-1" value="required" /></label>
             <label>Unique <input type="checkbox" class="option-unique" name="options-1" value="unique" /></label>
-            <label>Index <input type="checkbox" class="option-index" name="options-1" value="index" /></label><br>
+            <br>
             <label>Other Options </label><br><textarea class="other-options" name="other-options-1"></textarea><br>
           </td>
           <td><button class='delete-field-btn' id="delete-field-1">Delete</button></td>
@@ -137,7 +137,6 @@
       $('.field-type', el).attr('name', 'type-' + strNewNo);
       $('.option-required', el).attr('name', 'options-' + strNewNo);
       $('.option-unique', el).attr('name', 'options-' + strNewNo);
-      $('.option-index', el).attr('name', 'options-' + strNewNo);
       $('.other-options', el).attr('name', 'other-options-' + strNewNo);
       $('.delete-field-btn', el).attr('id', 'delete-field-' + strNewNo);
     });

@@ -157,7 +157,6 @@ type DocData struct {
   Type string
   Required bool
   Unique bool
-  Index bool
   OtherOptions []string
 }
 
@@ -192,17 +191,14 @@ func GetDocData(documentStructure string) ([]DocData, error) {
     if err != nil {
       return dds, err
     }
-    var required, unique, index bool
+    var required, unique bool
     if optionSearch(options, "required") {
       required = true
     }
     if optionSearch(options, "unique") {
       unique = true
     }
-    if optionSearch(options, "index") {
-      index = true
-    }
-    dd := DocData{label, name, type_, required, unique, index, strings.Split(otherOptions, "\n")}
+    dd := DocData{label, name, type_, required, unique, strings.Split(otherOptions, "\n")}
     dds = append(dds, dd)
   }
   err = rows.Err()

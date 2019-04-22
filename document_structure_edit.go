@@ -518,7 +518,7 @@ func addFields(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    if optionSearch(qff.options, "index") && ! optionSearch(qff.options, "unique") {
+    if ! optionSearch(qff.options, "unique") && qff.type_ != "Text" && qff.type_ != "Table" {
       indexSql := fmt.Sprintf("create index idx_%s on `%s`(%s)", qff.name, tblName, qff.name)
       _, err := SQLDB.Exec(indexSql)
       if err != nil {

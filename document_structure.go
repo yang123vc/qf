@@ -154,6 +154,11 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
       if optionSearch(qff.options, "unique") {
         sqlEnding += fmt.Sprintf(", unique(%s)", qff.name)
       }
+
+      if ! optionSearch(qff.options, "unique") && qff.type_ != "Text" && qff.type_ != "Table" {
+        sqlEnding += fmt.Sprintf(", index(%s)", qff.name)
+      }
+
       if qff.type_ == "Link" {
         ottblName, err := tableName(qff.other_options)
         if err != nil {
@@ -167,6 +172,7 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     if r.FormValue("child-table") == "on" {
       sql += ")"
     } else {
+      sql += ", index(created), index(modified)"
       sql += "," + fmt.Sprintf("foreign key (created_by) references `%s`(id)", UsersTable) + sqlEnding + ")"
     }
 
@@ -174,17 +180,6 @@ func newDocumentStructure(w http.ResponseWriter, r *http.Request) {
     if err1 != nil {
       errorPage(w, err1.Error())
       return
-    }
-
-    for _, qff := range qffs {
-      if optionSearch(qff.options, "index") && ! optionSearch(qff.options, "unique") {
-        indexSql := fmt.Sprintf("create index idx_%s on `%s`(%s)", qff.name, tblName, qff.name)
-        _, err := SQLDB.Exec(indexSql)
-        if err != nil {
-          errorPage(w, err.Error())
-          return
-        }
-      }
     }
 
     redirectURL := fmt.Sprintf("/edit-document-structure-permissions/%s/", r.FormValue("ds-name"))
