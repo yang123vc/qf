@@ -46,6 +46,8 @@
 
         {{ else if or (eq .Type "Image") (eq .Type "File")}}
 
+        {{else if eq .Type "Text"}}
+
         {{else}}
           <label>{{.Label}}</label>
         {{ end }}
@@ -83,9 +85,6 @@
               <option>{{.}}</option>
             {{end}}
           </select>
-
-        {{else if eq .Type "Text"}}
-            <textarea name="{{.Name}}"></textarea>
 
         {{else if eq .Type "URL"}}
             <input type="url" name="{{.Name}}">
