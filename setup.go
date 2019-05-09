@@ -250,6 +250,7 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/rename-role/", renameRole)
   r.HandleFunc("/delete-role/{role}/", deleteRole)
   r.HandleFunc("/users-to-roles-list/", usersToRolesList)
+  r.HandleFunc("/users-to-roles-list/{page:[0-9]+}/", usersToRolesList)
   r.HandleFunc("/edit-user-roles/{userid}/", editUserRoles)
   r.HandleFunc("/remove-role-from-user/{userid}/{role}/", removeRoleFromUser)
   r.HandleFunc("/delete-role-permissions/{document-structure}/{role}/", deleteRolePermissions)

@@ -9,6 +9,7 @@ import (
   "strconv"
   "html"
   "strings"
+  "math"
 )
 
 
@@ -166,6 +167,36 @@ func usersToRolesList(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  vars := mux.Vars(r)
+  page := vars["page"]
+  var pageI uint64
+  if page != "" {
+    pageI, err = strconv.ParseUint(page, 10, 64)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  } else {
+    pageI = 1
+  }
+
+  var count uint64
+  sqlStmt := fmt.Sprintf("select count(*) from `%s`", UsersTable)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if count == 0 {
+    errorPage(w, "You have not defined any users.")
+    return
+  }
+
+  var itemsPerPage uint64 = 50
+  startIndex := (pageI - 1) * itemsPerPage
+  totalItems := count
+  totalPages := math.Ceil( float64(totalItems) / float64(itemsPerPage) )
+
   type UserData struct {
     UserId uint64
     Firstname string
@@ -173,17 +204,17 @@ func usersToRolesList(w http.ResponseWriter, r *http.Request) {
     Roles []string
   }
 
-  sqlStmt := fmt.Sprintf("select users.id, `%s`.firstname, `%s`.surname, qf_roles.role ", UsersTable, UsersTable)
+  sqlStmt = fmt.Sprintf("select users.id, `%s`.firstname, `%s`.surname, qf_roles.role ", UsersTable, UsersTable)
   sqlStmt += fmt.Sprintf("from (qf_user_roles right join `%s` on qf_user_roles.userid = `%s`.id)", UsersTable, UsersTable)
   sqlStmt += fmt.Sprintf("left join qf_roles on qf_user_roles.roleid = qf_roles.id ")
-  sqlStmt += "order by users.id asc"
+  sqlStmt += "order by users.id asc limit ?, ?"
 
   uds := make([]UserData, 0)
   var userid uint64
   var firstname, surname string
   var role sql.NullString
   userRoleMap := make(map[uint64][]string)
-  rows, err := SQLDB.Query(sqlStmt)
+  rows, err := SQLDB.Query(sqlStmt, startIndex, itemsPerPage)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -236,8 +267,14 @@ func usersToRolesList(w http.ResponseWriter, r *http.Request) {
 
   type Context struct {
     UserDatas []UserData
+    Pages []uint64
   }
-  ctx := Context{udsNoDuplicates}
+  pages := make([]uint64, 0)
+  for i := uint64(0); i < uint64(totalPages); i++ {
+    pages = append(pages, i+1)
+  }
+
+  ctx := Context{udsNoDuplicates, pages}
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/users-to-roles-list.html"))
   tmpl.Execute(w, ctx)
 }

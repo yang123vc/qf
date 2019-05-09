@@ -1,5 +1,16 @@
 {{define "title"}}Users to Roles List {{end}}
 
+{{define "styles"}}
+  <style>
+    thead {
+      font-weight: bold;
+    }
+    td {
+      vertical-align: top;
+    }
+  </style>
+{{end}}
+
 {{define "main"}}
   <h3>Users to Roles List</h3>
 
@@ -16,10 +27,18 @@
         <tr>
           <td>{{.UserId}}</td>
           <td>{{.Firstname}} {{.Surname}} </td>
-          <td>{{range .Roles }} {{.}}&nbsp;&nbsp; {{end}} </td>
+          <td>{{range .Roles }} {{.}} <br> {{end}} </td>
           <td><a href='/edit-user-roles/{{.UserId}}/'>Edit</a></td>
         </tr>
       {{ end }}
     </tbody>
   </table>
+
+  <br><br>
+  <div id="pagination">
+      Pages:
+      {{range .Pages}}
+        <a class="pagination-link" href="/users-to-roles-list/{{.}}/">{{.}}</a>
+      {{end}}
+  </div>
 {{end}}
