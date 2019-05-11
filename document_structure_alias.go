@@ -171,7 +171,8 @@ func aliasesTwo(w http.ResponseWriter, r *http.Request) {
         return
       }
     }
+    
+    http.Redirect(w, r, "/list-document-structures/", 307)
   }
 
-  http.Redirect(w, r, "/list-document-structures/", 307)
 }
