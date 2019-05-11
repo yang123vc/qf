@@ -70,96 +70,59 @@
         {{ end }}
 
         {{if eq .Type "Big Number"}}
-          {{if .Required}}
-            <input type="number" name="{{.Name}}" required>
-          {{else}}
-            <input type="number" name="{{.Name}}">
-          {{end}}
+          <input type="number" name="{{.Name}}" {{if .Required}} required {{end}}
+          {{if .ReadOnly}} disabled {{end}}>
 
         {{else if eq .Type "Check"}}
-          <input type="checkbox" name="{{.Name}}">
+          <input type="checkbox" name="{{.Name}}" {{if .Required}} required {{end}}
+          {{if .ReadOnly}} disabled {{end}}>
 
         {{else if eq .Type "Data"}}
-          {{ if .Required}}
-            <input type="text" name="{{.Name}}" required>
-          {{ else }}
-            <input type="text" name="{{.Name}}">
-          {{ end }}
+          <input type="text" name="{{.Name}}" {{if .Required}} required {{end}}
+          {{if .ReadOnly}} disabled {{end}}>
 
         {{else if eq .Type "Date"}}
-          {{ if .Required }}
-            <input type="date" name="{{.Name}}" required>
-          {{ else }}
-            <input type="date" name="{{.Name}}">
-          {{end}}
+          <input type="date" name="{{.Name}}" {{if .Required}} required {{end}}
+          {{if .ReadOnly}} disabled {{end}}>
 
         {{ else if eq .Type "Datetime"}}
-          {{ if .Required }}
-            <input type="datetime-local" name={{.Name}} required>
-          {{else}}
-            <input type="datetime-local" name="{{.Name}}">
-          {{end}}
+          <input type="datetime-local" name="{{.Name}}" {{if .Required}} required {{end}}
+          {{if .ReadOnly}} disabled {{end}}>
 
         {{else if eq .Type "Email"}}
-          {{if .Required}}
-            <input type="email" name="{{.Name}}" required>
-          {{else}}
-            <input type="email" name="{{.Name}}">
-          {{end}}
+
+          <input type="email" name="{{.Name}}" {{if .Required}} required {{end}}
+          {{if .ReadOnly}} disabled {{end}}>
 
         {{else if eq .Type "File"}}
           {{ $lengthOtherOptions := len .OtherOptions}}
           {{if gt $lengthOtherOptions 1}}
-            {{if .Required}}
-            <input type="file" name="{{.Name}}" accept="{{range .OtherOptions}}.{{.}}, {{end}}" required>
-            {{else}}
-            <input type="file" name="{{.Name}}" accept="{{range .OtherOptions}}.{{.}}, {{end}}">
-            {{end}}
+            <input type="file" name="{{.Name}}" accept="{{range .OtherOptions}}.{{.}}, {{end}}" {{if .Required}} required {{end}}>
           {{else}}
-            {{if .Required}}
-              <input type="file" name="{{.Name}}" required>
-            {{else}}
-              <input type="file" name="{{.Name}}">
-            {{end}}
+            <input type="file" name="{{.Name}}" {{if .Required}} required {{end}}>
           {{end}}
 
 
         {{else if eq .Type "Float"}}
-          {{if .Required}}
-            <input type="number" step="0.0000001" name="{{.Name}}" required>
-          {{else}}
-            <input type="number" step="0.0000001" name="{{.Name}}">
-          {{end}}
+          <input type="number" step="0.0000001" name="{{.Name}}" {{if .Required}} required {{end}}
+          {{if .ReadOnly}} disabled {{end}}>
 
         {{else if eq .Type "Image"}}
-          {{if .Required}}
-            <input type="file" name="{{.Name}}" accept=".png, .jpg, .jpeg" required>
-          {{else}}
-            <input type="file" name="{{.Name}}" accept=".png, .jpg, .jpeg">
-          {{end}}
+          <input type="file" name="{{.Name}}" accept=".png, .jpg, .jpeg" {{if .Required}} required {{end}}>
 
         {{else if eq .Type "Int"}}
-          {{if .Required}}
-            <input type="number" name="{{.Name}}" required>
-          {{else}}
-            <input type="number" name="{{.Name}}">
-          {{end}}
+          <input type="number" name="{{.Name}}" {{if .Required}} required {{end}}
+          {{if .ReadOnly}} disabled {{end}}>
 
         {{else if eq .Type "Link"}}
-          {{if .Required}}
-            <input type="number" name="{{.Name}}" required>
-          {{else}}
-            <input type="number" name="{{.Name}}">
-          {{end}}
+          <input type="number" name="{{.Name}}" {{if .Required}} required {{end}}
+          {{if .ReadOnly}} disabled {{end}}>
           <button class="open-linked-document button-look" data-ldds="{{index .OtherOptions 0}}">
             Open Linked Document
           </button>
 
-        {{ else if eq .Type "Read Only"}}
-          <input type="text" name="{{.Name}}" disabled>
-
         {{ else if eq .Type "Select"}}
-          <select name="{{.Name}}">
+          <select name="{{.Name}}" {{if .ReadOnly}} disabled {{end}}>
             {{range .OtherOptions}}
               <option>{{.}}</option>
             {{end}}
@@ -185,94 +148,65 @@
                 {{range $docData}}
                   <td>
                     {{if eq .Type "Big Number"}}
-                      {{if .Required}}
-                        <input type="number" name="{{.Name}}" required>
-                      {{else}}
-                        <input type="number" name="{{.Name}}">
-                      {{end}}
+                        <input type="number" name="{{.Name}}-1" {{if .Required}} required {{end}}
+                        {{if .ReadOnly}} disabled {{end}}>
 
                     {{else if eq .Type "Check"}}
-                      <input type="checkbox" name="{{.Name}}-1">
+                      <input type="checkbox" name="{{.Name}}-1" {{if .Required}} required {{end}}
+                      {{if .ReadOnly}} disabled {{end}}>
 
                     {{else if eq .Type "Data"}}
-                      {{ if .Required}}
-                        <input type="text" name="{{.Name}}-1" required>
-                      {{ else }}
-                        <input type="text" name="{{.Name}}-1">
-                      {{ end }}
+                        <input type="text" name="{{.Name}}-1" {{if .Required}} required {{end}}
+                        {{if .ReadOnly}} disabled {{end}}>
 
                     {{else if eq .Type "Date"}}
-                      {{ if .Required }}
-                        <input type="date" name="{{.Name}}-1" required>
-                      {{ else }}
-                        <input type="date" name="{{.Name}}-1">
-                      {{end}}
+                      <input type="date" name="{{.Name}}-1" {{if .Required}} required {{end}}
+                      {{if .ReadOnly}} disabled {{end}}>
 
                     {{ else if eq .Type "Datetime"}}
-                      {{ if .Required }}
-                        <input type="datetime-local" name="{{.Name}}-1" required>
-                      {{else}}
-                        <input type="datetime-local" name="{{.Name}}-1">
-                      {{end}}
+                      <input type="datetime-local" name="{{.Name}}-1" {{if .Required}} required {{end}}
+                      {{if .ReadOnly}} disabled {{end}}>
 
                     {{else if eq .Type "Email"}}
-                      {{if .Required}}
-                        <input type="email" name="{{.Name}}-1" required>
-                      {{else}}
-                        <input type="email" name="{{.Name}}-1">
-                      {{end}}
+                      <input type="email" name="{{.Name}}-1" {{if .Required}} required {{end}}
+                      {{if .ReadOnly}} disabled {{end}}>
 
                     {{else if eq .Type "Float"}}
-                      {{if .Required}}
-                        <input type="number" step="0.0000001" name="{{.Name}}-1" required>
-                      {{else}}
-                        <input type="number" step="0.0000001" name="{{.Name}}-1">
-                      {{end}}
+                      <input type="number" step="0.0000001" name="{{.Name}}-1" {{if .Required}} required {{end}}
+                      {{if .ReadOnly}} disabled {{end}}>
 
                     {{else if eq .Type "Int"}}
-                      {{if .Required}}
-                        <input type="number" name="{{.Name}}-1" required>
-                      {{else}}
-                        <input type="number" name="{{.Name}}-1">
-                      {{end}}
+                      <input type="number" name="{{.Name}}-1" {{if .Required}} required {{end}}
+                      {{if .ReadOnly}} disabled {{end}}>
 
                     {{else if eq .Type "Link"}}
-                      {{if .Required}}
-                        <input type="number" name="{{.Name}}-1" required>
-                      {{else}}
-                        <input type="number" name="{{.Name}}-1">
-                      {{end}}
+                      <input type="number" name="{{.Name}}-1" {{if .Required}} required {{end}}
+                      {{if .ReadOnly}} disabled {{end}}>
+
                       <button class="open-linked-document button-look" data-ldds="{{index .OtherOptions 0}}">
                         Open Linked Document
                       </button>
 
-                    {{ else if eq .Type "Read Only"}}
-                      <input type="text" name="{{.Name}}-1" disabled>
-
                     {{ else if eq .Type "Select"}}
-                      <select name="{{.Name}}-1">
+                      <select name="{{.Name}}-1" {{if .ReadOnly}} disabled {{end}}>
                         {{range .OtherOptions}}
                           <option>{{.}}</option>
                         {{end}}
                       </select>
 
                     {{else if eq .Type "Text"}}
-                      {{if .Required}}
-                        <textarea name="{{.Name}}-1" required></textarea>
-                      {{else}}
-                        <textarea name="{{.Name}}-1"></textarea>
-                      {{end}}
+                      <textarea name="{{.Name}}-1" {{if .Required}} required {{end}}
+                      {{if .ReadOnly}} disabled {{end}}></textarea>
 
                     {{else if eq .Type "URL"}}
-                      {{if .Required}}
-                        <input type="url" name="{{.Name}}-1" required>
-                      {{else}}
-                        <input type="url" name="{{.Name}}-1">
-                      {{end}}
+                      <input type="url" name="{{.Name}}-1" {{if .Required}} required {{end}}
+                      {{if .ReadOnly}} disabled {{end}}>
 
                     {{end}}
+
                   </td>
                 {{end}}
+
                 <td>
                   <button type="button" id="delete-row-{{$tblName}}-1" class="delete-row-btn">Delete</button>
                 </td>
@@ -280,19 +214,14 @@
             </tbody>
           </table>
           <button type="button" class="add-row button-look">Add Row</button>
+
         {{else if eq .Type "Text"}}
-          {{if .Required}}
-            <textarea name="{{.Name}}" required></textarea>
-          {{else}}
-            <textarea name="{{.Name}}"></textarea>
-          {{end}}
+          <textarea name="{{.Name}}" {{if .Required}} required {{end}}
+          {{if .ReadOnly}} disabled {{end}}></textarea>
 
         {{else if eq .Type "URL"}}
-          {{if .Required}}
-            <input type="url" name="{{.Name}}" required>
-          {{else}}
-            <input type="url" name="{{.Name}}">
-          {{end}}
+          <input type="url" name="{{.Name}}" {{if .Required}} required {{end}}
+          {{if .ReadOnly}} disabled {{end}}>
 
         {{end}}
       </div>

@@ -17,6 +17,9 @@
   .field-label, #id-ds-name, #id-help-text {
     width: 300px;
   }
+  .other-options {
+    width: 300px;
+  }
   #error-box {
     display: none;
     color: red;
@@ -67,7 +70,10 @@
       <li>
         Child table types must not have files, section break or tables.
       </li>
+      <li>Every field that is not a text, table, file is indexed</li>
+      <li>ReadOnly / Calculated option has no effect on tables and files</li>
     </ol>
+
     <table>
       <thead>
         <tr>
@@ -96,7 +102,6 @@
               <option>Image</option>
               <option>Int</option>
               <option>Link</option>
-              <option>Read Only </option>
               <option>Section Break </option>
               <option>Select</option>
               <option>Table</option>
@@ -107,6 +112,7 @@
           <td>
             <label>Required <input type="checkbox" class="option-required" name="options-1" value="required" /></label>
             <label>Unique <input type="checkbox" class="option-unique" name="options-1" value="unique" /></label>
+            <label>ReadOnly / Calculated <input type="checkbox" class="option-readonly" name="options-1" value="readonly" /></label>
             <br>
             <label>Other Options </label><br><textarea class="other-options" name="other-options-1"></textarea><br>
           </td>
@@ -138,6 +144,7 @@
       $('.field-type', el).attr('name', 'type-' + strNewNo);
       $('.option-required', el).attr('name', 'options-' + strNewNo);
       $('.option-unique', el).attr('name', 'options-' + strNewNo);
+      $('.option-readonly', el).attr('name', 'options-' + strNewNo);
       $('.other-options', el).attr('name', 'other-options-' + strNewNo);
       $('.delete-field-btn', el).attr('id', 'delete-field-' + strNewNo);
     });
