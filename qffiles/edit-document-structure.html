@@ -19,6 +19,9 @@ thead {
 tbody {
   vertical-align: top;
 }
+.other-options {
+  width: 300px;
+}
 </style>
 {{end}}
 
@@ -162,6 +165,7 @@ tbody {
             <td>
               Required: {{if $element.Required}} Yes {{else}} No {{end}}
               Unique: {{if $element.Unique}} Yes {{else}} No {{end}}
+              ReadOnly: {{if $element.ReadOnly}} Yes {{else}} No {{end}}
             </td>
             <td>{{$element.OtherOptions}}</td>
           </tr>
@@ -199,7 +203,6 @@ tbody {
               <option>Image</option>
               <option>Int</option>
               <option>Link</option>
-              <option>Read Only </option>
               <option>Section Break </option>
               <option>Select</option>
               <option>Table</option>
@@ -210,6 +213,7 @@ tbody {
           <td>
             <label>Required <input type="checkbox" class="option-required" name="options-{{call $.Add $.NumberofFields 1}}" value="required" /></label>
             <label>Unique <input type="checkbox" class="option-unique" name="options-{{call $.Add $.NumberofFields 1}}" value="unique" /></label>
+            <label>ReadOnly / Calculated <input type="checkbox" class="option-readonly" name="options-1" value="readonly" /></label>
             <br>
             <label>Other Options </label><br><textarea class="other-options" name="other-options-{{call $.Add $.NumberofFields 1}}"></textarea><br>
           </td>
@@ -252,6 +256,7 @@ function deleteFieldHandler(e) {
     $('.field-type', el).attr('name', 'type-' + strNewNo);
     $('.option-required', el).attr('name', 'options-' + strNewNo);
     $('.option-unique', el).attr('name', 'options-' + strNewNo);
+    $('.option-readonly', el).attr('name', 'options-' + strNewNo);
     $('.other-options', el).attr('name', 'other-options-' + strNewNo);
     $('.delete-field-btn', el).attr('id', 'delete-field-' + strNewNo);
   });
