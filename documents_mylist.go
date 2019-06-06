@@ -95,7 +95,8 @@ func myListSetup(w http.ResponseWriter, r *http.Request) {
   }
 
   var fields string
-  err = SQLDB.QueryRow("select group_concat(name order by view_order asc separator ',,,') from qf_fields where dsid = ?", dsid).Scan(&fields)
+  err = SQLDB.QueryRow(`select group_concat(name order by view_order asc separator ',,,')
+  from qf_fields where dsid = ? and type not in ["Table", "File", "Section Break", "Check"]`, dsid).Scan(&fields)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -235,9 +236,26 @@ func myList(w http.ResponseWriter, r *http.Request) {
     return
   } else {
     endSqlStmt := make([]string, 0)
+    dds, err := GetDocData(ds)
+    if err != nil {
+      return nil, err
+    }
+
     for k, list := range listConfigs {
       for _, v := range list {
-        endSqlStmt = append(endSqlStmt, fmt.Sprintf(" %s = \"%s\"", k, v))
+        for _, dd := range dds {
+          if dd.Name == k {
+            switch dd.Type {
+            case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
+              data := fmt.Sprintf("\"%s\"", html.EscapeString(v))
+              endSqlStmt = append(endSqlStmt, dd.Name + " = " + data)
+            default:
+              data := html.EscapeString(v)
+              endSqlStmt = append(endSqlStmt, dd.Name + " = " + data)
+            }
+          }
+          break
+        }
       }
     }
     readSqlStmt := fmt.Sprintf("select * from `%s` where ", tblName) + strings.Join(endSqlStmt, " or ")
