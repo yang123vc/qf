@@ -6,6 +6,7 @@ import (
   "html/template"
   "strings"
   "fmt"
+  "html"
 )
 
 
@@ -96,7 +97,7 @@ func myListSetup(w http.ResponseWriter, r *http.Request) {
 
   var fields string
   err = SQLDB.QueryRow(`select group_concat(name order by view_order asc separator ',,,')
-  from qf_fields where dsid = ? and type not in ["Table", "File", "Section Break", "Check"]`, dsid).Scan(&fields)
+  from qf_fields where dsid = ? and type not in ("Table", "File", "Section Break", "Check")`, dsid).Scan(&fields)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -111,7 +112,9 @@ func myListSetup(w http.ResponseWriter, r *http.Request) {
       Fields []string
     }
 
-    ctx := Context{listConfigs, ds, userid, strings.Split(fields, ",,,")}
+    fieldsList := strings.Split(fields, ",,,")
+    fieldsList = append(fieldsList, "created_by")
+    ctx := Context{listConfigs, ds, userid, fieldsList}
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/mylist-config.html"))
     tmpl.Execute(w, ctx)
 
@@ -238,26 +241,31 @@ func myList(w http.ResponseWriter, r *http.Request) {
     endSqlStmt := make([]string, 0)
     dds, err := GetDocData(ds)
     if err != nil {
-      return nil, err
+      errorPage(w, err.Error())
+      return
     }
 
     for k, list := range listConfigs {
       for _, v := range list {
-        for _, dd := range dds {
-          if dd.Name == k {
-            switch dd.Type {
-            case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
-              data := fmt.Sprintf("\"%s\"", html.EscapeString(v))
-              endSqlStmt = append(endSqlStmt, dd.Name + " = " + data)
-            default:
-              data := html.EscapeString(v)
-              endSqlStmt = append(endSqlStmt, dd.Name + " = " + data)
+        if k == "created_by" {
+          endSqlStmt = append(endSqlStmt, fmt.Sprintf("%s = %s", k, html.EscapeString(v)))
+        } else {
+          for _, dd := range dds {
+            if dd.Name == k {
+              switch dd.Type {
+              case "Text", "Data", "Email", "Read Only", "URL", "Select", "Date", "Datetime":
+                data := fmt.Sprintf("\"%s\"", html.EscapeString(v))
+                endSqlStmt = append(endSqlStmt, dd.Name + " = " + data)
+              default:
+                data := html.EscapeString(v)
+                endSqlStmt = append(endSqlStmt, dd.Name + " = " + data)
+              }
             }
           }
-          break
         }
       }
     }
+
     readSqlStmt := fmt.Sprintf("select * from `%s` where ", tblName) + strings.Join(endSqlStmt, " or ")
     totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " or ")
     innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "my-list")
