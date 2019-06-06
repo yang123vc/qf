@@ -1,0 +1,55 @@
+{{define "title"}}MyList Configuration for {{.DocumentStructure}}{{end}}
+
+
+{{define "styles"}}
+  <style>
+  #error-box {
+    margin-bottom: 5px;
+    display: none;
+    color: red;
+  }
+  form div {
+    margin-bottom: 10px;
+  }
+  input[type=text] {
+    width: 300px;
+  }
+  </style>
+{{end}}
+
+
+{{define "main"}}
+<h3>MyList Configuration for {{.DocumentStructure}}</h3>
+
+<a href="/mylist/{{.DocumentStructure}}/">MyList</a>
+
+<h4>Old Configurations</h4>
+<ol>
+  {{ range $key, $val := .ListConfigs}}
+    <li>
+      Field: <b> {{$key}} </b>
+      Values: {{range $val}} <b> {{.}} <a href="/remove-list-config/{{$.DocumentStructure}}/{{$key}}/{{.}}/">Delete</a> , </b> {{end}}
+    </li>
+  {{end}}
+</ol>
+
+<h4>New Configurations</h4>
+<form method="post" action="" id="new-list-config-form">
+  <div>
+    <label>Field</label>
+    <select name="field">
+      {{range .Fields}}
+        <option>{{.}}</option>
+      {{end}}
+    </select>
+  </div>
+  <div>
+    <label>Data to Watch for </label>
+    <input type="text" name="data" required/>
+  </div>
+  <div>
+    <input type="submit" value="Register" />
+  </div>
+</form>
+
+{{end}}

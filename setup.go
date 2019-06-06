@@ -214,6 +214,20 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
 
+
+    sqlStmt = "create table qf_mylistoptions ("
+    sqlStmt += "id bigint unsigned not null auto_increment,"
+    sqlStmt += "userid bigint unsigned not null,"
+    sqlStmt += "field varchar(100), data varchar(255), "
+    sqlStmt += "dsid int not null, primary key(id),"
+    sqlStmt += "foreign key (dsid) references qf_document_structures (id),"
+    sqlStmt += fmt.Sprintf("foreign key (userid) references `%s`(id))", UsersTable)
+    _, err = SQLDB.Exec(sqlStmt)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
     fmt.Fprintf(w, "Setup Completed.")
 
   }
@@ -277,6 +291,9 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/unapproved-list/{document-structure}/{page:[0-9]+}/", unapprovedList)
   r.HandleFunc("/delete-file/{document-structure}/{id:[0-9]+}/{name}/", deleteFile)
 
+  // My List links
+  r.HandleFunc("/mylist-setup/{document-structure}/", myListSetup)
+  r.HandleFunc("/remove-list-config/{document-structure}/{field}/{data}/", removeOneMylistConfig)
   // Approvals
   r.HandleFunc("/add-approvals-to-document-structure/{document-structure}/", addApprovals)
   r.HandleFunc("/remove-approvals-from-document-structure/{document-structure}/", removeApprovals)
