@@ -294,6 +294,9 @@ func AddQFHandlers(r *mux.Router) {
   // My List links
   r.HandleFunc("/mylist-setup/{document-structure}/", myListSetup)
   r.HandleFunc("/remove-list-config/{document-structure}/{field}/{data}/", removeOneMylistConfig)
+  r.HandleFunc("/mylist/{document-structure}/", myList)
+  r.HandleFunc("/mylist/{document-structure}/{page:[0-9]+}/", myList)
+
   // Approvals
   r.HandleFunc("/add-approvals-to-document-structure/{document-structure}/", addApprovals)
   r.HandleFunc("/remove-approvals-from-document-structure/{document-structure}/", removeApprovals)

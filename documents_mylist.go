@@ -188,3 +188,60 @@ func removeOneMylistConfig(w http.ResponseWriter, r *http.Request) {
 
   http.Redirect(w, r, fmt.Sprintf("/mylist-setup/%s/", ds), 307)
 }
+
+
+func myList(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+
+  detv, err := docExists(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if detv == false {
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
+    return
+  }
+
+  tv1, err := DoesCurrentUserHavePerm(r, ds, "read")
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! tv1 {
+    errorPage(w, "You don't have read permission for this document structure.")
+    return
+  }
+
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  listConfigs, err := getMyListConfig(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  if len(listConfigs) == 0 {
+    type Context struct {
+      DocumentStructure string
+    }
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/suggest-create-mylistconfig.html"))
+    tmpl.Execute(w, Context{ds})
+    return
+  } else {
+    endSqlStmt := make([]string, 0)
+    for k, list := range listConfigs {
+      for _, v := range list {
+        endSqlStmt = append(endSqlStmt, fmt.Sprintf(" %s = \"%s\"", k, v))
+      }
+    }
+    readSqlStmt := fmt.Sprintf("select * from `%s` where ", tblName) + strings.Join(endSqlStmt, " or ")
+    totalSqlStmt := fmt.Sprintf("select count(*) from `%s` where ", tblName) + strings.Join(endSqlStmt, " or ")
+    innerListDocuments(w, r, readSqlStmt, totalSqlStmt, "my-list")
+  }
+}

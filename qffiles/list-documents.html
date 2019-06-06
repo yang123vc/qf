@@ -9,6 +9,8 @@
     List of Approved {{.DocumentStructure}} Documents
   {{else if eq .ListType "unapproved-list"}}
     List of Unapproved {{.DocumentStructure}} Documents
+  {{else if eq .ListType "my-list"}}
+    My List in {{.DocumentStructure}}
   {{end}}
 {{end}}
 
@@ -34,12 +36,17 @@
       List of Approved {{.DocumentStructure}} Documents
     {{else if eq .ListType "unapproved-list"}}
       List of Unapproved {{.DocumentStructure}} Documents
+    {{else if eq .ListType "my-list"}}
+      My List in {{.DocumentStructure}}
     {{end}}
   </h3>
 
   {{ if eq $.CreatePerm true}}
     <a class="button-look" href="/create/{{.DocumentStructure}}/">Create</a>
   {{ end}}
+  <a class="button-look" href="/mylist/{{.DocumentStructure}}/">My List </a>
+  {{if eq $.ListType "my-list"}} <a class="button-look" href="/mylist-setup/{{.DocumentStructure}}/">MyList Setup</a>{{end}}
+
   <a class="button-look" href="/date-lists/{{.DocumentStructure}}/">Date Lists</a>
   <a class="button-look" href="/search/{{.DocumentStructure}}/">Search</a>
   {{if $.HasApprovals}}
@@ -121,6 +128,8 @@
           <a class="pagination-link" href="/unapproved-list/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
         {{else if eq $.ListType "search-list"}}
           <a class="pagination-link" href="/search-results/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
+        {{else if eq $.ListType "my-list"}}
+          <a class="pagination-link" href="/mylist/{{$.DocumentStructure}}/{{.}}/">{{.}}</a>
         {{end}}
       {{end}}
   </div>
