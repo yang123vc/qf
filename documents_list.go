@@ -281,6 +281,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
     ListType string
     OptionalDate string
     OrderColumns []string
+    Count uint64
   }
 
   pages := make([]uint64, 0)
@@ -328,7 +329,7 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
   }
 
   ctx := Context{ds, colNamesList, myRows, pageI, pages, tv1, tv2, tv3, hasApprovals,
-    approver, listType, date, strings.Split(allColumnLabels.String, ",,,")}
+    approver, listType, date, strings.Split(allColumnLabels.String, ",,,"), count}
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/list-documents.html"))
   tmpl.Execute(w, ctx)
 }
