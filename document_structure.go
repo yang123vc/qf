@@ -281,6 +281,46 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  var ctStr string
+  err = SQLDB.QueryRow("select child_table from qf_document_structures where fullname = ?", ds).Scan(&ctStr)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  if ctStr == "t" {
+    var dsid string
+    dsidsUsingThisCT := make([]string, 0)
+
+    rows, err := SQLDB.Query("select dsid from qf_fields where other_options = ?", ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    defer rows.Close()
+    for rows.Next() {
+      err := rows.Scan(&dsid)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+
+      dsidsUsingThisCT = append(dsidsUsingThisCT, dsid)
+    }
+    err = rows.Err()
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    if len(dsidsUsingThisCT) > 0 {
+      m := fmt.Sprintf("This Child Table is in use by the following document structures with id: %s",
+        dsidsUsingThisCT)
+      errorPage(w, m)
+      return
+    }
+  }
+
   approvers, err := getApprovers(ds)
   if err != nil {
     errorPage(w, err.Error())
