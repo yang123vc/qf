@@ -4,6 +4,8 @@ import (
   "net/http"
   "html/template"
   "github.com/gorilla/mux"
+  "strings"
+  "database/sql"
 )
 
 
@@ -18,17 +20,24 @@ func createButton(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  ndsList, err := notAliasDocumentStructureList()
+  var dslStr sql.NullString
+  err = SQLDB.QueryRow("select group_concat(fullname separator ',,,') from qf_document_structures where child_table = 'f'").Scan(&dslStr)
   if err != nil {
     errorPage(w, err.Error())
     return
+  }
+  var dsList []string
+  if dslStr.Valid {
+    dsList = strings.Split(dslStr.String, ",,,")
+  } else {
+    dsList = make([]string, 0)
   }
 
   if r.Method == http.MethodGet {
     type Context struct {
       DocumentStructureList []string
     }
-    ctx := Context{ndsList}
+    ctx := Context{dsList}
 
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/create-button.html"))
     tmpl.Execute(w, ctx)
