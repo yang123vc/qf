@@ -355,7 +355,19 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  _, err = SQLDB.Exec("delete from qf_fields where dsid = ?", dsid)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
   _, err = SQLDB.Exec("delete from qf_permissions where dsid = ?", dsid)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  _, err = SQLDB.Exec("delete from qf_buttons where dsid = ?", dsid)
   if err != nil {
     errorPage(w, err.Error())
     return
