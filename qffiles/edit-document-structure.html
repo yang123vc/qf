@@ -35,16 +35,20 @@ tbody {
   </p>
 
   <h3>Change Name Form</h3>
-  <p id="change-name-error" class="error-box"></p>
-  <form id="change-name-form" method='post' action='/update-document-structure-name/{{.DocumentStructure}}/'>
-    <div>
-      <label>New Name</label>
-      <input type="text" value="{{.DocumentStructure}}" name="new-name" />
-    </div>
-    <div>
-      <input type="submit" value="Update" id="change-name-btn" />
-    </div>
-  </form>
+  {{if .IsChildTable}}
+    Child table renaming is not supported.
+  {{else}}
+    <p id="change-name-error" class="error-box"></p>
+    <form id="change-name-form" method='post' action='/update-document-structure-name/{{.DocumentStructure}}/'>
+      <div>
+        <label>New Name</label>
+        <input type="text" value="{{.DocumentStructure}}" name="new-name" />
+      </div>
+      <div>
+        <input type="submit" value="Update" id="change-name-btn" />
+      </div>
+    </form>
+  {{end}}
 
   <h3>Update Help Text</h3>
   <p id="help-text-error" class="error-box"></p>
