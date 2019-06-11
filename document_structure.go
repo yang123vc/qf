@@ -219,28 +219,31 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
 
   structDSList := make([]DS, 0)
 
-  dsList, err := GetDocumentStructureList()
+  var str, ctStr string
+  var ctBool bool
+  rows, err := SQLDB.Query("select fullname, child_table from qf_document_structures order by fullname")
   if err != nil {
     errorPage(w, err.Error())
     return
   }
-
-  for _, ds := range dsList {
-    var ct string
-    err = SQLDB.QueryRow("select child_table from qf_document_structures where fullname = ?", ds).Scan(&ct)
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&str, &ctStr)
     if err != nil {
       errorPage(w, err.Error())
       return
     }
-
-    var b bool
-    if ct == "t" {
-      b = true
-    } else {
-      b = false
+    if ctStr == "f" {
+      ctBool = false
+    } else if ctStr == "t" {
+      ctBool = true
     }
-
-    structDSList = append(structDSList, DS{ds,b})
+    structDSList = append(structDSList, DS{str, ctBool})
+  }
+  err = rows.Err()
+  if err != nil {
+    errorPage(w, err.Error())
+    return
   }
 
   type Context struct {
