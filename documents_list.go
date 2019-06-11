@@ -89,21 +89,10 @@ func innerListDocuments(w http.ResponseWriter, r *http.Request, readSqlStmt, tot
   }
 
   colNames := make([]ColLabel, 0)
-  var dsid int
-  isAlias, ptdsid, err := DSIdAliasPointsTo(ds)
+  dsid, err := getDocumentStructureID(ds)
   if err != nil {
     errorPage(w, err.Error())
     return
-  }
-
-  if isAlias {
-    dsid = ptdsid
-  } else {
-    err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&dsid)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
   }
 
   var colName string

@@ -112,14 +112,12 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       id int not null auto_increment,
       fullname varchar(255) not null,
       tbl_name varchar(64) not null,
-      dsid int,
       child_table varchar(1) default 'f',
       approval_steps varchar(255),
       help_text text,
       primary key (id),
       unique (fullname),
-      unique (tbl_name),
-      foreign key (dsid) references qf_document_structures(id)
+      unique (tbl_name)
       )`)
     if err != nil {
       errorPage(w, err.Error())
@@ -301,10 +299,6 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/add-approvals-to-document-structure/{document-structure}/", addApprovals)
   r.HandleFunc("/remove-approvals-from-document-structure/{document-structure}/", removeApprovals)
   r.HandleFunc("/approvals/{document-structure}/{id:[0-9]+}/", viewOrUpdateApprovals)
-
-  // Document Structure Alias
-  r.HandleFunc("/aliases-one/", aliasesOne)
-  r.HandleFunc("/aliases-two/", aliasesTwo)
 
   // Buttons
   r.HandleFunc("/create-button/", createButton)

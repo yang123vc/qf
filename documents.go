@@ -48,22 +48,6 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var aliasName string
-  isAlias, ptdsid, err := DSIdAliasPointsTo(ds)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
-  if isAlias {
-    aliasName = ds
-    err = SQLDB.QueryRow("select fullname from qf_document_structures where id = ?", ptdsid).Scan(&ds)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-  }
-
   var helpText sql.NullString
   err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", ds).Scan(&helpText)
   if err != nil {
@@ -110,12 +94,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
       TableFields map[string][]DocData
     }
 
-    var ctx Context
-    if isAlias {
-      ctx = Context{aliasName, dds, htStr, ue, tableFields}
-    } else {
-      ctx = Context{ds, dds, htStr, ue, tableFields}
-    }
+    ctx := Context{ds, dds, htStr, ue, tableFields}
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/create-document.html"))
     tmpl.Execute(w, ctx)
 
@@ -146,19 +125,10 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    var tblName string
-    if isAlias {
-      tblName, err = tableName(aliasName)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
-    } else {
-      tblName, err = tableName(ds)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
+    tblName, err := tableName(ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
     }
 
     colNames := make([]string, 0)
@@ -319,12 +289,7 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
       ec.AfterCreateFn(uint64(lastid))
     }
 
-    var redirectURL string
-    if isAlias {
-      redirectURL = fmt.Sprintf("/list/%s/", aliasName)
-    } else {
-      redirectURL = fmt.Sprintf("/list/%s/", ds)
-    }
+    redirectURL := fmt.Sprintf("/list/%s/", ds)
     http.Redirect(w, r, redirectURL, 307)
   }
 
@@ -378,35 +343,11 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var aliasName string
-  isAlias, ptdsid, err := DSIdAliasPointsTo(ds)
+
+  tblName, err := tableName(ds)
   if err != nil {
     errorPage(w, err.Error())
     return
-  }
-
-  if isAlias {
-    aliasName = ds
-    err = SQLDB.QueryRow("select fullname from qf_document_structures where id = ?", ptdsid).Scan(&ds)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-  }
-
-  var tblName string
-  if isAlias {
-    tblName, err = tableName(aliasName)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-  } else {
-    tblName, err = tableName(ds)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
   }
 
   var createdBy uint64
@@ -441,18 +382,10 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   var helpText sql.NullString
-  if isAlias {
-    err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", aliasName).Scan(&helpText)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-  } else {
-    err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", ds).Scan(&helpText)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
+  err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", ds).Scan(&helpText)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
   }
 
   var htStr string
@@ -713,13 +646,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    var trueDS string
-    if isAlias {
-      trueDS = aliasName
-    } else {
-      trueDS = ds
-    }
-    ctx := Context{created, modified, trueDS, docAndStructureSlice, docid, firstname, surname,
+    ctx := Context{created, modified, ds, docAndStructureSlice, docid, firstname, surname,
       created_by, updatePerm, deletePerm, htStr, ue, tableData, add, hasApprovals,
       approver, qfbs}
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/update-document.html"))
@@ -952,12 +879,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       ec.AfterUpdateFn(docidUint64)
     }
 
-    var redirectURL string
-    if isAlias {
-      redirectURL = fmt.Sprintf("/list/%s/", aliasName)
-    } else {
-      redirectURL = fmt.Sprintf("/list/%s/", ds)
-    }
+    redirectURL := fmt.Sprintf("/list/%s/", ds)
     http.Redirect(w, r, redirectURL, 307)
   }
 

@@ -86,7 +86,7 @@
   {{ $l := len .QFBS}}
   {{if gt $l 0}}
     {{range .QFBS}}
-      <a class="button-look" href="{{.URLPrefix}}{{$.DocumentStructure}}/{{$.Id}}/">{{.Name}}</a> &nbsp;&nbsp;
+      <a class="button-look" href="{{.URLPrefix}}{{$.Id}}/">{{.Name}}</a> &nbsp;&nbsp;
     {{end}}
     <br>
   {{end}}

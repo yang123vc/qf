@@ -283,26 +283,6 @@ func deleteFields(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    aliases, err := getAliases(ds)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-    for _, alias := range aliases {
-      atblName, err := tableName(alias)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
-
-      sqlStmt := fmt.Sprintf("alter table `%s` drop column %s", atblName, mysqlName)
-      _, err = SQLDB.Exec(sqlStmt)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
-    }
-
     sqlStmt := fmt.Sprintf("alter table `%s` drop column %s", tblName, mysqlName)
     _, err = SQLDB.Exec(sqlStmt)
     if err != nil {
@@ -386,12 +366,6 @@ func addFields(w http.ResponseWriter, r *http.Request) {
   }
 
   tblName, err := tableName(ds)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
-  aliases, err := getAliases(ds)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -482,39 +456,12 @@ func addFields(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    aliasTableNames := make(map[string]string)
-    for _, alias := range aliases {
-      atblName, err := tableName(alias)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
-      aliasTableNames[alias] = atblName
-
-      sqlStmt = fmt.Sprintf("alter table `%s` add column %s ", atblName, qff.name)
-
-      _, err = SQLDB.Exec(sqlStmt + brokenStmt)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
-    }
-
     if optionSearch(qff.options, "unique") {
       sqlStmt = fmt.Sprintf("alter table `%s` add unique index (%s)", tblName, qff.name)
       _, err = SQLDB.Exec(sqlStmt)
       if err != nil {
         errorPage(w, err.Error())
         return
-      }
-
-      for _, alias := range aliases {
-        sqlStmt = fmt.Sprintf("alter table `%s` add unique index (%s)", aliasTableNames[alias], qff.name)
-        _, err = SQLDB.Exec(sqlStmt)
-        if err != nil {
-          errorPage(w, err.Error())
-          return
-        }
       }
     }
 
@@ -526,14 +473,6 @@ func addFields(w http.ResponseWriter, r *http.Request) {
         return
       }
 
-      for _, alias := range aliases {
-        indexSql := fmt.Sprintf("create index idx_%s on `%s`(%s)", qff.name, aliasTableNames[alias], qff.name)
-        _, err := SQLDB.Exec(indexSql)
-        if err != nil {
-          errorPage(w, err.Error())
-          return
-        }
-      }
     }
 
     if qff.type_ == "Link" {
@@ -547,15 +486,6 @@ func addFields(w http.ResponseWriter, r *http.Request) {
       if err != nil {
         errorPage(w, err.Error())
         return
-      }
-
-      for _, alias := range aliases {
-        sqlStmt = fmt.Sprintf("alter table `%s` add foreign key (%s) references `%s`(id)", aliasTableNames[alias], qff.name, ottblName)
-        _, err = SQLDB.Exec(sqlStmt)
-        if err != nil {
-          errorPage(w, err.Error())
-          return
-        }
       }
     }
   }

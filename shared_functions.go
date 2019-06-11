@@ -164,22 +164,10 @@ type DocData struct {
 
 func GetDocData(documentStructure string) ([]DocData, error) {
   dds := make([]DocData, 0)
-
-  var dsid int
-
-  isAlias, ptdsid, err := DSIdAliasPointsTo(documentStructure)
+  dsid, err := getDocumentStructureID(documentStructure)
   if err != nil {
-    return nil, err
+    return dds, err
   }
-  if isAlias {
-    dsid = ptdsid
-  } else {
-    err := SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", documentStructure).Scan(&dsid)
-    if err != nil {
-      return nil, err
-    }
-  }
-
   var label, name, type_, options, otherOptions string
 
   rows, err := SQLDB.Query("select label, name, type, options, other_options from qf_fields where dsid = ? order by view_order asc", dsid)
@@ -534,42 +522,6 @@ func isApprovalFrameworkInstalled(documentStructure string) (bool, error) {
   } else {
     return true, nil
   }
-}
-
-
-func DSIdAliasPointsTo(documentStructure string) (bool, int, error) {
-  sqlStmt := "select dsid from qf_document_structures where fullname = ?"
-  var dsidStr sql.NullString
-  err := SQLDB.QueryRow(sqlStmt, documentStructure).Scan(&dsidStr)
-  if err != nil {
-    return false, 0, err
-  }
-  if ! dsidStr.Valid {
-    return false, 0, err
-  }
-  dsid, err := strconv.Atoi(dsidStr.String)
-  if err != nil {
-    return false, 0, err
-  }
-  return true, dsid, nil
-}
-
-
-func getAliases(documentStructure string) ([]string, error) {
-  dsid, err := getDocumentStructureID(documentStructure)
-  if err != nil {
-    return nil, err
-  }
-  var aliasesNS sql.NullString
-  err = SQLDB.QueryRow("select group_concat(fullname separator ',,,') from qf_document_structures where dsid = ?", dsid).Scan(&aliasesNS)
-  if err != nil {
-    return nil, err
-  }
-  var aliases []string
-  if aliasesNS.Valid {
-    aliases = strings.Split(aliasesNS.String, ",,,")
-  }
-  return aliases, nil
 }
 
 

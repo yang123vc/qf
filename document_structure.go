@@ -226,25 +226,11 @@ func listDocumentStructures(w http.ResponseWriter, r *http.Request) {
   }
 
   for _, ds := range dsList {
-    isAlias, ptdsid, err := DSIdAliasPointsTo(ds)
+    var ct string
+    err = SQLDB.QueryRow("select child_table from qf_document_structures where fullname = ?", ds).Scan(&ct)
     if err != nil {
       errorPage(w, err.Error())
       return
-    }
-
-    var ct string
-    if isAlias {
-      err = SQLDB.QueryRow("select child_table from qf_document_structures where id = ?", ptdsid).Scan(&ct)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
-    } else {
-      err = SQLDB.QueryRow("select child_table from qf_document_structures where fullname = ?", ds).Scan(&ct)
-      if err != nil {
-        errorPage(w, err.Error())
-        return
-      }
     }
 
     var b bool
@@ -292,16 +278,6 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  aliases, err := getAliases(ds)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-  if len(aliases) > 0 {
-    errorPage(w, "Some aliases exists for this document structure. Delete them first.")
-    return
-  }
-
   approvers, err := getApprovers(ds)
   if err != nil {
     errorPage(w, err.Error())
@@ -334,20 +310,6 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
   if err != nil {
     errorPage(w, err.Error())
     return
-  }
-
-  isAlias, _, err := DSIdAliasPointsTo(ds)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
-  if ! isAlias {
-    _, err = SQLDB.Exec("delete from qf_fields where dsid = ?", dsid)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
   }
 
   _, err = SQLDB.Exec("delete from qf_permissions where dsid = ?", dsid)
@@ -416,34 +378,13 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  aliases, err := getAliases(ds)
+  var childTableStr string
+  err = SQLDB.QueryRow("select child_table from qf_document_structures where fullname = ?", ds).Scan(&childTableStr)
   if err != nil {
     errorPage(w, err.Error())
     return
   }
 
-  var alias bool
-  isAlias, ptdsid, err := DSIdAliasPointsTo(ds)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-  var aliasOf string
-  var childTableStr string
-  if isAlias {
-    alias = true
-    err = SQLDB.QueryRow("select fullname, child_table from qf_document_structures where id = ?", ptdsid).Scan(&aliasOf, &childTableStr)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-  } else {
-    err = SQLDB.QueryRow("select child_table from qf_document_structures where fullname = ?", ds).Scan(&childTableStr)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-  }
   var childTableBool bool
   if childTableStr == "t" {
     childTableBool = true
@@ -462,9 +403,6 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     HasApprovers bool
     ChildTable bool
     TableName string
-    Aliases []string
-    Alias bool
-    AliasOf string
   }
 
   add := func(x, y int) int {
@@ -490,7 +428,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   ctx := Context{ds, docDatas, id, add, rps, strings.Join(approvers, ", "), hasApprovers,
-    childTableBool, tblNameStr, aliases, alias, aliasOf}
+    childTableBool, tblNameStr}
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/view-document-structure.html"))
   tmpl.Execute(w, ctx)
 }

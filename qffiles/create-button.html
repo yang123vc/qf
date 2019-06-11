@@ -16,10 +16,7 @@
 {{define "main"}}
   <h3>Create Button</h3>
   <p>
-    Buttons would redirect to a link. The link would be of the form {url-prefix}{document-structure}/{document-id}/.<br>
-    The document structure is provided because one button should serve all the aliases. Aliases have the same table
-    structure. This variable would help you know which alias you are calling from.<br>
-    You need to create this link by yourself.<br>
+    Buttons would redirect to a link. The link would be of the form {url-prefix}/{document-id}/.<br>
     url-prefix must begin and end with forward slashes eg. <pre>/ie-complain/</pre>
   </p>
   {{$l := len .DocumentStructureList}}
