@@ -1,0 +1,51 @@
+{{define "title"}}Create Button{{end}}
+
+
+
+{{define "styles"}}
+<style>
+  form div {
+    margin-bottom: 10px;
+  }
+  input[type=text] {
+    width: 300px;
+  }
+</style>
+{{end}}
+
+{{define "main"}}
+  <h3>Create Button</h3>
+  <p>
+    Buttons would redirect to a link. The link would be of the form {url-prefix}/{document-id}/.<br>
+    url-prefix must begin and end with forward slashes eg. <pre>/ie-complain/</pre>
+  </p>
+  {{$l := len .DocumentStructureList}}
+  {{if eq $l 0 }}
+    <p>You have not created any document structure.</p>
+  {{else}}
+    <form id="create-button-form" method="post" action="">
+      <div>
+        <label>Button Name</label>
+        <input type="text" name="button_name" required />
+      </div>
+
+      <div>
+        <label>On Document Structure</label>
+        <select name="ds">
+          {{range .DocumentStructureList}}
+            <option>{{.}}</option>
+          {{end}}
+        </select>
+      </div>
+
+      <div>
+        <label>URL prefix</label>
+        <input type="text" name="url_prefix" required />
+      </div>
+
+      <div>
+        <input type="submit" value="Create Button" />
+      </div>
+    </form>
+  {{end}}
+{{end}}

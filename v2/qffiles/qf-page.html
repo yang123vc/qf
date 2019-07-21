@@ -1,0 +1,73 @@
+{{define "title"}}QF Page{{end}}
+
+
+{{define "styles"}}
+<style>
+div.info {
+  border-bottom: 3px solid gray;
+  margin-bottom: 20px;
+  width: 600px;
+}
+li {
+  margin-bottom: 10px;
+}
+</style>
+{{end}}
+
+
+{{define "main"}}
+  <h3>QF Page</h3>
+  <p>
+    This page contains all the links to the features of QF.<br>
+    The links here are only accessible by the administrator.
+  </p>
+
+  <div class="info">
+    <h4>Users And Roles</h4>
+    <ol>
+      <li>
+        <a href="/roles-view/">Roles</a><br>
+        For the creation, listing and deletion of roles.
+      </li>
+      <li>
+        <a href="/users-to-roles-list/">Users And Roles Association</a><br>
+        A listing of the users and the roles attached to the users. It further
+        provides links to edit the association.
+      </li>
+  </div>
+
+  <div class="info">
+    <h4>Document Structures</h4>
+    <ol>
+      <li>
+        <a href="/new-document-structure/">New Document Structure</a><br>
+        A document structure is a collection of data that leads to creation of form pages.
+        This creates a new document structure.
+      </li>
+      <li>
+        <a href="/list-document-structures/">List Document Structures</a><br>
+        This list the document structures and provides links to create, view document structure,
+        view created lists and delete document structures.<br>
+        In the view page of document structures you have links to edit the document structure,
+        edit its permissions and add approvals framework to it.<br>
+      </li>
+    </ol>
+  </div>
+
+  <div class="info">
+    <h4>Buttons</h4>
+    <ol>
+      <li>
+        <a href="/create-button/">Create Button</a><br>
+        This creates a new button which is shared across document structures. The button
+        would point to a link which would run the actions of the button. The administrator would write
+        the receiving link.
+      </li>
+      <li>
+        <a href="/list-buttons/">List Buttons </a><br>
+        This list the buttons created and some details about the buttons. It also contains links to delete
+        buttons.
+      </li>
+  </div>
+
+{{end}}
