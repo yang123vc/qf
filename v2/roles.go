@@ -1,16 +1,17 @@
 package v2
 
 import (
-  // "github.com/gorilla/mux"
+  "github.com/gorilla/mux"
   "net/http"
-  // "fmt"
+  "fmt"
   "html/template"
-  // "strconv"
+  "strconv"
   // "html"
   "strings"
-  // "math"
+  "math"
   "github.com/adam-hanna/arrayOperations"
   "cloud.google.com/go/firestore"
+  "google.golang.org/api/iterator"
 )
 
 
@@ -162,280 +163,215 @@ func renameRole(w http.ResponseWriter, r *http.Request) {
 // }
 
 
-// func usersToRolesList(w http.ResponseWriter, r *http.Request) {
-//   truthValue, err := isUserAdmin(r)
-//   if err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
-//   if ! truthValue {
-//     errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
-//     return
-//   }
+func usersList(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
 
-//   vars := mux.Vars(r)
-//   page := vars["page"]
-//   var pageI uint64
-//   if page != "" {
-//     pageI, err = strconv.ParseUint(page, 10, 64)
-//     if err != nil {
-//       errorPage(w, err.Error())
-//       return
-//     }
-//   } else {
-//     pageI = 1
-//   }
+  vars := mux.Vars(r)
+  page := vars["page"]
+  var pageI int
+  if page != "" {
+    pageI, err = strconv.Atoi(page)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  } else {
+    pageI = 1
+  }
 
-//   var count uint64
-//   sqlStmt := fmt.Sprintf("select count(*) from `%s`", UsersTable)
-//   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
-//   if err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
-//   if count == 0 {
-//     errorPage(w, "You have not defined any users.")
-//     return
-//   }
+  type UserInfo struct {
+    ID string
+    Firstname string
+    Surname string
+    Email string
+  }
 
-//   var itemsPerPage uint64 = 50
-//   startIndex := (pageI - 1) * itemsPerPage
-//   totalItems := count
-//   totalPages := math.Ceil( float64(totalItems) / float64(itemsPerPage) )
+  ufs := make([]UserInfo, 0)
 
-//   type UserData struct {
-//     UserId uint64
-//     Firstname string
-//     Surname string
-//     Roles []string
-//   }
+  allDocs, err := Gclient.Collection(UsersCollection).Documents(Gctx).GetAll()
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  totalItems := len(allDocs)
+  totalPages := math.Ceil( float64(totalItems) / float64(50) )
 
-//   sqlStmt = fmt.Sprintf("select `%[1]s`.id, `%[1]s`.firstname, `%[1]s`.surname, qf_roles.role ", UsersTable)
-//   sqlStmt += fmt.Sprintf("from (qf_user_roles right join `%[1]s` on qf_user_roles.userid = `%[1]s`.id)", UsersTable)
-//   sqlStmt += fmt.Sprintf("left join qf_roles on qf_user_roles.roleid = qf_roles.id ")
-//   sqlStmt += fmt.Sprintf("order by `%s`.firstname asc limit ?, ?", UsersTable)
+  startPoint := (pageI - 1) * 50
+  docs := Gclient.Collection(UsersCollection).OrderBy("firstname", firestore.Asc).StartAt(startPoint).Limit(50).Documents(Gctx)
+  for {
+    doc, err := docs.Next()
+    if err == iterator.Done {
+      break
+    }
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
 
-//   uds := make([]UserData, 0)
-//   var userid uint64
-//   var firstname, surname string
-//   var role sql.NullString
-//   userRoleMap := make(map[uint64][]string)
-//   rows, err := SQLDB.Query(sqlStmt, startIndex, itemsPerPage)
-//   if err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
-//   defer rows.Close()
-//   for rows.Next() {
-//     err := rows.Scan(&userid, &firstname, &surname, &role)
-//     if err != nil {
-//       errorPage(w, err.Error())
-//       return
-//     }
+    data := doc.Data()
+    uf := UserInfo{doc.Ref.ID, data["firstname"].(string), data["surname"].(string), data["email"].(string)}
+    ufs = append(ufs, uf)
+  }
 
-//     list, ok := userRoleMap[userid]
-//     if ! ok {
-//       if role.Valid {
-//         userRoleMap[userid] = []string{role.String}
-//       } else {
-//         userRoleMap[userid] = []string{}
-//       }
-//     } else {
-//       if role.Valid {
-//         list = append(list, role.String)
-//         userRoleMap[userid] = list
-//       }
-//     }
-//     uds = append(uds, UserData{userid, firstname, surname, []string{}})
-//   }
+  type Context struct {
+    UserInfos []UserInfo
+    Pages []uint64
+  }
+  pages := make([]uint64, 0)
+  for i := uint64(0); i < uint64(totalPages); i++ {
+    pages = append(pages, i+1)
+  }
 
-//   if err = rows.Err(); err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
-
-//   // remove duplicates
-//   udsNoDuplicates := make([]UserData, 0)
-//   hasDuplicates := make(map[uint64]bool)
-//   for i := 0; i < len(uds); i++ {
-//     ud := uds[i]
-//     _, ok := hasDuplicates[ud.UserId]
-//     if ! ok {
-//       udsNoDuplicates = append(udsNoDuplicates, ud)
-//       hasDuplicates[ud.UserId] = true
-//     }
-//   }
-
-//   for i := 0; i < len(udsNoDuplicates); i++ {
-//     ud := &udsNoDuplicates[i]
-//     ud.Roles = userRoleMap[ud.UserId]
-//   }
-
-//   type Context struct {
-//     UserDatas []UserData
-//     Pages []uint64
-//   }
-//   pages := make([]uint64, 0)
-//   for i := uint64(0); i < uint64(totalPages); i++ {
-//     pages = append(pages, i+1)
-//   }
-
-//   ctx := Context{udsNoDuplicates, pages}
-//   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/users-to-roles-list.html"))
-//   tmpl.Execute(w, ctx)
-// }
+  ctx := Context{ufs, pages}
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/users-list.html"))
+  tmpl.Execute(w, ctx)
+}
 
 
-// func editUserRoles(w http.ResponseWriter, r *http.Request) {
-//   truthValue, err := isUserAdmin(r)
-//   if err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
-//   if ! truthValue {
-//     errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
-//     return
-//   }
+func editUserRoles(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
 
-//   vars := mux.Vars(r)
-//   userid := vars["userid"]
-//   useridUint64, err := strconv.ParseUint(userid, 10, 64)
+  vars := mux.Vars(r)
+  userid := vars["userid"]
 
-//   var count int
-//   sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", UsersTable, userid)
-//   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
-//   if err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
-//   if count == 0 {
-//     errorPage(w, "The userid does not exist.")
-//     return
-//   }
-
-//   userRoles := make([]string, 0)
-//   var role string
-//   rows, err := SQLDB.Query(`select qf_roles.role from qf_roles inner join qf_user_roles on qf_roles.id = qf_user_roles.roleid
-//     where qf_user_roles.userid = ?`, useridUint64)
-//   if err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
-//   defer rows.Close()
-//   for rows.Next() {
-//     err := rows.Scan(&role)
-//     if err != nil {
-//       errorPage(w, err.Error())
-//       return
-//     }
-//     userRoles = append(userRoles, role)
-//   }
-//   if err = rows.Err(); err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
-
-//   if r.Method == http.MethodGet {
-//     roles, err := GetRoles()
-//     if err != nil {
-//       errorPage(w, err.Error())
-//       return
-//     }
-
-//     var firstname, surname string
-//     sqlStmt = fmt.Sprintf("select firstname, surname from `%s` where id = %d", UsersTable, useridUint64)
-//     err = SQLDB.QueryRow(sqlStmt).Scan(&firstname, &surname)
-//     if err != nil {
-//       errorPage(w, err.Error())
-//       return
-//     }
-
-//     type Context struct {
-//       UserId string
-//       UserRoles []string
-//       Roles []string
-//       FullName string
-//     }
-
-//     ctx := Context{userid, userRoles, roles, firstname + " " + surname}
-//     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/edit-user-roles.html"))
-//     tmpl.Execute(w, ctx)
-
-//   } else if r.Method == http.MethodPost {
-
-//     r.ParseForm()
-//     newRoles := r.PostForm["roles"]
-//     stmt, err := SQLDB.Prepare("insert into qf_user_roles(userid, roleid) values(?, ?)")
-//     if err != nil {
-//       errorPage(w, err.Error())
-//       return
-//     }
-//     for _, str := range newRoles {
-//       roleid, err := getRoleId(str)
-//       if err != nil {
-//         errorPage(w, err.Error())
-//         return
-//       }
-//       _, err = stmt.Exec(useridUint64, roleid)
-//       if err != nil {
-//         errorPage(w, err.Error())
-//         return
-//       }
-//     }
-
-//     http.Redirect(w, r, "/users-to-roles-list/", 307)
-//   }
-
-// }
+  dsnap, err := Gclient.Collection(UsersCollection).Doc(userid).Get(Gctx)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! dsnap.Exists() {
+    errorPage(w, "The userid does not exist.")
+    return
+  }
 
 
-// func removeRoleFromUser(w http.ResponseWriter, r *http.Request) {
-//   truthValue, err := isUserAdmin(r)
-//   if err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
-//   if ! truthValue {
-//     errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
-//     return
-//   }
+  userRoles := make(map[string]string)
+  iter := Gclient.Collection("qf_user_roles").Where("userid", "==", userid).Documents(Gctx)
+  for {
+    doc, err := iter.Next()
+    if err == iterator.Done {
+      break
+    }
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
 
-//   vars := mux.Vars(r)
-//   userid := vars["userid"]
-//   role := vars["role"]
-//   useridUint64, err := strconv.ParseUint(userid, 10, 64)
-//   if err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
+    roleid, err := doc.DataAt("roleid")
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
 
-//   var count int
-//   sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", UsersTable, userid)
-//   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
-//   if err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
-//   if count == 0 {
-//     errorPage(w, "The userid does not exist.")
-//     return
-//   }
+    rdsnap, err := Gclient.Collection("qf_roles").Doc(roleid.(string)).Get(Gctx)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    rData := rdsnap.Data()
+    userRoles[rData["name"].(string)] = roleid.(string)
+  }
 
-//   roleid, err := getRoleId(role)
-//   if err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
 
-//   _, err = SQLDB.Exec("delete from qf_user_roles where userid = ? and roleid = ?", useridUint64, roleid)
-//   if err != nil {
-//     errorPage(w, err.Error())
-//     return
-//   }
+  if r.Method == http.MethodGet {
+    roles, err := GetRoles()
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
 
-//   redirectURL := fmt.Sprintf("/edit-user-roles/%s/", userid)
-//   http.Redirect(w, r, redirectURL, 307)
-// }
+    type Context struct {
+      UserId string
+      UserRoles map[string]string
+      Roles map[string]string
+      FullName string
+    }
+
+    data := dsnap.Data()
+    ctx := Context{userid, userRoles, roles, data["firstname"].(string) + " " + data["surname"].(string)}
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/edit-user-roles.html"))
+    tmpl.Execute(w, ctx)
+
+  } else if r.Method == http.MethodPost {
+
+    r.ParseForm()
+    newRoles := r.PostForm["roles"]
+    for _, str := range newRoles {
+      _, _, err := Gclient.Collection("qf_user_roles").Add(Gctx, map[string]interface{}{"roleid": str, "userid": userid })
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+    }
+
+    http.Redirect(w, r, "/users-list/", 307)
+  }
+
+}
+
+
+func removeRoleFromUser(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  vars := mux.Vars(r)
+  userid := vars["userid"]
+  roleid := vars["roleid"]
+
+  dsnap, err := Gclient.Collection(UsersCollection).Doc(userid).Get(Gctx)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! dsnap.Exists() {
+    errorPage(w, "The userid does not exist.")
+    return
+  }
+
+  iter := Gclient.Collection("qf_user_roles").Where("userid", "==", userid).Where("roleid", "==", roleid).Documents(Gctx)
+  for {
+    doc, err := iter.Next()
+    if err == iterator.Done {
+      break
+    }
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    _, err = doc.Ref.Delete(Gctx)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  }
+
+  redirectURL := fmt.Sprintf("/edit-user-roles/%s/", userid)
+  http.Redirect(w, r, redirectURL, 307)
+}
 
 
 // func deleteRolePermissions(w http.ResponseWriter, r *http.Request) {

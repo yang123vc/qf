@@ -1,4 +1,4 @@
-{{define "title"}}Users to Roles List {{end}}
+{{define "title"}}Users List {{end}}
 
 {{define "styles"}}
   <style>
@@ -15,24 +15,22 @@
 {{end}}
 
 {{define "main"}}
-  <h3>Users to Roles List</h3>
+  <h3>Users List</h3>
 
   <table>
     <thead>
       <tr>
         <td>UserId</td>
         <td>Name</td>
-        <td>Roles</td>
         <td>Actions</td>
       </tr>
     </thead>
     <tbody>
-      {{ range .UserDatas}}
+      {{ range .UserInfos}}
         <tr>
-          <td>{{.UserId}}</td>
+          <td>{{.ID}}</td>
           <td>{{.Firstname}} {{.Surname}} </td>
-          <td>{{range .Roles }} {{.}} <br> {{end}} </td>
-          <td><a href='/edit-user-roles/{{.UserId}}/'>Edit</a></td>
+          <td><a href='/edit-user-roles/{{.ID}}/'>Edit</a></td>
         </tr>
       {{ end }}
     </tbody>
@@ -42,7 +40,7 @@
   <div id="pagination">
       Pages:
       {{range .Pages}}
-        <a class="pagination-link" href="/users-to-roles-list/{{.}}/">{{.}}</a>
+        <a class="pagination-link" href="/users-list/{{.}}/">{{.}}</a>
       {{end}}
   </div>
 {{end}}

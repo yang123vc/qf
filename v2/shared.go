@@ -7,6 +7,7 @@ import (
 	"os"
 	"html/template"
 	"google.golang.org/api/iterator"
+  "cloud.google.com/go/firestore"
 )
 
 
@@ -67,7 +68,7 @@ func errorPage(w http.ResponseWriter, msg string) {
 
 
 func GetRoles() (map[string]string, error) {
-	iter := Gclient.Collection("qf_roles").Documents(Gctx)
+	iter := Gclient.Collection("qf_roles").OrderBy("name", firestore.Asc).Documents(Gctx)
 	roles := make(map[string]string)
 	for {
 		doc, err := iter.Next()
