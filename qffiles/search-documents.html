@@ -23,11 +23,13 @@
   <h3>Search {{.DocumentStructure}} Documents</h3>
 
   <form method="get" action="/search-results/{{.DocumentStructure}}/">
-    <div>
-      <label>Created By (User ID)</label>
-      <input type="number" name="created_by" />
-    </div>
-
+    {{if .FullReadAccess}}
+      <div>
+        <label>Created By (User ID)</label>
+        <input type="number" name="created_by" />
+      </div>
+    {{end}}
+    
     <div>
       <label>Creation Year </label>
       <input type="number" name="creation-year" />

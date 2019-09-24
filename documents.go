@@ -326,6 +326,11 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     errorPage(w, err.Error())
     return
   }
+  rocPerm, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
 
   updatePerm, err := DoesCurrentUserHavePerm(r, ds, "update")
   if err != nil {
@@ -365,8 +370,15 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
   }
 
   if ! readPerm {
-    errorPage(w, "You don't have the read permission for this document structure.")
-    return
+    if rocPerm {
+      if createdBy != useridUint64 {
+        errorPage(w, "You are not the owner of this document so can't read it.")
+        return
+      }
+    } else {
+      errorPage(w, "You don't have the read permission for this document structure.")
+      return      
+    }
   }
 
   var count uint64
@@ -887,7 +899,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 
 
 func editLog(w http.ResponseWriter, r *http.Request) {
-  _, err := GetCurrentUser(r)
+  useridUint64, err := GetCurrentUser(r)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -916,8 +928,9 @@ func editLog(w http.ResponseWriter, r *http.Request) {
     errorPage(w, err.Error())
     return
   }
-  if ! readPerm {
-    errorPage(w, "You don't have the read permission for this document structure.")
+  rocPerm, err := DoesCurrentUserHavePerm(r, ds, "read-only-created")
+  if err != nil {
+    errorPage(w, err.Error())
     return
   }
 
@@ -929,17 +942,29 @@ func editLog(w http.ResponseWriter, r *http.Request) {
 
   sqlStmt := fmt.Sprintf("select edit_log, created_by from %s where id = ?", tblName)
   var editLogStr sql.NullString
-  var createdBy string
+  var createdBy uint64
   err = SQLDB.QueryRow(sqlStmt, docid).Scan(&editLogStr, &createdBy)
   if err != nil {
     errorPage(w, err.Error())
     return
   }
 
+  if ! readPerm {
+    if rocPerm {
+      if createdBy != useridUint64 {
+        errorPage(w, "You are not the owner of this document so can't read it.")
+        return
+      }
+    } else {
+      errorPage(w, "You don't have the read permission for this document structure.")
+      return      
+    }
+  }
+
   type Context struct {
     DocumentStructure string
     DocId string
-    CreatedBy string
+    CreatedBy uint64
     Editors []string
     NoEditor bool
   }
