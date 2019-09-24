@@ -228,6 +228,21 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
 
+    _, err = SQLDB.Exec(`create table qf_version (
+      id int not null auto_increment,
+      version varchar(50) not null,
+      primary key (id)
+    )`)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    _, err = SQLDB.Exec("insert into qf_version (id, version) values (?, ?)", 1, "1.7.0")
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
     fmt.Fprintf(w, "Setup Completed.")
 
   }

@@ -182,14 +182,6 @@ After upgrading the code please remember to update the copy of `qffiles` in your
 
 ## FAQs
 
-### I just updated and my installation stopped working
-
-This could happen when the database structure changes.
-
-Backup your database, delete the qf tables and recreate them by going to /qf-setup/. Then reload
-data from your database backup keeping in mind the changes that have taken place.
-
-
 ### Groups of Programmers building on QF. How to merge.
 
 Use a shared database.
@@ -212,11 +204,6 @@ and the design of the email itself.
 ### When is X Database Support Coming
 
 I don't intend to support more than one database so has to make the work cheaper.
-
-
-### How to Create a Foreign Key between a QF table and a non QF table
-
-Create a big number field. Then use ExtraCode to validate that the data is in the other table.
 
 
 ## License
