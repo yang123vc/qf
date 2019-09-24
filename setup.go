@@ -23,6 +23,7 @@ type ExtraCode struct {
   AfterCreateFn func(id uint64)
   AfterUpdateFn func(id uint64)
   BeforeDeleteFn func(id uint64)
+  CanCreateFn func() string
 }
 
 var ExtraCodeMap = make(map[int]ExtraCode)

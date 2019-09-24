@@ -48,6 +48,17 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  ec, ectv := getEC(ds)
+
+  // first check if it passes the extra code validation for this document.
+  if ectv && ec.CanCreateFn != nil {
+    outString := ec.CanCreateFn()
+    if outString != "" {
+      errorPage(w, fmt.Sprintf("Document creation process cannot begin because: '%s'", outString))
+      return
+    }
+  }
+
   var helpText sql.NullString
   err = SQLDB.QueryRow("select help_text from qf_document_structures where fullname = ?", ds).Scan(&helpText)
   if err != nil {
@@ -103,7 +114,6 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
     r.FormValue("email")
 
     // first check if it passes the extra code validation for this document.
-    ec, ectv := getEC(ds)
     if ectv && ec.ValidationFn != nil {
       outString := ec.ValidationFn(r.PostForm)
       if outString != "" {
