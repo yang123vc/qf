@@ -168,6 +168,13 @@ To send mails after approvals set the `qf.ApprovalFrameworkMailsFn`. It's defini
 `func(docid uint64, role, status, message string)`
 
 
+### Creating Inspectors
+
+Inspectors are users who have read access to all the documents in an installation.
+
+To add a user as inspector add his/her id to `qf.Inspectors`
+
+
 ## Upgrading
 
 After upgrading the code please remember to update the copy of `qffiles` in your project

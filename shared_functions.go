@@ -94,12 +94,31 @@ func isUserAdmin(r *http.Request) (bool, error) {
 }
 
 
+func isUserInspector(r *http.Request) (bool, error) {
+  userid, err := GetCurrentUser(r)
+  if err != nil {
+    return false, err
+  }
+  for _, id := range Inspectors {
+    if userid == id {
+      return true, nil
+    }
+  }
+  return false, nil
+}
+
+
 func DoesCurrentUserHavePerm(r *http.Request, documentStructure, permission string) (bool, error) {
   adminTruth, err := isUserAdmin(r)
   if err == nil && adminTruth {
     return true, nil
   }
 
+  inspectorTruth, err := isUserInspector(r)
+  if err == nil && inspectorTruth && permission == "read" {
+    return true, nil
+  }
+  
   userid, err := GetCurrentUser(r)
   if err != nil {
     return false, err

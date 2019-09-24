@@ -15,6 +15,7 @@ var SQLDB *sql.DB
 var SiteDB string
 var UsersTable string
 var Admins []uint64
+var Inspectors []uint64
 var GetCurrentUser func(r *http.Request) (uint64, error)
 var BaseTemplate string
 
