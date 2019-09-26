@@ -800,16 +800,10 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 
         var newFileName string
         for {
-          var extension string
-          if strings.HasSuffix(handle.Filename, "tar.gz") {
-            extension = ".tar.gz"
-          } else if strings.HasSuffix(handle.Filename, "tar.xz") {
-            extension = ".tar.xz"
-          } else {
-            extension = filepath.Ext(handle.Filename)
-          }
+          randomFileName := filepath.Join(tblName, 
+            fmt.Sprintf("%s%s%s", untestedRandomString(100), 
+            FILENAME_SEPARATOR, handle.Filename))
 
-          randomFileName := filepath.Join(tblName, untestedRandomString(100) + extension)
           objHandle := client.Bucket(QFBucketName).Object(randomFileName)
           _, err := objHandle.NewReader(ctx)
           if err == nil {
