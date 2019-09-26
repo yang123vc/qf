@@ -262,7 +262,23 @@ func usersToRolesList(w http.ResponseWriter, r *http.Request) {
 
   for i := 0; i < len(udsNoDuplicates); i++ {
     ud := &udsNoDuplicates[i]
-    ud.Roles = userRoleMap[ud.UserId]
+    tmpRoles := userRoleMap[ud.UserId]
+
+    for _, id := range Admins {
+      if ud.UserId == id {
+        tmpRoles = append(ud.Roles, "Administrator")
+        break
+      }
+    }
+
+    for _, id := range Inspectors {
+      if ud.UserId == id {
+        tmpRoles = append(ud.Roles, "Inspector")
+        break
+      }
+    }
+
+    ud.Roles = tmpRoles
   }
 
   type Context struct {
