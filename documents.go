@@ -299,8 +299,13 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
       ec.AfterCreateFn(uint64(lastid))
     }
 
-    redirectURL := fmt.Sprintf("/list/%s/", ds)
-    http.Redirect(w, r, redirectURL, 307)
+    type Context struct {
+      DocumentStructure string
+      LastId uint64
+    }
+
+    tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/after-create-msg.html"))
+    tmpl.Execute(w, Context{ds, uint64(lastid)})
   }
 
 }
