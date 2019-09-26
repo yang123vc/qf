@@ -32,9 +32,6 @@ var ExtraCodeMap = make(map[int]ExtraCode)
 var ApprovalFrameworkMailsFn func(docid uint64, role, status, message string)
 
 var QFBucketName string
-var KeyFilePath string
-var GoogleAccessID string
-
 
 func qfSetup(w http.ResponseWriter, r *http.Request) {
   if SQLDB == nil {
@@ -256,7 +253,6 @@ func AddQFHandlers(r *mux.Router) {
   // Please call this link first to do your setup.
   r.HandleFunc("/qf-setup/", qfSetup)
   r.HandleFunc("/qf-page/", qfPage)
-  r.HandleFunc("/serve-js/{library}/", serveJS)
 
   // document structure links
   r.HandleFunc("/new-document-structure/", newDocumentStructure)
@@ -304,6 +300,10 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/approved-list/{document-structure}/{page:[0-9]+}/", approvedList)
   r.HandleFunc("/unapproved-list/{document-structure}/", unapprovedList)
   r.HandleFunc("/unapproved-list/{document-structure}/{page:[0-9]+}/", unapprovedList)
+
+  // file links 
+  r.HandleFunc("/serve-js/{library}/", serveJS)
+  r.HandleFunc("/qf-file/", serveFileForQF)
   r.HandleFunc("/delete-file/{document-structure}/{id:[0-9]+}/{name}/", deleteFile)
 
   // My List links

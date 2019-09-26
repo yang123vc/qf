@@ -132,9 +132,9 @@
 
         {{else if eq .Type "File"}}
           {{if ne .Data ""}}
-            <a href="{{.Data}}">View File</a>
+            <a href="/qf-file/?p={{.Data}}">View File</a>
             {{if eq .Required false}}
-              <a href="/doc/{{$.DocumentStructure}}/delete-file/{{$.Id}}/{{.Name}}/">Remove File</a>
+              <a href="/delete-file/{{$.DocumentStructure}}/{{$.Id}}/{{.Name}}/">Remove File</a>
             {{end}}
             <br>
           {{end}}
@@ -154,10 +154,10 @@
 
         {{else if eq .Type "Image"}}
           {{if ne .Data ""}}
-            <img class="image-field" src="{{.Data}}" alt="An Image" />
+            <img class="image-field" src="/qf-file/?p={{.Data}}" alt="An Image" />
             {{if eq .Required false}}
               <br>
-              <a href="/doc/{{$.DocumentStructure}}/delete-file/{{$.Id}}/{{.Name}}/">Remove File</a>
+              <a href="/delete-file/{{$.DocumentStructure}}/{{$.Id}}/{{.Name}}/">Remove File</a>
             {{end}}
             <br>
 

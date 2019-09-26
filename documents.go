@@ -13,10 +13,10 @@ import (
   "golang.org/x/net/context"
   "cloud.google.com/go/storage"
   "io"
-  "io/ioutil"
-  "time"
 )
 
+
+var FILENAME_SEPARATOR = "____"
 
 func createDocument(w http.ResponseWriter, r *http.Request) {
   useridUint64, err := GetCurrentUser(r)
@@ -234,19 +234,12 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
         }
         defer file.Close()
 
-        // ctx := context.Background()
         var newFileName string
         for {
-          var extension string
-          if strings.HasSuffix(handle.Filename, "tar.gz") {
-            extension = ".tar.gz"
-          } else if strings.HasSuffix(handle.Filename, "tar.xz") {
-            extension = ".tar.xz"
-          } else {
-            extension = filepath.Ext(handle.Filename)
-          }
+          randomFileName := filepath.Join(tblName, 
+            fmt.Sprintf("%s%s%s", untestedRandomString(100), 
+            FILENAME_SEPARATOR, handle.Filename))
 
-          randomFileName := filepath.Join(tblName, untestedRandomString(100) + extension)
           objHandle := client.Bucket(QFBucketName).Object(randomFileName)
           _, err := objHandle.NewReader(ctx)
           if err == nil {
@@ -492,25 +485,25 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, ""})
     } else {
       data := rowMap[ docData.Name ]
-      if data != "" && (docData.Type == "File" || docData.Type == "Image") {
-        pkey, err := ioutil.ReadFile(KeyFilePath)
-        if err != nil {
-          errorPage(w, err.Error())
-          return
-        }
-        opts := &storage.SignedURLOptions{
-          GoogleAccessID: GoogleAccessID,
-          PrivateKey: pkey,
-          Method: "GET",
-          Expires: time.Now().Add(1 * time.Hour),
-        }
-        viewableFilePath, err := storage.SignedURL(QFBucketName, data, opts)
-        if err != nil {
-          errorPage(w, err.Error())
-          return
-        }
-        data = viewableFilePath
-      }
+      // if data != "" && (docData.Type == "File" || docData.Type == "Image") {
+      //   pkey, err := ioutil.ReadFile(KeyFilePath)
+      //   if err != nil {
+      //     errorPage(w, err.Error())
+      //     return
+      //   }
+      //   opts := &storage.SignedURLOptions{
+      //     GoogleAccessID: GoogleAccessID,
+      //     PrivateKey: pkey,
+      //     Method: "GET",
+      //     Expires: time.Now().Add(1 * time.Hour),
+      //   }
+      //   viewableFilePath, err := storage.SignedURL(QFBucketName, data, opts)
+      //   if err != nil {
+      //     errorPage(w, err.Error())
+      //     return
+      //   }
+      //   data = viewableFilePath
+      // }
       docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, data})
 
       if docData.Type == "Table" {
