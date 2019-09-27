@@ -74,9 +74,6 @@ to use in communicating with google cloud storage.
 You would need to create a bucket on google cloud storage for all your files in a qf installation. Then
 set the name of the bucket to `qf.QFBucketName`.
 
-Read [this](https://godoc.org/cloud.google.com/go/storage#SignedURLOptions) to find out how to get the values
-to enter into `qf.KeyFilePath` and `qf.GoogleAccessID`
-
 
 ### Setting up Role Permissions and Approvals for a Document Structure.
 
