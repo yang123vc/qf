@@ -100,6 +100,13 @@ The link to display to the user is of the form `/list/{documentStructure}/`. Rep
 the name of the document structure.
 
 
+### Creating Inspectors
+
+Inspectors are users who have read access to all the documents in an installation.
+
+To add a user as inspector add his/her id to `qf.Inspectors`
+
+
 ### Theming Your Project
 
 The sample project has no design. To make it beautiful make a template from this template :`qffiles/bad-base.html`
@@ -163,13 +170,6 @@ set the AfterCreateFn and the AfterDeleteFn.
 
 To send mails after approvals set the `qf.ApprovalFrameworkMailsFn`. It's definition is
 `func(docid uint64, role, status, message string)`
-
-
-### Creating Inspectors
-
-Inspectors are users who have read access to all the documents in an installation.
-
-To add a user as inspector add his/her id to `qf.Inspectors`
 
 
 ## Upgrading
