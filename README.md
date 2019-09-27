@@ -145,12 +145,12 @@ the ID of the document structure as the key. Example is :
 
   qf.ExtraCodeMap[1] = qf.ExtraCode{ValidationFn: validateProfile}
   ```
-- For ValidationFn whenever it returns a string it would be taken as an error and printed to the user.
+- For ValidationFn and CanCreateFn whenever it returns a string it would be taken as an error and printed to the user.
 If it doesn't then there is no error.
 
 - Other functions under ExtraCode do not print to screen.
 
-- For AfterCreateFn and AfterUpdateFn you would need to do an SQL query to get the document data.
+- For AfterCreateFn, AfterUpdateFn and BeforeDeleteFn you would need to do an SQL query to get the document data.
 
 
 ### Setup of Approval Framework Mails
