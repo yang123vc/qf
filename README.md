@@ -52,8 +52,7 @@ declaration `func(r *http.Request) (uint64, error)`.
 
 ### Begin
 
-Get the framework through the following command
-`go get github.com/bankole7782/qf`
+Get the framework through the following command `go get -u github.com/bankole7782/qf`
 
 There is a sample application which details how to complete the setup. Take a look at it [here](https://github.com/bankole7782/qf_example)
 
