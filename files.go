@@ -7,6 +7,8 @@ import (
   "golang.org/x/net/context"
   "cloud.google.com/go/storage"
   "strings"
+  "fmt"
+  "strconv"
 )
 
 
@@ -78,4 +80,96 @@ func serveJS(w http.ResponseWriter, r *http.Request) {
   } else if lib == "autosize" {
     http.ServeFile(w, r, "qffiles/autosize.min.js")
   }
+}
+
+
+
+func deleteFile(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  vars := mux.Vars(r)
+  ds := vars["document-structure"]
+  docid := vars["id"]
+  _, err = strconv.ParseUint(docid, 10, 64)
+  if err != nil {
+    errorPage(w, err.Error())
+  }
+
+  detv, err := docExists(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if detv == false {
+    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
+    return
+  }
+
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  var count uint64
+  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tblName, docid)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+  if count == 0 {
+    errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid))
+    return
+  }
+
+  deletePerm, err := DoesCurrentUserHavePerm(r, ds, "delete")
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  docPerm, err := DoesCurrentUserHavePerm(r, ds, "delete-only-created")
+  if err != nil {
+    errorPage(w, err.Error())
+  }
+
+  var createdBy uint64
+  sqlStmt = fmt.Sprintf("select created_by from `%s` where id = %s", tblName, docid)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  ctx := context.Background()
+  client, err := storage.NewClient(ctx)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  if deletePerm || (docPerm && createdBy == useridUint64) {
+    var toDeleteFileName string
+    sqlStmt = fmt.Sprintf("select %s from `%s` where id = %s", vars["name"], tblName, docid)
+    err = SQLDB.QueryRow(sqlStmt).Scan(&toDeleteFileName)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    err = client.Bucket(QFBucketName).Object(toDeleteFileName).Delete(ctx)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    sqlStmt = fmt.Sprintf("update `%s` set %s = null, modified = now() where id = %s",
+      tblName, vars["name"], docid)
+    _, err = SQLDB.Exec(sqlStmt)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  }
+
+  redirectURL := fmt.Sprintf("/update/%s/%s/", ds, docid)
+  http.Redirect(w, r, redirectURL, 307)
 }
