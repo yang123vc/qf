@@ -173,7 +173,9 @@ To send mails after approvals set the `qf.ApprovalFrameworkMailsFn`. It's defini
 
 ## Upgrading
 
-After upgrading the code please remember to update the copy of `qffiles` in your project
+1.  Upgrade the code
+2.  Copy the new `qffiles` to your project. Please delete the old one first.
+3.  Run `/qf-upgrade/` to upgrade the database tables.
 
 
 ## FAQs
