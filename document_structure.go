@@ -424,7 +424,7 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   var redirectURL string
   if hasForm {
-    redirectURL = "/complete-files-delete/"
+    redirectURL = "/complete-files-delete/?n=l"
   } else {
     redirectURL = "/list-document-structures/"
   }
