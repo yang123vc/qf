@@ -240,6 +240,20 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
 
+
+    _, err = SQLDB.Exec(`create table qf_files_for_delete (
+      id bigint unsigned not null auto_increment,
+      created_by bigint unsigned not null,
+      filepath varchar(255) not null,
+      primary key(id),
+      index(filepath),
+      index(created_by)
+    )`)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
     fmt.Fprintf(w, "Setup Completed.")
 
   }
@@ -252,7 +266,10 @@ func AddQFHandlers(r *mux.Router) {
 
   // Please call this link first to do your setup.
   r.HandleFunc("/qf-setup/", qfSetup)
+
+  // admin pages
   r.HandleFunc("/qf-page/", qfPage)
+  r.HandleFunc("/qf-upgrade/", qfUpgrade)
 
   // document structure links
   r.HandleFunc("/new-document-structure/", newDocumentStructure)
