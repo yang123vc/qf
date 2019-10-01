@@ -9,71 +9,64 @@ import (
   "golang.org/x/net/context"
   "cloud.google.com/go/storage"
   "strings"
+  "errors"
 )
 
 
-func deleteDocument(w http.ResponseWriter, r *http.Request) {
+func innerDeleteDocument(r *http.Request, docid string, deleteFile bool) error {
   useridUint64, err := GetCurrentUser(r)
   if err != nil {
-    errorPage(w, err.Error())
-    return
+    return err
   }
 
   vars := mux.Vars(r)
   ds := vars["document-structure"]
-  docid := vars["id"]
+
   docidUint64, err := strconv.ParseUint(docid, 10, 64)
   if err != nil {
-    errorPage(w, err.Error())
+    return err
   }
 
   detv, err := docExists(ds)
   if err != nil {
-    errorPage(w, err.Error())
-    return
+    return err
   }
   if detv == false {
-    errorPage(w, fmt.Sprintf("The document structure %s does not exists.", ds))
-    return
+    return errors.New(fmt.Sprintf("The document structure %s does not exists.", ds))
   }
 
   tblName, err := tableName(ds)
   if err != nil {
-    errorPage(w, err.Error())
-    return
+    return err
   }
 
   var count uint64
   sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", tblName, docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&count)
   if count == 0 {
-    errorPage(w, fmt.Sprintf("The document with id %s do not exists", docid))
-    return
+    return errors.New(fmt.Sprintf("The document with id %s do not exists", docid))
   }
 
   deletePerm, err := DoesCurrentUserHavePerm(r, ds, "delete")
   if err != nil {
-    errorPage(w, err.Error())
-    return
+    return err
   }
   docPerm, err := DoesCurrentUserHavePerm(r, ds, "delete-only-created")
   if err != nil {
-    errorPage(w, err.Error())
+    return err
   }
 
   var id int
   err = SQLDB.QueryRow("select id from qf_document_structures where fullname = ?", ds).Scan(&id)
   if err != nil {
-    errorPage(w, err.Error())
-    return
+    return err
   }
 
   ec, ectv := getEC(ds)
 
   dds, err := GetDocData(ds)
   if err != nil {
-    errorPage(w, err.Error())
-    return
+    return err
   }
 
   var colNames []string
@@ -88,8 +81,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     sqlStmt := fmt.Sprintf("select %s from `%s` where id = %s", colName, tblName, docid)
     err := SQLDB.QueryRow(sqlStmt).Scan(&dataFromDB)
     if err != nil {
-      errorPage(w, err.Error())
-      return
+      return err
     }
     if dataFromDB.Valid {
       data = dataFromDB.String
@@ -103,8 +95,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
   sqlStmt = fmt.Sprintf("select created_by from `%s` where id = %s", tblName, docid)
   err = SQLDB.QueryRow(sqlStmt).Scan(&createdBy)
   if err != nil {
-    errorPage(w, err.Error())
-    return
+    return err
   }
 
   if deletePerm || (docPerm && createdBy == useridUint64) {
@@ -114,21 +105,18 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
 
     approvers, err := getApprovers(ds)
     if err != nil {
-      errorPage(w, err.Error())
-      return
+      return err
     }
 
     for _, step := range approvers {
       atn, err := getApprovalTable(ds, step)
       if err != nil {
-        errorPage(w, err.Error())
-        return
+        return err
       }
 
       _, err = SQLDB.Exec(fmt.Sprintf("delete from `%s` where docid = ?", atn), docid)
       if err != nil {
-        errorPage(w, err.Error())
-        return
+        return err
       }
     }
 
@@ -140,8 +128,7 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
       ctx = context.Background()
       client, err = storage.NewClient(ctx)
       if err != nil {
-        errorPage(w, err.Error())
-        return
+        return err
       }
     }
 
@@ -151,21 +138,29 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
         for _, part := range parts {
           ottblName, err := tableName(dd.OtherOptions[0])
           if err != nil {
-            errorPage(w, err.Error())
-            return
+            return err
           }
 
           sqlStmt = fmt.Sprintf("delete from `%s` where id = ?", ottblName)
           _, err = SQLDB.Exec(sqlStmt, part)
           if err != nil {
-            errorPage(w, err.Error())
-            return
+            return err
           }
         }
       }
 
-      if dd.Type == "File" || dd.Type == "Image" {
-        client.Bucket(QFBucketName).Object(fData[dd.Name]).Delete(ctx)
+      if (deleteFile) {
+        if dd.Type == "File" || dd.Type == "Image" {
+          client.Bucket(QFBucketName).Object(fData[dd.Name]).Delete(ctx)
+        }        
+      } else {
+        if dd.Type == "File" || dd.Type == "Image" {
+          sqlStmt = "insert into `qf_files_for_delete` (created_by, filepath) values (?, ?)"
+          _, err = SQLDB.Exec(sqlStmt, useridUint64, fData[dd.Name])
+          if err != nil {
+            return err
+          }
+        }
       }
 
     }
@@ -173,12 +168,25 @@ func deleteDocument(w http.ResponseWriter, r *http.Request) {
     sqlStmt = fmt.Sprintf("delete from `%s` where id = %s", tblName, docid)
     _, err = SQLDB.Exec(sqlStmt)
     if err != nil {
-      errorPage(w, err.Error())
-      return
+      return err
     }
 
   } else {
-    errorPage(w, "You don't have the delete permission for this document.")
+    return errors.New("You don't have the delete permission for this document.")
+  }
+
+  return nil
+}
+
+
+func deleteDocument(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  docid := vars["id"]
+  ds := vars["document-structure"]
+
+  err := innerDeleteDocument(r, docid, true)
+  if err != nil {
+    errorPage(w, err.Error())
     return
   }
 
@@ -201,15 +209,6 @@ func deleteSearchResults(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  tv1, err := DoesCurrentUserHavePerm(r, ds, "delete")
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-  if ! tv1 {
-    errorPage(w, "You don't have the delete permission for this document structure.")
-    return
-  }
 
   endSqlStmt, err := parseSearchVariables(r)
   if err != nil {
@@ -228,13 +227,45 @@ func deleteSearchResults(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  sqlStmt := fmt.Sprintf("delete from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
-  _, err = SQLDB.Exec(sqlStmt)
+  var toDeleteDocId string
+  sqlStmt := fmt.Sprintf("select id from `%s` where ", tblName) + strings.Join(endSqlStmt, " and ")
+  rows, err := SQLDB.Query(sqlStmt)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&toDeleteDocId)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    err = innerDeleteDocument(r, toDeleteDocId, false)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+  }
+  err = rows.Err()
   if err != nil {
     errorPage(w, err.Error())
     return
   }
 
-  redirectURL := fmt.Sprintf("/list/%s/", ds)
+  hasForm, err := documentStructureHasForm(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  var redirectURL string
+  if hasForm {
+    redirectURL = "/complete-files-delete/"
+  } else {
+    redirectURL = fmt.Sprintf("/list/%s/", ds)    
+  }
+  
   http.Redirect(w, r, redirectURL, 307)
 }

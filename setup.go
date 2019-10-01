@@ -305,6 +305,8 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/serve-js/{library}/", serveJS)
   r.HandleFunc("/qf-file/", serveFileForQF)
   r.HandleFunc("/delete-file/{document-structure}/{id:[0-9]+}/{name}/", deleteFile)
+  r.HandleFunc("/complete-files-delete/", completeFilesDelete)
+  r.HandleFunc("/delete-file-from-browser/", deleteFileFromBrowser)
 
   // My List links
   r.HandleFunc("/mylist-setup/{document-structure}/", myListSetup)

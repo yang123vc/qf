@@ -9,6 +9,8 @@ import (
   "strings"
   "fmt"
   "strconv"
+  "database/sql"
+  "html/template"
 )
 
 
@@ -172,4 +174,72 @@ func deleteFile(w http.ResponseWriter, r *http.Request) {
 
   redirectURL := fmt.Sprintf("/update/%s/%s/", ds, docid)
   http.Redirect(w, r, redirectURL, 307)
+}
+
+
+func completeFilesDelete(w http.ResponseWriter, r *http.Request) {
+  useridUint64, err := GetCurrentUser(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  var count uint64
+  err = SQLDB.QueryRow("select count(*) from qf_files_for_delete where created_by = ? ", useridUint64).Scan(&count)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  if count == 0 {
+    errorPage(w, "You have nothing to delete.")
+    return
+  }
+
+  var fps sql.NullString
+  err = SQLDB.QueryRow("select group_concat(filePath separator ',,,') from qf_files_for_delete where created_by = ?", useridUint64).Scan(&fps)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  type Context struct {
+    FilePaths []string
+  }
+
+  ctx := Context{strings.Split(fps.String, ",,,")}
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/complete-files-delete.html"))
+  tmpl.Execute(w, ctx)
+}
+
+
+func deleteFileFromBrowser(w http.ResponseWriter, r *http.Request) {
+  _, err := GetCurrentUser(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+
+  ctx := context.Background()
+  client, err := storage.NewClient(ctx)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  fp := r.FormValue("p")
+  err = client.Bucket(QFBucketName).Object(fp).Delete(ctx)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  _, err = SQLDB.Exec("delete from qf_files_for_delete where filepath = ?", fp)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  
+  fmt.Fprintf(w, "ok")
 }
