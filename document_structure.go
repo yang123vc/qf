@@ -337,6 +337,54 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   }
 
+  tblName, err := tableName(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  hasForm, err := documentStructureHasForm(ds)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  if hasForm {
+    dds, err := GetDocData(ds)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    useridUint64, err := GetCurrentUser(r)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    for _, dd := range dds {
+      if dd.Type == "File" || dd.Type == "Image" {
+        var fps sql.NullString
+        qStmt := fmt.Sprintf("select group_concat(%s separator ',,,') from `%s` where created_by = ?", dd.Name, tblName)
+        err = SQLDB.QueryRow(qStmt, useridUint64).Scan(&fps)
+        if err != nil {
+          errorPage(w, err.Error())
+          return
+        }
+
+        filepaths := strings.Split(fps.String, ",,,")
+        for _, fp := range filepaths {
+          qStmt = "insert into qf_files_for_delete (created_by, filepath) values (?, ?)"
+          _, err = SQLDB.Exec(qStmt, useridUint64, fp)
+          if err != nil {
+            panic(err)
+          }
+        }        
+      }
+    }
+
+  }
+
   dsid, err := getDocumentStructureID(ds)
   if err != nil {
     errorPage(w, err.Error())
@@ -361,11 +409,6 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  tblName, err := tableName(ds)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
   sql := fmt.Sprintf("drop table `%s`", tblName)
   _, err = SQLDB.Exec(sql)
   if err != nil {
@@ -379,7 +422,13 @@ func deleteDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  http.Redirect(w, r, "/list-document-structures/", 307)
+  var redirectURL string
+  if hasForm {
+    redirectURL = "/complete-files-delete/"
+  } else {
+    redirectURL = "/list-document-structures/"
+  }
+  http.Redirect(w, r, redirectURL, 307)
 }
 
 
