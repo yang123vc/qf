@@ -114,6 +114,7 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       child_table varchar(1) default 'f',
       approval_steps varchar(255),
       help_text text,
+      public char(1) default 'f',
       primary key (id),
       unique (fullname),
       unique (tbl_name)

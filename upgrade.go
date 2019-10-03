@@ -29,6 +29,7 @@ func qfUpgrade(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  // make sure version update in the database always comes last.
   upgradeStmts := map[string][]string{
     "1.7.0": []string{
       `create table qf_files_for_delete (
@@ -42,7 +43,15 @@ func qfUpgrade(w http.ResponseWriter, r *http.Request) {
 
       `update qf_version set version = '1.8.0' where id = 1;`,
     },
+
+    "1.8.0": []string {
+      `alter table qf_document_structures add (public char(1) default 'f');`,
+      `update qf_version set version = '1.9.0' where id = 1;`,     
+    },
   }
+
+  upgradeProgression := []string{"1.7.0", "1.8.0",}
+
   err = SQLDB.QueryRow(`select count(*) as count from information_schema.tables
   where table_schema=? and table_name=?`, SiteDB, "qf_version").Scan(&count)
   if err != nil {
@@ -54,25 +63,32 @@ func qfUpgrade(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  runUpgradeQueries := func(stmts []string) error {
-    for _, stmt := range stmts {
-      _, err := SQLDB.Exec(stmt)
-      if err != nil {
-        return err
-      }
-    }
-    return nil
-  }
-
   var currentVersion string
   err = SQLDB.QueryRow("select version from qf_version where id = 1").Scan(&currentVersion)
   if err != nil {
     errorPage(w, err.Error())
     return
   }
-  if currentVersion == "1.7.0" {
-    stmts := upgradeStmts[currentVersion]
-    err = runUpgradeQueries(stmts)
+
+  startIndex := 0
+  for i, ver := range upgradeProgression {
+    if ver == currentVersion {
+      startIndex = i
+    }
+  }
+
+  stmts := make([]string, 0)
+
+  for i, ver := range upgradeProgression[startIndex: ] {
+    if i == len(upgradeProgression[startIndex: ]) -1 {
+      stmts = append(stmts, upgradeStmts[ver]...)
+    } else {
+      stmts = append(stmts, upgradeStmts[ver][: len(upgradeStmts[ver]) - 1]...)
+    }
+  }
+
+  for _, stmt := range stmts {
+    _, err := SQLDB.Exec(stmt)
     if err != nil {
       errorPage(w, err.Error())
       return
