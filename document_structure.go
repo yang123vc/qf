@@ -458,7 +458,8 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
 
   var id int
   var tblNameStr string
-  err = SQLDB.QueryRow("select id, tbl_name from qf_document_structures where fullname = ?", ds).Scan(&id, &tblNameStr)
+  var publicStr string
+  err = SQLDB.QueryRow("select id, tbl_name, public from qf_document_structures where fullname = ?", ds).Scan(&id, &tblNameStr, &publicStr)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -477,13 +478,8 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  var childTableBool bool
-  if childTableStr == "t" {
-    childTableBool = true
-  } else {
-    childTableBool = false
-  }
-
+  childTableBool := charToBool(childTableStr)
+  publicBool := charToBool(publicStr)
 
   type Context struct {
     DocumentStructure string
@@ -495,6 +491,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
     HasApprovers bool
     ChildTable bool
     TableName string
+    Public bool
   }
 
   add := func(x, y int) int {
@@ -520,7 +517,7 @@ func viewDocumentStructure(w http.ResponseWriter, r *http.Request) {
   }
 
   ctx := Context{ds, docDatas, id, add, rps, strings.Join(approvers, ", "), hasApprovers,
-    childTableBool, tblNameStr}
+    childTableBool, tblNameStr, publicBool}
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/view-document-structure.html"))
   tmpl.Execute(w, ctx)
 }

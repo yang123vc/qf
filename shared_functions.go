@@ -109,7 +109,18 @@ func isUserInspector(r *http.Request) (bool, error) {
 
 
 func DoesCurrentUserHavePerm(r *http.Request, documentStructure, permission string) (bool, error) {
+  state, err := publicState(documentStructure)
+  if err != nil {
+    return false, err
+  }
+  if state && permission == "read" {
+    return true, nil
+  }
+  
   adminTruth, err := isUserAdmin(r)
+  if err != nil {
+    return false, err
+  }
   if err == nil && adminTruth {
     return true, nil
   }
@@ -540,5 +551,14 @@ func isApprovalFrameworkInstalled(documentStructure string) (bool, error) {
     return false, nil
   } else {
     return true, nil
+  }
+}
+
+
+func charToBool(elem string) bool {
+  if elem == "t" {
+    return true
+  } else {
+    return false
   }
 }

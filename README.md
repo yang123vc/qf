@@ -49,6 +49,8 @@ You must also provide a function that would get the currently logged in users. T
 to get the cookies for its purpose. Set the `qf.GetCurrentUser` to this function. The function has the following
 declaration `func(r *http.Request) (uint64, error)`.
 
+The `qf.GetCurrentUser` should return 0 for public.
+
 
 ### Begin
 

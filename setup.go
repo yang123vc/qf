@@ -286,6 +286,10 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/change-fields-order/{document-structure}/", changeFieldsOrder)
   r.HandleFunc("/add-fields/{document-structure}/", addFields)
 
+  // publicity document structure links
+  r.HandleFunc("/make-public/{document-structure}/", makePublic)
+  r.HandleFunc("/undo-make-public/{document-structure}/", undoMakePublic)
+
 
   // roles links
   r.HandleFunc("/roles-view/", rolesView)

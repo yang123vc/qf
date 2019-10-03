@@ -36,6 +36,13 @@
   <span>ID : <b>{{.Id}}</b></span><br>
   <span>Database Table Name: <b>{{.TableName}}</b></span><br>
   <span>Is Child Table: <b>{{.ChildTable}}</b></span><br>
+  <span>Is Accessible to the Public: <b>{{.Public}}</b></span>
+  {{if .Public}}
+    <a href="/undo-make-public/{{.DocumentStructure}}/">Undo Make Public</a>
+  {{else}}
+    <a href="/make-public/{{.DocumentStructure}}/">Make Public</a>
+  {{end}}
+  <br>
 
   <h3>Field Data</h3>
 
