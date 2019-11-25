@@ -23,10 +23,11 @@
   {{if eq $l 0 }}
     <p>You have not created any document structure.</p>
   {{else}}
+    <p id="error-box"></p>
     <form id="create-button-form" method="post" action="">
       <div>
         <label>Button Name</label>
-        <input type="text" name="button_name" required />
+        <input type="text" name="button_name" id="btn_name" required />
       </div>
 
       <div>
@@ -40,7 +41,28 @@
 
       <div>
         <label>URL prefix</label>
-        <input type="text" name="url_prefix" required />
+        <input type="text" name="url_prefix" id="btn_url_prefix" required />
+      </div>
+
+      <h4>Roles with Execute Permission </h4>
+      <table>
+        <tr>
+          <td>1</td>
+          <td>
+            <select class="a-role" name="role-1">
+              {{range .Roles}}
+              <option>{{.}}</option>
+              {{end}}
+            </select>
+          </td>
+          <td>
+            <button type="button" class="delete-role" id="delete-role-1">Delete</button>
+          </td>
+        </tr>
+      </table>
+
+      <div>
+        <button type="button" id="add-role-btn">Add Role</button>
       </div>
 
       <div>
@@ -48,4 +70,77 @@
       </div>
     </form>
   {{end}}
+
+{{end}}
+
+
+{{define "scripts"}}
+  <script>
+  function deleteStepHandler(e) {
+    $(e.target).parents('tr').remove();
+    // reset the numbers
+    $('table tr').each(function(i, el) {
+      var newNo = i + 1;
+      var strNewNo = newNo.toString()
+      $('td:first', el).text(strNewNo);
+      $('.a-role', el).attr('name', 'role-' + strNewNo);
+      $('.delete-role', el).attr('id', 'delete-role-' + strNewNo);
+    });
+  }
+
+
+  $(document).ready(function() {
+    $('#delete-role-1').hide();
+
+    $('#add-role-btn').click(function(e) {
+      var currentNo = parseInt($('tr:last td:first').text());
+      var newNo = currentNo + 1;
+      var html = $('tr:last').html();
+      var re = new RegExp(currentNo.toString(), 'g');
+      html = html.replace(re, newNo.toString());
+
+      html = "<tr>" + html + "</tr>";
+      $('table').append(html);
+
+      $('#delete-role-' + newNo.toString()).click(deleteStepHandler);
+      $('#delete-role-' + newNo.toString()).show();
+
+      $('html, body').scrollTop($(document).height());
+    });
+
+    $('form input[type=submit]').click(function(e) {
+      e.preventDefault();
+      $('#error-box').hide();
+
+      if ( $('#btn_name').val() == "") {
+        $('#btn_name').css('border', '1px solid red');
+        return;
+      } else {
+        $('#btn_name').css('border', '1px solid gray');
+      }
+
+      if ( $('#btn_url_prefix').val() == "") {
+        $('#btn_url_prefix').css('border', '1px solid red');
+        return;
+      } else {
+        $('#btn_url_prefix').css('border', '1px solid gray');
+      }
+
+
+      var steps = [];
+      for (var i = 0; i < $('.a-role').length; i++) {
+        el = $('.a-role')[i]
+        if (steps.indexOf($(el).val()) != -1) {
+          $('#error-box').text("Two steps can't have the same role.");
+          $('#error-box').show();
+          return
+        }
+        steps.push($(el).val());
+      }
+
+      $('form').submit();
+    });
+
+  });
+  </script>
 {{end}}

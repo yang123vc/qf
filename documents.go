@@ -236,8 +236,8 @@ func createDocument(w http.ResponseWriter, r *http.Request) {
 
         var newFileName string
         for {
-          randomFileName := filepath.Join(tblName, 
-            fmt.Sprintf("%s%s%s", untestedRandomString(100), 
+          randomFileName := filepath.Join(tblName,
+            fmt.Sprintf("%s%s%s", untestedRandomString(100),
             FILENAME_SEPARATOR, handle.Filename))
 
           objHandle := client.Bucket(QFBucketName).Object(randomFileName)
@@ -385,7 +385,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       }
     } else {
       errorPage(w, "You don't have the read permission for this document structure.")
-      return      
+      return
     }
   }
 
@@ -485,25 +485,7 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
       docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, ""})
     } else {
       data := rowMap[ docData.Name ]
-      // if data != "" && (docData.Type == "File" || docData.Type == "Image") {
-      //   pkey, err := ioutil.ReadFile(KeyFilePath)
-      //   if err != nil {
-      //     errorPage(w, err.Error())
-      //     return
-      //   }
-      //   opts := &storage.SignedURLOptions{
-      //     GoogleAccessID: GoogleAccessID,
-      //     PrivateKey: pkey,
-      //     Method: "GET",
-      //     Expires: time.Now().Add(1 * time.Hour),
-      //   }
-      //   viewableFilePath, err := storage.SignedURL(QFBucketName, data, opts)
-      //   if err != nil {
-      //     errorPage(w, err.Error())
-      //     return
-      //   }
-      //   data = viewableFilePath
-      // }
+
       docAndStructureSlice = append(docAndStructureSlice, docAndStructure{docData, data})
 
       if docData.Type == "Table" {
@@ -800,8 +782,8 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
 
         var newFileName string
         for {
-          randomFileName := filepath.Join(tblName, 
-            fmt.Sprintf("%s%s%s", untestedRandomString(100), 
+          randomFileName := filepath.Join(tblName,
+            fmt.Sprintf("%s%s%s", untestedRandomString(100),
             FILENAME_SEPARATOR, handle.Filename))
 
           objHandle := client.Bucket(QFBucketName).Object(randomFileName)
@@ -959,7 +941,7 @@ func editLog(w http.ResponseWriter, r *http.Request) {
       }
     } else {
       errorPage(w, "You don't have the read permission for this document structure.")
-      return      
+      return
     }
   }
 

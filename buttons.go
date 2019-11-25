@@ -6,6 +6,7 @@ import (
   "github.com/gorilla/mux"
   "strings"
   "database/sql"
+  "strconv"
 )
 
 
@@ -33,11 +34,18 @@ func createButton(w http.ResponseWriter, r *http.Request) {
     dsList = make([]string, 0)
   }
 
+  roles, err := GetRoles()
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
   if r.Method == http.MethodGet {
     type Context struct {
       DocumentStructureList []string
+      Roles []string
     }
-    ctx := Context{dsList}
+    ctx := Context{dsList, roles}
 
     tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/create-button.html"))
     tmpl.Execute(w, ctx)
@@ -51,11 +59,40 @@ func createButton(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    _, err = SQLDB.Exec("insert into qf_buttons (name, dsid, url_prefix) values (?,?,?)",
+    res, err := SQLDB.Exec("insert into qf_buttons (name, dsid, url_prefix) values (?,?,?)",
       r.FormValue("button_name"), dsid, r.FormValue("url_prefix"))
     if err != nil {
       errorPage(w, err.Error())
       return
+    }
+
+    btnid, err := res.LastInsertId()
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    execRoles := make([]string, 0)
+    for i := 1; i < 100 ; i++ {
+      iStr := strconv.Itoa(i)
+      if r.FormValue("role-" + iStr) == "" {
+        break
+      } else {
+        execRoles = append(execRoles, r.FormValue("role-" + iStr))
+      }
+    }
+
+    for _, r := range execRoles {
+      roleid, err := getRoleId(r)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+      _, err = SQLDB.Exec("insert into qf_btns_and_roles(roleid, buttonid) values(?,?)", roleid, btnid)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
     }
 
     http.Redirect(w, r, "/list-buttons/", 307)

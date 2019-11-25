@@ -255,6 +255,20 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
 
+    _, err = SQLDB.Exec(`create table qf_btns_and_roles (
+      id int not null auto_increment,
+      roleid int not null,
+      buttonid int not null,
+      primary key (id),
+      unique(roleid, buttonid),
+      foreign key (roleid) references qf_roles (id),
+      foreign key (buttonid) references qf_buttons (id)
+      )`)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
     fmt.Fprintf(w, "Setup Completed.")
 
   }
@@ -323,7 +337,7 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/unapproved-list/{document-structure}/", unapprovedList)
   r.HandleFunc("/unapproved-list/{document-structure}/{page:[0-9]+}/", unapprovedList)
 
-  // file links 
+  // file links
   r.HandleFunc("/serve-js/{library}/", serveJS)
   r.HandleFunc("/qf-file/", serveFileForQF)
   r.HandleFunc("/delete-file/{document-structure}/{id:[0-9]+}/{name}/", deleteFile)

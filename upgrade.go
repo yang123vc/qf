@@ -15,7 +15,7 @@ func qfUpgrade(w http.ResponseWriter, r *http.Request) {
   if ! truthValue {
     errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
     return
-  }  
+  }
 
   var count int
   err = SQLDB.QueryRow(`select count(*) as count from information_schema.tables
@@ -46,11 +46,26 @@ func qfUpgrade(w http.ResponseWriter, r *http.Request) {
 
     "1.8.0": []string {
       `alter table qf_document_structures add (public char(1) default 'f');`,
-      `update qf_version set version = '1.9.0' where id = 1;`,     
+      `update qf_version set version = '1.9.0' where id = 1;`,
+    },
+
+    "1.9.0": []string {
+      `
+      create table qf_btns_and_roles (
+        id int not null auto_increment,
+        roleid int not null,
+        buttonid int not null,
+        primary key (id),
+        unique(roleid, buttonid),
+        foreign key (roleid) references qf_roles (id),
+        foreign key (buttonid) references qf_buttons (id)
+        )
+      `,
+      `update qf_version set version = '1.10.0' where id = 1;`,
     },
   }
 
-  upgradeProgression := []string{"1.7.0", "1.8.0",}
+  upgradeProgression := []string{"1.7.0", "1.8.0", "1.9.0",}
 
   err = SQLDB.QueryRow(`select count(*) as count from information_schema.tables
   where table_schema=? and table_name=?`, SiteDB, "qf_version").Scan(&count)
