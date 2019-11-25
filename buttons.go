@@ -117,6 +117,7 @@ func listButtons(w http.ResponseWriter, r *http.Request) {
     Name string
     DocumentStructure string
     URLPrefix string
+    Roles []string
   }
   qfbs := make([]QFButton, 0)
 
@@ -145,7 +146,17 @@ func listButtons(w http.ResponseWriter, r *http.Request) {
       errorPage(w, err.Error())
       return
     }
-    qfbs = append(qfbs, QFButton{buttonId, name, dsName, urlPrefix})
+
+    var roleIdsStr sql.NullString
+    qStmt := `select group_concat(qf_roles.role separator ',,,') from qf_btns_and_roles inner join qf_roles
+    on qf_btns_and_roles.roleid = qf_roles.id where qf_btns_and_roles.buttonid = ?`
+    err = SQLDB.QueryRow(qStmt, buttonId).Scan(&roleIdsStr)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    qfbs = append(qfbs, QFButton{buttonId, name, dsName, urlPrefix, strings.Split(roleIdsStr.String, ",,,")})
   }
   err = rows.Err()
   if err != nil {

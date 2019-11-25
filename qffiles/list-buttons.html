@@ -10,6 +10,7 @@
         Name: <b>{{.Name}}</b><br>
         Document Structure : <b>{{.DocumentStructure}}</b><br>
         URL Prefix: <b>{{.URLPrefix}}</b><br>
+        Roles that can execute this button: <ol>{{range .Roles }} <li><b>{{.}}</b></li> {{end}}</ol> <br>
         <a href="/delete-button/{{.ButtonId}}/">Delete Button</a><br><br>
     {{end}}
   </ol>
