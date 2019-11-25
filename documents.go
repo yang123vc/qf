@@ -588,29 +588,70 @@ func updateDocument(w http.ResponseWriter, r *http.Request) {
     }
     qfbs := make([]QFButton, 0)
 
-    var (
-      name string
-      urlPrefix string
-    )
-    rows, err := SQLDB.Query("select name, url_prefix from qf_buttons where dsid = ?", dsid)
+    truthValue, err := isUserAdmin(r)
     if err != nil {
       errorPage(w, err.Error())
       return
     }
-    defer rows.Close()
-    for rows.Next() {
-      err := rows.Scan(&name, &urlPrefix)
+
+    var (
+      name string
+      urlPrefix string
+    )
+    if truthValue == true {
+      rows, err := SQLDB.Query("select name, url_prefix from qf_buttons where dsid = ?", dsid)
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+      defer rows.Close()
+      for rows.Next() {
+        err := rows.Scan(&name, &urlPrefix)
+        if err != nil {
+          errorPage(w, err.Error())
+          return
+        }
+
+        qfbs = append(qfbs, QFButton{name, urlPrefix})
+      }
+      err = rows.Err()
+      if err != nil {
+        errorPage(w, err.Error())
+        return
+      }
+    } else {
+      rids, err := GetCurrentUserRolesIds(r)
       if err != nil {
         errorPage(w, err.Error())
         return
       }
 
-      qfbs = append(qfbs, QFButton{name, urlPrefix})
-    }
-    err = rows.Err()
-    if err != nil {
-      errorPage(w, err.Error())
-      return
+      if len(rids) != 0 {
+        qStmt := fmt.Sprintf(`select distinct qf_buttons.name, qf_buttons.url_prefix from qf_buttons inner join qf_btns_and_roles
+        on qf_buttons.id = qf_btns_and_roles.buttonid where qf_btns_and_roles.roleid in ( %s ) and dsid = ?
+        `, strings.Join(rids, " , "))
+
+        rows, err := SQLDB.Query(qStmt, dsid)
+        if err != nil {
+          errorPage(w, err.Error())
+          return
+        }
+        defer rows.Close()
+        for rows.Next() {
+          err := rows.Scan(&name, &urlPrefix)
+          if err != nil {
+            errorPage(w, err.Error())
+            return
+          }
+
+          qfbs = append(qfbs, QFButton{name, urlPrefix})
+        }
+        err = rows.Err()
+        if err != nil {
+          errorPage(w, err.Error())
+          return
+        }
+      }
     }
 
     type Context struct {

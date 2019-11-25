@@ -116,7 +116,7 @@ func DoesCurrentUserHavePerm(r *http.Request, documentStructure, permission stri
   if state && permission == "read" {
     return true, nil
   }
-  
+
   adminTruth, err := isUserAdmin(r)
   if err != nil {
     return false, err
@@ -129,7 +129,7 @@ func DoesCurrentUserHavePerm(r *http.Request, documentStructure, permission stri
   if err == nil && inspectorTruth && permission == "read" {
     return true, nil
   }
-  
+
   userid, err := GetCurrentUser(r)
   if err != nil {
     return false, err
@@ -251,6 +251,25 @@ func GetRoles() ([]string, error) {
     return strSlice, err
   }
   return strSlice, nil
+}
+
+
+func GetCurrentUserRolesIds(r *http.Request) ([]string, error) {
+  userid, err := GetCurrentUser(r)
+  if err != nil {
+    return nil, err
+  }
+
+  var roles sql.NullString
+  err = SQLDB.QueryRow("select group_concat(roleid separator ',,,') from qf_user_roles where userid = ?", userid).Scan(&roles)
+  if err != nil {
+    return nil, err
+  }
+  if ! roles.Valid {
+    return []string{}, nil
+  }
+  rids := strings.Split(roles.String, ",,,")
+  return rids, nil
 }
 
 
