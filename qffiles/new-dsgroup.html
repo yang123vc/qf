@@ -1,0 +1,49 @@
+{{define "title"}}New Document Structure Group {{end}}
+
+{{define "styles"}}
+<style>
+form div {
+  margin-bottom: 10px;
+}
+#id-group-name {
+  width: 300px;
+}
+</style>
+{{end}}
+
+
+{{define "main"}}
+<h3>New Document Structure Group </h3>
+
+<p id="error-box"></p>
+<form method="post" action="">
+  <div>
+    <label for="id-group-name">Group Name</label>
+    <input type="text" id="id-group-name" name="group-name" required />
+  </div>
+
+  <div>
+    <input type="submit" value="Create Group" />
+  </div>
+</form>
+{{end}}
+
+
+{{define "scripts"}}
+<script>
+  var dsgroups = "{{.DSGroups}}";
+
+  $(document).ready(function() {
+    $('form input[type=submit]').click(function(e) {
+      $('#error-box').hide();
+      dsGroupsList = dsgroups.split(",,,");
+      if (dsGroupsList.indexOf( $("#id-group-name").val() ) != -1 ) {
+        e.preventDefault()
+        $('#error-box').text("The group name has been used.")
+        $("#error-box").show()
+        $("#id-group-name").css("background-color", "1px solid red");
+      }
+    });
+  });
+</script>
+{{end}}
