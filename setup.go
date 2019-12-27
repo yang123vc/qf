@@ -297,7 +297,6 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
     _, err = SQLDB.Exec(`create table qf_dsgroups_links (
       id int not null auto_increment,
       dsgroupid int not null,
-      display_text varchar(255),
       link varchar(255),
       primary key (id),
       unique (dsgroupid, link),
@@ -345,10 +344,6 @@ func AddQFHandlers(r *mux.Router) {
 
   // document structure group links
   r.HandleFunc("/new-document-structure-group/", newDSGroup)
-  r.HandleFunc("/manage-dsgroup/{document-structure-group}/", manageDSGroup)
-  r.HandleFunc("/update-dsgroup-onds/{document-structure-group}/", updateDSGroupOnDS)
-  r.HandleFunc("/update-dsgroup-onlinks/{document-structure-group}/", updateDSGroupOnLinks)
-  r.HandleFunc("/delete-extra-link/{document-structure-group}/{id}/", deleteExtraLink)
 
   // roles links
   r.HandleFunc("/roles-view/", rolesView)
