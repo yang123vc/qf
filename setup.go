@@ -269,44 +269,6 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    _, err = SQLDB.Exec(`create table qf_dsgroups (
-      id int not null auto_increment,
-      group_name varchar(60) not null,
-      primary key (id),
-      unique (group_name)
-      )`)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-
-    _, err = SQLDB.Exec(`create table qf_dsgroups_ds (
-      id int not null auto_increment,
-      dsgroupid int not null,
-      dsid int not null,
-      primary key (id),
-      unique (dsgroupid, dsid),
-      foreign key (dsgroupid) references qf_dsgroups (id),
-      foreign key (dsid) references qf_document_structures(id)
-      )`)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-
-    _, err = SQLDB.Exec(`create table qf_dsgroups_links (
-      id int not null auto_increment,
-      dsgroupid int not null,
-      link varchar(255),
-      primary key (id),
-      unique (dsgroupid, link),
-      foreign key (dsgroupid) references qf_dsgroups (id)
-      )`)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-
     fmt.Fprintf(w, "Setup Completed.")
 
   }
@@ -342,8 +304,6 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/make-public/{document-structure}/", makePublic)
   r.HandleFunc("/undo-make-public/{document-structure}/", undoMakePublic)
 
-  // document structure group links
-  r.HandleFunc("/new-document-structure-group/", newDSGroup)
 
   // roles links
   r.HandleFunc("/roles-view/", rolesView)
