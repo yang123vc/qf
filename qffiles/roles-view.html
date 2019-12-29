@@ -1,4 +1,4 @@
-{{define "title"}}Roles List And Creation{{end}}
+{{define "title"}}Roles Management{{end}}
 
 
 {{define "styles"}}
@@ -11,16 +11,22 @@
   form div {
     margin-bottom: 5px;
   }
+  li {
+    margin-bottom: 10px;
+  }
   </style>
 {{end}}
 
 
 {{define "main"}}
-  <h3>Roles List And Creation</h3>
+  <h3>Roles Management</h3>
   {{if .NumberOfRoles}}
   <ol>
     {{ range .Roles }}
-      <li>{{.}} <a href="/delete-role/{{.}}/">Delete</a></li>
+      <li>
+        <a href="/view-role-members/{{.}}/">{{.}}</a>
+        <a style="margin-left: 30px" href="/delete-role/{{.}}/">Delete</a>
+      </li>
     {{end}}
   </ol>
   {{ else }}

@@ -568,3 +568,70 @@ func userDetails(w http.ResponseWriter, r * http.Request) {
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/user-details.html"))
   tmpl.Execute(w, ctx)
 }
+
+
+func viewRoleMembers(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  vars := mux.Vars(r)
+  role := vars["role"]
+
+  type UserSummary struct {
+    UserId string
+    Firstname string
+    Surname string
+    Email string
+  }
+
+  roleid, err := getRoleId(role)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  uss := make([]UserSummary, 0)
+
+  sqlStmt := "select `%[1]s`.id, `%[1]s`.firstname, `%[1]s`.surname, `%[1]s`.email from qf_user_roles inner join `%[1]s` "
+  sqlStmt += "on qf_user_roles.userid = `%[1]s`.id where qf_user_roles.roleid = ? "
+  sqlStmt += "order by `%[1]s`.firstname asc"
+
+  var userid, firstname, surname, email string
+  rows, err := SQLDB.Query(fmt.Sprintf(sqlStmt, UsersTable), roleid)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  defer rows.Close()
+  for rows.Next() {
+    err := rows.Scan(&userid, &firstname, &surname, &email)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    uss = append(uss, UserSummary{userid, firstname, surname, email})
+  }
+  err = rows.Err()
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  type Context struct {
+    Role string
+    UserSummaries []UserSummary
+    UsersCount int
+  }
+
+  ctx := Context{role, uss, len(uss)}
+  tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/view-roles-members.html"))
+  tmpl.Execute(w, ctx)
+}

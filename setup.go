@@ -299,9 +299,8 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/delete-fields/{document-structure}/", deleteFields)
   r.HandleFunc("/change-fields-order/{document-structure}/", changeFieldsOrder)
   r.HandleFunc("/add-fields/{document-structure}/", addFields)
-
-  // document structure templates
   r.HandleFunc("/new-ds-from-template/{document-structure}/", newDSFromTemplate)
+
 
   // publicity document structure links
   r.HandleFunc("/make-public/{document-structure}/", makePublic)
@@ -319,6 +318,7 @@ func AddQFHandlers(r *mux.Router) {
   r.HandleFunc("/remove-role-from-user/{userid}/{role}/", removeRoleFromUser)
   r.HandleFunc("/delete-role-permissions/{document-structure}/{role}/", deleteRolePermissions)
   r.HandleFunc("/user-details/{userid}/", userDetails)
+  r.HandleFunc("/view-role-members/{role}/", viewRoleMembers)
 
   // document links
   r.HandleFunc("/create/{document-structure}/", createDocument)
