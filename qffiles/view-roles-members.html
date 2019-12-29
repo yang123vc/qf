@@ -12,6 +12,7 @@
           <td>Firstname</td>
           <td>Surname</td>
           <td>Email</td>
+          <td>Action</td>
         </tr>
       </thead>
       <tbody>
@@ -21,6 +22,7 @@
             <td>{{.Firstname}}</td>
             <td>{{.Surname}}</td>
             <td>{{.Email}}</td>
+            <td><a href="/remove-role-from-user-2/{{.UserId}}/{{$.Role}}/">Remove User</a></td>
           </tr>
         {{end}}
     </table>

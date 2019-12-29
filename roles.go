@@ -10,6 +10,7 @@ import (
   "html"
   "strings"
   "math"
+  "errors"
 )
 
 
@@ -399,6 +400,35 @@ func editUserRoles(w http.ResponseWriter, r *http.Request) {
 }
 
 
+func removeRoleFromUserInner(role, userid string) error {
+  useridUint64, err := strconv.ParseUint(userid, 10, 64)
+  if err != nil {
+    return err
+  }
+
+  var count int
+  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", UsersTable, userid)
+  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
+  if err != nil {
+    return err
+  }
+  if count == 0 {
+    return errors.New("The userid does not exist.")
+  }
+
+  roleid, err := getRoleId(role)
+  if err != nil {
+    return err
+  }
+
+  _, err = SQLDB.Exec("delete from qf_user_roles where userid = ? and roleid = ?", useridUint64, roleid)
+  if err != nil {
+    return err
+  }
+
+  return nil
+}
+
 func removeRoleFromUser(w http.ResponseWriter, r *http.Request) {
   truthValue, err := isUserAdmin(r)
   if err != nil {
@@ -411,33 +441,10 @@ func removeRoleFromUser(w http.ResponseWriter, r *http.Request) {
   }
 
   vars := mux.Vars(r)
-  userid := vars["userid"]
   role := vars["role"]
-  useridUint64, err := strconv.ParseUint(userid, 10, 64)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
+  userid := vars["userid"]
 
-  var count int
-  sqlStmt := fmt.Sprintf("select count(*) from `%s` where id = %s", UsersTable, userid)
-  err = SQLDB.QueryRow(sqlStmt).Scan(&count)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-  if count == 0 {
-    errorPage(w, "The userid does not exist.")
-    return
-  }
-
-  roleid, err := getRoleId(role)
-  if err != nil {
-    errorPage(w, err.Error())
-    return
-  }
-
-  _, err = SQLDB.Exec("delete from qf_user_roles where userid = ? and roleid = ?", useridUint64, roleid)
+  err = removeRoleFromUserInner(role, userid)
   if err != nil {
     errorPage(w, err.Error())
     return
@@ -634,4 +641,30 @@ func viewRoleMembers(w http.ResponseWriter, r *http.Request) {
   ctx := Context{role, uss, len(uss)}
   tmpl := template.Must(template.ParseFiles(getBaseTemplate(), "qffiles/view-roles-members.html"))
   tmpl.Execute(w, ctx)
+}
+
+
+func removeRoleFromUser2(w http.ResponseWriter, r *http.Request) {
+  truthValue, err := isUserAdmin(r)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+  if ! truthValue {
+    errorPage(w, "You are not an admin here. You don't have permissions to view this page.")
+    return
+  }
+
+  vars := mux.Vars(r)
+  role := vars["role"]
+  userid := vars["userid"]
+
+  err = removeRoleFromUserInner(role, userid)
+  if err != nil {
+    errorPage(w, err.Error())
+    return
+  }
+
+  redirectURL := fmt.Sprintf("/view-role-members/%s/", role)
+  http.Redirect(w, r, redirectURL, 307)
 }
