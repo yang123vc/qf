@@ -226,22 +226,6 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       return
     }
 
-    _, err = SQLDB.Exec(`create table qf_version (
-      id int not null auto_increment,
-      version varchar(50) not null,
-      primary key (id)
-    )`)
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-    _, err = SQLDB.Exec("insert into qf_version (id, version) values (?, ?)", 1, "1.7.0")
-    if err != nil {
-      errorPage(w, err.Error())
-      return
-    }
-
-
     _, err = SQLDB.Exec(`create table qf_files_for_delete (
       id bigint unsigned not null auto_increment,
       created_by bigint unsigned not null,
@@ -264,6 +248,21 @@ func qfSetup(w http.ResponseWriter, r *http.Request) {
       foreign key (roleid) references qf_roles (id),
       foreign key (buttonid) references qf_buttons (id)
       )`)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+
+    _, err = SQLDB.Exec(`create table qf_version (
+      id int not null auto_increment,
+      version varchar(50) not null,
+      primary key (id)
+    )`)
+    if err != nil {
+      errorPage(w, err.Error())
+      return
+    }
+    _, err = SQLDB.Exec("insert into qf_version (id, version) values (?, ?)", 1, "1.10.0")
     if err != nil {
       errorPage(w, err.Error())
       return
