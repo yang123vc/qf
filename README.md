@@ -56,7 +56,7 @@ The `qf.GetCurrentUser` should return 0 for public.
 
 Get the framework through the following command `go get -u github.com/bankole7782/qf`
 
-There is a sample application which details how to complete the setup. Take a look at it [here](https://github.com/bankole7782/qf_example)
+There is a sample application which details how to complete the setup. Take a look at it [here](https://github.com/bankole7782/qf/tree/master/qf_example)
 
 Copy the folder `qffiles` from the main repo into the same path as your `main.go`.
 
