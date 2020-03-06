@@ -206,6 +206,11 @@ and the design of the email itself.
 I don't intend to support more than one database so has to make the work cheaper.
 
 
+### When is X Cloud Support Comming
+
+I don't intend to support more than one cloud.
+
+
 ## License
 
 Released with the MIT License
