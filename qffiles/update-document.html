@@ -178,9 +178,13 @@
 
         {{ else if eq .Type "Select"}}
           <select name="{{.Name}}" {{if .ReadOnly}} disabled {{end}}>
-            <option selected>{{.Data}}</option>
+            {{$T := .Data}}
             {{range .OtherOptions}}
-              <option>{{.}}</option>
+              {{if eq $T .}}
+                <option selected>{{.}}</option>
+              {{else}}
+                <option>{{.}}</option>
+              {{end}}
             {{end}}
           </select>
 
@@ -251,9 +255,13 @@
 
                     {{ else if eq .Type "Select"}}
                       <select name="{{.Name}}-{{call $.Add $index 1}}" {{if .ReadOnly}} disabled {{end}}>
-                        <option selected>{{.Data}}</option>
+                        {{$T := .Data}}
                         {{range .OtherOptions}}
-                          <option>{{.}}</option>
+                          {{if eq $T .}}
+                            <option selected>{{.}}</option>
+                          {{else}}
+                            <option>{{.}}</option>
+                          {{end}}
                         {{end}}
                       </select>
 

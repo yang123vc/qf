@@ -220,7 +220,11 @@ func GetDocData(documentStructure string) ([]DocData, error) {
     if optionSearch(options, "readonly") {
       readonly = true
     }
-    dd := DocData{label, name, type_, required, unique, readonly, strings.Split(otherOptions, "\n")}
+    otherOptionsOk := make([]string, 0)
+    for _, otherOption := range strings.Split(otherOptions, "\n") {
+      otherOptionsOk = append(otherOptionsOk, strings.TrimSpace(otherOption))
+    }
+    dd := DocData{label, name, type_, required, unique, readonly, otherOptionsOk}
     dds = append(dds, dd)
   }
   err = rows.Err()
