@@ -263,8 +263,8 @@
 
                     {{else if eq .Type "URL"}}
                       <input type="url" name="{{.Name}}-{{call $.Add $index 1}}" value="{{.Data}}" {{if .Required}} required {{end}}
-                      {{if .ReadOnly}} disabled {{end}}>
-
+                      {{if .ReadOnly}} disabled {{end}}>&nbsp;&nbsp;
+                      <a href="{{.Data}}" target="_blank">Open URL</a>
                     {{end}}
 
                   </td>
@@ -287,8 +287,8 @@
 
         {{else if eq .Type "URL"}}
           <input type="url" name="{{.Name}}" value="{{.Data}}" {{if .Required}} required {{end}}
-          {{if .ReadOnly}} disabled {{end}}>
-
+          {{if .ReadOnly}} disabled {{end}}>&nbsp;&nbsp;  
+          <a href="{{.Data}}" target="_blank">Open URL</a>
         {{end}}
 
       </div>
